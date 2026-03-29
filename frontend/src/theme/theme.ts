@@ -1,15 +1,18 @@
 import { createTheme } from "@mui/material/styles";
 
-// ─── Portal Brand Tokens (pixel-matched from Talents Apartment portal) ───────
+// ─── Soft UI Tokens (matched from demo-ais.html) ────────────────────────────
 export const tokens = {
-  primary: "#435ebe",
-  primaryDark: "#2946af",
-  info: "#17c1e8",
-  success: "#2dce89",
+  primary: "#17C1E8",
+  primaryDark: "#0e9aba",
+  secondary: "#8392AB",
+  success: "#82d616",
   danger: "#ea0606",
+  warning: "#fbcf33",
+  info: "#17c1e8",
+  dark: "#344767",
   pink: "#cb0c9f",
 
-  heading: "#252f40",
+  heading: "#344767",
   text: "#344767",
   muted: "#67748e",
   axisLabel: "#9ca2b7",
@@ -19,14 +22,19 @@ export const tokens = {
   inputBg: "#f6f7f9",
   border: "#e9ecef",
 
-  sidebarActive: "#435ebe",
-  sidebarActiveBg: "rgba(67,94,190,0.10)",
-  utilBarBg: "#1e3c8a",
+  sidebarActive: "#17C1E8",
+  sidebarActiveBg: "rgba(23,193,232,0.08)",
+  utilBarBg: "#344767",
 
-  gradPrimary: "linear-gradient(310deg, #2946af 0%, #435ebe 100%)",
+  gradPrimary: "linear-gradient(310deg, #2152FF 0%, #21D4FD 100%)",
+  gradSuccess: "linear-gradient(310deg, #17AD37 0%, #98EC2D 100%)",
+  gradWarning: "linear-gradient(310deg, #F53939 0%, #FBCF33 100%)",
+  gradInfo: "linear-gradient(310deg, #7928CA 0%, #FF0080 100%)",
+  gradDark: "linear-gradient(310deg, #141727 0%, #3A416F 100%)",
   gradPink: "linear-gradient(310deg, #d40000 0%, #cb0c9f 100%)",
-  gradGreen: "linear-gradient(310deg, #17ad37 0%, #2dce89 100%)",
-  gradBlue: "linear-gradient(310deg, #1171ef 0%, #17c1e8 100%)",
+
+  shadowSoft: "0 20px 27px 0 rgba(0,0,0,0.05)",
+  shadowCard: "0 2px 6px -1px rgba(0,0,0,0.10), 0 1px 4px -1px rgba(0,0,0,0.06)",
 } as const;
 
 const theme = createTheme({
@@ -35,11 +43,11 @@ const theme = createTheme({
     primary: {
       main: tokens.primary,
       dark: tokens.primaryDark,
-      light: "#6b84d4",
+      light: "#45cfed",
       contrastText: "#ffffff",
     },
     secondary: {
-      main: tokens.muted,
+      main: tokens.secondary,
       contrastText: "#ffffff",
     },
     success: {
@@ -54,7 +62,7 @@ const theme = createTheme({
       main: tokens.danger,
     },
     warning: {
-      main: "#f53939",
+      main: tokens.warning,
     },
     background: {
       default: tokens.bg,
