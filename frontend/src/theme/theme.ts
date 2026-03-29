@@ -207,18 +207,26 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 0,
+          borderLeft: "3px solid transparent",
+          padding: "11px 20px",
+          gap: 12,
+          fontSize: "0.875rem",
+          fontWeight: 400,
+          color: tokens.text,
           "&.Mui-selected": {
-            backgroundColor: tokens.sidebarActiveBg,
-            color: tokens.sidebarActive,
-            "& .MuiListItemIcon-root": { color: tokens.sidebarActive },
-            "&:hover": { backgroundColor: tokens.sidebarActiveBg },
+            borderLeftColor: tokens.primary,
+            backgroundColor: "rgba(23,193,232,0.06)",
+            color: tokens.primary,
+            fontWeight: 600,
+            "& .MuiListItemIcon-root": { color: tokens.primary },
+            "&:hover": { backgroundColor: "rgba(23,193,232,0.06)" },
           },
         },
       },
     },
     MuiListItemIcon: {
       styleOverrides: {
-        root: { minWidth: 30, color: tokens.muted },
+        root: { minWidth: 30, fontSize: 18, color: tokens.secondary },
       },
     },
     MuiAppBar: {

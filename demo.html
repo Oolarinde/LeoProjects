@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Soft UI Design System — Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bs-blue: #63B3ED;
+    --bs-indigo: #596CFF;
+    --bs-purple: #6f42c1;
+    --bs-pink: #d63384;
+    --bs-red: #F56565;
+    --bs-orange: #fd7e14;
+    --bs-yellow: #FBD38D;
+    --bs-green: #81E6D9;
+    --bs-teal: #20c997;
+    --bs-cyan: #0dcaf0;
+    --bs-primary: #17C1E8;
+    --bs-secondary: #8392AB;
+    --bs-success: #82d616;
+    --bs-info: #17c1e8;
+    --bs-warning: #fbcf33;
+    --bs-danger: #ea0606;
+    --bs-light: #e9ecef;
+    --bs-dark: #344767;
+    --bs-white: #fff;
+    --bs-body-color: #67748e;
+    --bs-heading-color: #344767;
+    --bs-border-radius: 0.75rem;
+    --bs-border-radius-lg: 1rem;
+    --bs-border-radius-xl: 1.5rem;
+    --bs-font-sans-serif: 'Open Sans', sans-serif;
+    --bs-gradient: linear-gradient(310deg, #7928CA, #FF0080);
+    --shadow-soft: 0 20px 27px 0 rgba(0,0,0,0.05);
+    --shadow-card: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--bs-font-sans-serif);
+    color: var(--bs-body-color);
+    background: #f8f9fa;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Layout ── */
+  .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+  .section { margin-bottom: 3rem; }
+  .section-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--bs-secondary);
+    margin-bottom: 1rem;
+  }
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--bs-heading-color);
+    margin-bottom: 0.25rem;
+  }
+  h1 span { background: var(--bs-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .subtitle { font-size: 1.1rem; color: var(--bs-secondary); margin-bottom: 3rem; }
+  h2 { font-size: 1.25rem; font-weight: 700; color: var(--bs-heading-color); margin-bottom: 1.25rem; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
+  .grid-6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1rem; }
+  @media (max-width: 768px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .grid-6 { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  /* ── Color Swatches ── */
+  .swatch {
+    border-radius: var(--bs-border-radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+    background: #fff;
+  }
+  .swatch-color { height: 80px; }
+  .swatch-info { padding: 0.75rem; }
+  .swatch-name { font-weight: 600; font-size: 0.85rem; color: var(--bs-heading-color); }
+  .swatch-hex { font-size: 0.75rem; color: var(--bs-secondary); font-family: monospace; }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--bs-white);
+    border-radius: var(--bs-border-radius-lg);
+    box-shadow: var(--shadow-soft);
+    padding: 1.5rem;
+    border: 0;
+  }
+  .card-gradient {
+    color: #fff;
+    border-radius: var(--bs-border-radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-soft);
+  }
+  .card-gradient h3 { font-size: 0.875rem; font-weight: 600; opacity: 0.85; margin-bottom: 0.5rem; }
+  .card-gradient .big-number { font-size: 2rem; font-weight: 700; }
+  .card-gradient .change { font-size: 0.8rem; opacity: 0.8; margin-top: 0.25rem; }
+
+  .grad-primary { background: linear-gradient(310deg, #2152FF, #21D4FD); }
+  .grad-success { background: linear-gradient(310deg, #17AD37, #98EC2D); }
+  .grad-warning { background: linear-gradient(310deg, #F53939, #FBCF33); }
+  .grad-info { background: linear-gradient(310deg, #7928CA, #FF0080); }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-block;
+    padding: 0.625rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    font-family: var(--bs-font-sans-serif);
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    transition: all 0.15s ease-in;
+    box-shadow: 0 4px 7px -1px rgba(0,0,0,0.11), 0 2px 4px -1px rgba(0,0,0,0.07);
+    margin: 0.25rem;
+  }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 7px 14px -3px rgba(0,0,0,0.15), 0 3px 6px -2px rgba(0,0,0,0.1); }
+  .btn-primary { background: var(--bs-primary); color: #fff; }
+  .btn-success { background: var(--bs-success); color: #fff; }
+  .btn-danger  { background: var(--bs-danger); color: #fff; }
+  .btn-warning { background: var(--bs-warning); color: var(--bs-dark); }
+  .btn-info    { background: var(--bs-info); color: #fff; }
+  .btn-dark    { background: var(--bs-dark); color: #fff; }
+  .btn-outline {
+    background: transparent;
+    border: 2px solid var(--bs-primary);
+    color: var(--bs-primary);
+    box-shadow: none;
+  }
+  .btn-gradient {
+    background: var(--bs-gradient);
+    color: #fff;
+  }
+
+  /* ── Badges ── */
+  .badge {
+    display: inline-block;
+    padding: 0.35em 0.65em;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 0.45rem;
+    margin: 0.15rem;
+  }
+  .badge-primary { background: rgba(23,193,232,0.12); color: #17C1E8; }
+  .badge-success { background: rgba(130,214,22,0.12); color: #82d616; }
+  .badge-danger  { background: rgba(234,6,6,0.12); color: #ea0606; }
+  .badge-warning { background: rgba(251,207,51,0.15); color: #c49c09; }
+  .badge-dark    { background: rgba(52,71,103,0.12); color: #344767; }
+
+  /* ── Table ── */
+  .table-wrap {
+    background: #fff;
+    border-radius: var(--bs-border-radius-lg);
+    box-shadow: var(--shadow-soft);
+    overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    text-align: left;
+    padding: 0.85rem 1.25rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--bs-secondary);
+    border-bottom: 1px solid #e9ecef;
+  }
+  tbody td {
+    padding: 0.85rem 1.25rem;
+    font-size: 0.875rem;
+    color: var(--bs-heading-color);
+    border-bottom: 1px solid #f0f2f5;
+    vertical-align: middle;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: #f8f9fa; }
+  .text-bold { font-weight: 600; }
+  .text-success { color: var(--bs-success); }
+  .text-danger { color: var(--bs-danger); }
+
+  /* ── Form ── */
+  .form-group { margin-bottom: 1rem; }
+  .form-label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--bs-heading-color);
+    margin-bottom: 0.4rem;
+  }
+  .form-control {
+    width: 100%;
+    padding: 0.625rem 0.85rem;
+    font-size: 0.875rem;
+    font-family: var(--bs-font-sans-serif);
+    color: var(--bs-heading-color);
+    background: #fff;
+    border: 1px solid #d2d6da;
+    border-radius: 0.5rem;
+    transition: border-color 0.15s ease;
+    outline: none;
+  }
+  .form-control:focus { border-color: var(--bs-primary); box-shadow: 0 0 0 2px rgba(23,193,232,0.25); }
+  select.form-control { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238392AB' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.75rem center; padding-right: 2rem; }
+
+  /* ── Alert ── */
+  .alert {
+    padding: 1rem 1.25rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+  .alert-info { background: rgba(23,193,232,0.1); color: #0e7490; border-left: 4px solid var(--bs-info); }
+  .alert-success { background: rgba(130,214,22,0.1); color: #4d7c0f; border-left: 4px solid var(--bs-success); }
+  .alert-warning { background: rgba(251,207,51,0.12); color: #92400e; border-left: 4px solid var(--bs-warning); }
+  .alert-danger { background: rgba(234,6,6,0.08); color: #b91c1c; border-left: 4px solid var(--bs-danger); }
+
+  /* ── Progress ── */
+  .progress { height: 6px; background: #e9ecef; border-radius: 1rem; overflow: hidden; margin: 0.5rem 0; }
+  .progress-bar { height: 100%; border-radius: 1rem; transition: width 1s ease; }
+
+  /* ── Avatar ── */
+  .avatar {
+    width: 42px; height: 42px;
+    border-radius: var(--bs-border-radius);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  /* ── Typography ── */
+  .typo-sample { margin-bottom: 0.5rem; color: var(--bs-heading-color); }
+  .typo-meta { font-size: 0.75rem; color: var(--bs-secondary); margin-bottom: 1.25rem; }
+
+  /* ── Divider ── */
+  hr { border: none; border-top: 1px solid #e9ecef; margin: 2rem 0; }
+
+  /* ── Nav Pills ── */
+  .nav-pills { display: flex; gap: 0.25rem; background: #f0f2f5; border-radius: 0.75rem; padding: 0.25rem; margin-bottom: 1.5rem; width: fit-content; }
+  .nav-pill {
+    padding: 0.5rem 1.25rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    color: var(--bs-secondary);
+    border: none;
+    background: transparent;
+    font-family: var(--bs-font-sans-serif);
+    transition: all 0.2s;
+  }
+  .nav-pill.active { background: #fff; color: var(--bs-heading-color); box-shadow: 0 1px 5px rgba(0,0,0,0.1); }
+
+  /* ── Switch ── */
+  .switch { position: relative; display: inline-block; width: 40px; height: 22px; margin-right: 0.5rem; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch .slider {
+    position: absolute; inset: 0;
+    background: #e9ecef;
+    border-radius: 22px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  .switch .slider::before {
+    content: '';
+    position: absolute;
+    height: 16px; width: 16px;
+    left: 3px; bottom: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: 0.3s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .switch input:checked + .slider { background: var(--bs-primary); }
+  .switch input:checked + .slider::before { transform: translateX(18px); }
+
+  .flex-center { display: flex; align-items: center; }
+  .gap-1 { gap: 0.5rem; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <div class="section" style="text-align:center; padding: 2rem 0 1rem;">
+    <h1>Soft UI <span>Design System</span></h1>
+    <p class="subtitle">CSS Variable Showcase &mdash; All tokens rendered as live components</p>
+  </div>
+
+  <!-- ── Colors ── -->
+  <div class="section">
+    <p class="section-title">Colour Palette</p>
+    <h2>Theme Colours</h2>
+    <div class="grid-6">
+      <div class="swatch"><div class="swatch-color" style="background:#17C1E8"></div><div class="swatch-info"><div class="swatch-name">Primary</div><div class="swatch-hex">#17C1E8</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#8392AB"></div><div class="swatch-info"><div class="swatch-name">Secondary</div><div class="swatch-hex">#8392AB</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#82d616"></div><div class="swatch-info"><div class="swatch-name">Success</div><div class="swatch-hex">#82d616</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#fbcf33"></div><div class="swatch-info"><div class="swatch-name">Warning</div><div class="swatch-hex">#fbcf33</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#ea0606"></div><div class="swatch-info"><div class="swatch-name">Danger</div><div class="swatch-hex">#ea0606</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#344767"></div><div class="swatch-info"><div class="swatch-name">Dark</div><div class="swatch-hex">#344767</div></div></div>
+    </div>
+    <br>
+    <h2>Extended Palette</h2>
+    <div class="grid-6">
+      <div class="swatch"><div class="swatch-color" style="background:#63B3ED"></div><div class="swatch-info"><div class="swatch-name">Blue</div><div class="swatch-hex">#63B3ED</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#596CFF"></div><div class="swatch-info"><div class="swatch-name">Indigo</div><div class="swatch-hex">#596CFF</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#6f42c1"></div><div class="swatch-info"><div class="swatch-name">Purple</div><div class="swatch-hex">#6f42c1</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#d63384"></div><div class="swatch-info"><div class="swatch-name">Pink</div><div class="swatch-hex">#d63384</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#F56565"></div><div class="swatch-info"><div class="swatch-name">Red</div><div class="swatch-hex">#F56565</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#fd7e14"></div><div class="swatch-info"><div class="swatch-name">Orange</div><div class="swatch-hex">#fd7e14</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#FBD38D"></div><div class="swatch-info"><div class="swatch-name">Yellow</div><div class="swatch-hex">#FBD38D</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#81E6D9"></div><div class="swatch-info"><div class="swatch-name">Green</div><div class="swatch-hex">#81E6D9</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#20c997"></div><div class="swatch-info"><div class="swatch-name">Teal</div><div class="swatch-hex">#20c997</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#0dcaf0"></div><div class="swatch-info"><div class="swatch-name">Cyan</div><div class="swatch-hex">#0dcaf0</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#e9ecef"></div><div class="swatch-info"><div class="swatch-name">Light</div><div class="swatch-hex">#e9ecef</div></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#67748e"></div><div class="swatch-info"><div class="swatch-name">Body</div><div class="swatch-hex">#67748e</div></div></div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- ── Typography ── -->
+  <div class="section">
+    <p class="section-title">Typography</p>
+    <h2>Open Sans Type Scale</h2>
+    <div class="card">
+      <div class="typo-sample" style="font-size:2.5rem; font-weight:700;">Heading 1 — Bold 2.5rem</div>
+      <div class="typo-meta">font-weight: 700 &middot; color: #344767</div>
+      <div class="typo-sample" style="font-size:2rem; font-weight:700;">Heading 2 — Bold 2rem</div>
+      <div class="typo-meta">font-weight: 700 &middot; color: #344767</div>
+      <div class="typo-sample" style="font-size:1.5rem; font-weight:600;">Heading 3 — SemiBold 1.5rem</div>
+      <div class="typo-meta">font-weight: 600 &middot; color: #344767</div>
+      <div class="typo-sample" style="font-size:1.25rem; font-weight:600;">Heading 4 — SemiBold 1.25rem</div>
+      <div class="typo-meta">font-weight: 600 &middot; color: #344767</div>
+      <div class="typo-sample" style="font-size:1rem; font-weight:400;">Body — Regular 1rem. The quick brown fox jumps over the lazy dog.</div>
+      <div class="typo-meta">font-weight: 400 &middot; color: #67748e</div>
+      <div class="typo-sample" style="font-size:0.875rem; font-weight:400;">Small — Regular 0.875rem. Secondary text and descriptions.</div>
+      <div class="typo-meta">font-weight: 400 &middot; color: #67748e</div>
+      <div class="typo-sample" style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color: var(--bs-secondary);">OVERLINE — Bold 0.75rem uppercase</div>
+      <div class="typo-meta">font-weight: 700 &middot; letter-spacing: 0.1em &middot; color: #8392AB</div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- ── Stat Cards ── -->
+  <div class="section">
+    <p class="section-title">Components</p>
+    <h2>Gradient Stat Cards</h2>
+    <div class="grid-4">
+      <div class="card-gradient grad-primary">
+        <h3>Total Revenue</h3>
+        <div class="big-number">&#8358;12.4M</div>
+        <div class="change">+23% from last year</div>
+      </div>
+      <div class="card-gradient grad-success">
+        <h3>Occupancy Rate</h3>
+        <div class="big-number">87%</div>
+        <div class="change">+5% from last month</div>
+      </div>
+      <div class="card-gradient grad-warning">
+        <h3>Outstanding Rent</h3>
+        <div class="big-number">&#8358;1.2M</div>
+        <div class="change">12 tenants overdue</div>
+      </div>
+      <div class="card-gradient grad-info">
+        <h3>Net Profit</h3>
+        <div class="big-number">&#8358;4.8M</div>
+        <div class="change">+18% YoY growth</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Buttons ── -->
+  <div class="section">
+    <h2>Buttons</h2>
+    <div class="card">
+      <p style="margin-bottom:0.75rem; font-size:0.8rem; font-weight:600; color:var(--bs-heading-color);">Solid</p>
+      <div style="margin-bottom:1rem;">
+        <button class="btn btn-primary">Primary</button>
+        <button class="btn btn-success">Success</button>
+        <button class="btn btn-danger">Danger</button>
+        <button class="btn btn-warning">Warning</button>
+        <button class="btn btn-info">Info</button>
+        <button class="btn btn-dark">Dark</button>
+      </div>
+      <p style="margin-bottom:0.75rem; font-size:0.8rem; font-weight:600; color:var(--bs-heading-color);">Special</p>
+      <div>
+        <button class="btn btn-outline">Outline</button>
+        <button class="btn btn-gradient">Gradient</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Badges ── -->
+  <div class="section">
+    <h2>Badges</h2>
+    <div class="card">
+      <span class="badge badge-primary">Primary</span>
+      <span class="badge badge-success">Paid</span>
+      <span class="badge badge-danger">Overdue</span>
+      <span class="badge badge-warning">Pending</span>
+      <span class="badge badge-dark">Draft</span>
+    </div>
+  </div>
+
+  <!-- ── Alerts ── -->
+  <div class="section">
+    <h2>Alerts</h2>
+    <div class="alert alert-info">Info — New rent cycle starts on April 1, 2026.</div>
+    <div class="alert alert-success">Success — Payment of &#8358;150,000 recorded for Unit Vine 2.</div>
+    <div class="alert alert-warning">Warning — 3 tenants have unpaid balances past 30 days.</div>
+    <div class="alert alert-danger">Danger — Failed to sync with bank. Check API credentials.</div>
+  </div>
+
+  <!-- ── Nav Pills ── -->
+  <div class="section">
+    <h2>Nav Pills</h2>
+    <div class="nav-pills">
+      <button class="nav-pill active">Dashboard</button>
+      <button class="nav-pill">Revenue</button>
+      <button class="nav-pill">Expenses</button>
+      <button class="nav-pill">Reports</button>
+    </div>
+  </div>
+
+  <!-- ── Progress Bars ── -->
+  <div class="section">
+    <h2>Progress Bars</h2>
+    <div class="card">
+      <div style="margin-bottom:1rem;">
+        <div class="flex-center" style="justify-content:space-between;">
+          <span style="font-size:0.8rem; font-weight:600; color:var(--bs-heading-color);">Budget Used</span>
+          <span style="font-size:0.8rem; font-weight:700; color:var(--bs-primary);">72%</span>
+        </div>
+        <div class="progress"><div class="progress-bar" style="width:72%; background:linear-gradient(310deg,#2152FF,#21D4FD);"></div></div>
+      </div>
+      <div style="margin-bottom:1rem;">
+        <div class="flex-center" style="justify-content:space-between;">
+          <span style="font-size:0.8rem; font-weight:600; color:var(--bs-heading-color);">Rent Collection</span>
+          <span style="font-size:0.8rem; font-weight:700; color:var(--bs-success);">87%</span>
+        </div>
+        <div class="progress"><div class="progress-bar" style="width:87%; background:linear-gradient(310deg,#17AD37,#98EC2D);"></div></div>
+      </div>
+      <div>
+        <div class="flex-center" style="justify-content:space-between;">
+          <span style="font-size:0.8rem; font-weight:600; color:var(--bs-heading-color);">Maintenance Tasks</span>
+          <span style="font-size:0.8rem; font-weight:700; color:var(--bs-warning);">45%</span>
+        </div>
+        <div class="progress"><div class="progress-bar" style="width:45%; background:linear-gradient(310deg,#F53939,#FBCF33);"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- ── Table ── -->
+  <div class="section">
+    <h2>Data Table</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Tenant</th>
+            <th>Unit</th>
+            <th>Location</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="flex-center gap-1">
+              <div class="avatar" style="background:linear-gradient(310deg,#2152FF,#21D4FD);">AO</div>
+              <span class="text-bold">Adewale Ogunleye</span>
+            </td>
+            <td>Vine 2</td>
+            <td>Agbowo</td>
+            <td class="text-bold">&#8358;150,000</td>
+            <td><span class="badge badge-success">Paid</span></td>
+            <td>Mar 15, 2026</td>
+          </tr>
+          <tr>
+            <td class="flex-center gap-1">
+              <div class="avatar" style="background:linear-gradient(310deg,#17AD37,#98EC2D);">FI</div>
+              <span class="text-bold">Fatima Ibrahim</span>
+            </td>
+            <td>Scholar</td>
+            <td>UI</td>
+            <td class="text-bold">&#8358;200,000</td>
+            <td><span class="badge badge-warning">Pending</span></td>
+            <td>Mar 22, 2026</td>
+          </tr>
+          <tr>
+            <td class="flex-center gap-1">
+              <div class="avatar" style="background:linear-gradient(310deg,#F53939,#FBCF33);">CE</div>
+              <span class="text-bold">Chidi Emenike</span>
+            </td>
+            <td>Kollege</td>
+            <td>Agbowo</td>
+            <td class="text-bold">&#8358;180,000</td>
+            <td><span class="badge badge-danger">Overdue</span></td>
+            <td>Feb 28, 2026</td>
+          </tr>
+          <tr>
+            <td class="flex-center gap-1">
+              <div class="avatar" style="background:linear-gradient(310deg,#7928CA,#FF0080);">BN</div>
+              <span class="text-bold">Blessing Nwosu</span>
+            </td>
+            <td>Anooore 1</td>
+            <td>UI</td>
+            <td class="text-bold">&#8358;120,000</td>
+            <td><span class="badge badge-success">Paid</span></td>
+            <td>Mar 10, 2026</td>
+          </tr>
+          <tr>
+            <td class="flex-center gap-1">
+              <div class="avatar" style="background:linear-gradient(310deg,#596CFF,#c6f5ff);">OT</div>
+              <span class="text-bold">Oluwaseun Taiwo</span>
+            </td>
+            <td>Premier</td>
+            <td>Agbowo</td>
+            <td class="text-bold">&#8358;250,000</td>
+            <td><span class="badge badge-success">Paid</span></td>
+            <td>Mar 18, 2026</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- ── Forms ── -->
+  <div class="section">
+    <h2>Form Elements</h2>
+    <div class="grid-2">
+      <div class="card">
+        <h2 style="font-size:1rem;">Record Payment</h2>
+        <div class="form-group">
+          <label class="form-label">Tenant Name</label>
+          <input class="form-control" type="text" placeholder="e.g. Adewale Ogunleye">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Location</label>
+          <select class="form-control">
+            <option>Agbowo</option>
+            <option>UI</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Unit</label>
+          <select class="form-control">
+            <option>Vine 2</option>
+            <option>Scholar</option>
+            <option>Kollege</option>
+            <option>Anooore 1</option>
+            <option>Premier</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Amount (&#8358;)</label>
+          <input class="form-control" type="text" placeholder="150,000">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Payment Method</label>
+          <select class="form-control">
+            <option>Bank Transfer</option>
+            <option>Cash</option>
+            <option>POS</option>
+            <option>Mobile Transfer</option>
+            <option>Cheque</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" style="width:100%; margin:0.5rem 0 0;">Submit Payment</button>
+      </div>
+
+      <div class="card">
+        <h2 style="font-size:1rem;">Switches &amp; Toggles</h2>
+        <div style="margin-bottom:1rem;">
+          <label class="flex-center gap-1" style="margin-bottom:0.75rem; cursor:pointer;">
+            <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+            <span style="font-size:0.875rem; color:var(--bs-heading-color); font-weight:600;">SMS Notifications</span>
+          </label>
+          <label class="flex-center gap-1" style="margin-bottom:0.75rem; cursor:pointer;">
+            <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+            <span style="font-size:0.875rem; color:var(--bs-heading-color); font-weight:600;">WhatsApp Alerts</span>
+          </label>
+          <label class="flex-center gap-1" style="margin-bottom:0.75rem; cursor:pointer;">
+            <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+            <span style="font-size:0.875rem; color:var(--bs-heading-color); font-weight:600;">Email Reports</span>
+          </label>
+          <label class="flex-center gap-1" style="cursor:pointer;">
+            <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+            <span style="font-size:0.875rem; color:var(--bs-heading-color); font-weight:600;">Dark Mode</span>
+          </label>
+        </div>
+
+        <hr>
+
+        <h2 style="font-size:1rem; margin-top:1rem;">Border Radius Tokens</h2>
+        <div style="display:flex; gap:1rem; flex-wrap:wrap; margin-top:0.75rem;">
+          <div style="text-align:center;">
+            <div style="width:60px;height:60px;background:var(--bs-primary);border-radius:0.25rem;"></div>
+            <div style="font-size:0.7rem;color:var(--bs-secondary);margin-top:0.25rem;">sm: 0.25rem</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="width:60px;height:60px;background:var(--bs-info);border-radius:0.375rem;"></div>
+            <div style="font-size:0.7rem;color:var(--bs-secondary);margin-top:0.25rem;">base: 0.375rem</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="width:60px;height:60px;background:var(--bs-success);border-radius:0.75rem;"></div>
+            <div style="font-size:0.7rem;color:var(--bs-secondary);margin-top:0.25rem;">lg: 0.75rem</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="width:60px;height:60px;background:var(--bs-warning);border-radius:1rem;"></div>
+            <div style="font-size:0.7rem;color:var(--bs-secondary);margin-top:0.25rem;">xl: 1rem</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="width:60px;height:60px;background:var(--bs-danger);border-radius:50rem;"></div>
+            <div style="font-size:0.7rem;color:var(--bs-secondary);margin-top:0.25rem;">pill: 50rem</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- ── Grey Scale ── -->
+  <div class="section">
+    <h2>Grey Scale</h2>
+    <div style="display:flex; border-radius:var(--bs-border-radius-lg); overflow:hidden; box-shadow:var(--shadow-soft);">
+      <div style="flex:1;height:60px;background:#f8f9fa;display:flex;align-items:flex-end;padding:0.25rem;"><span style="font-size:0.6rem;color:#344767;">100</span></div>
+      <div style="flex:1;height:60px;background:#e9ecef;display:flex;align-items:flex-end;padding:0.25rem;"><span style="font-size:0.6rem;color:#344767;">200</span></div>
+      <div style="flex:1;height:60px;background:#dee2e6;display:flex;align-items:flex-end;padding:0.25rem;"><span style="font-size:0.6rem;color:#344767;">300</span></div>
+      <div style="flex:1;height:60px;background:#ced4da;display:flex;align-items:flex-end;padding:0.25rem;"><span style="font-size:0.6rem;color:#344767;">400</span></div>
+      <div style="flex:1;height:60px;background:#adb5bd;display:flex;align-items:flex-end;padding:0.25rem;"><span style="font-size:0.6rem;color:#fff;">500</span></div>
+      <div style="flex:1;height:60px;background:#6c757d;display:flex;align-items:flex-end;padding:0.25rem;"><span style="font-size:0.6rem;color:#fff;">600</span></div>
+      <div style="flex:1;height:60px;background:#495057;display:flex;align-items:flex-end;padding:0.25rem;"><span style="font-size:0.6rem;color:#fff;">700</span></div>
+      <div style="flex:1;height:60px;background:#343a40;display:flex;align-items:flex-end;padding:0.25rem;"><span style="font-size:0.6rem;color:#fff;">800</span></div>
+      <div style="flex:1;height:60px;background:#212529;display:flex;align-items:flex-end;padding:0.25rem;"><span style="font-size:0.6rem;color:#fff;">900</span></div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div style="text-align:center; padding:2rem 0; color:var(--bs-secondary); font-size:0.8rem;">
+    Soft UI Design System &mdash; CSS Variables Demo &middot; All tokens from your <code>:root</code> block
+  </div>
+
+</div>
+
+</body>
+</html>
