@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TALAccounting — Design Extraction from Pilotts Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #F5F7FA; color: #2D3748; }
+
+  /* ── Section Layout ── */
+  .section { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+  .section-title {
+    font-size: 24px; font-weight: 700; color: #1B2A4A;
+    margin-bottom: 8px;
+  }
+  .section-sub { font-size: 14px; color: #6B7280; margin-bottom: 32px; }
+  hr { border: none; border-top: 1px solid #E5E7EB; margin: 48px 0; }
+
+  /* ── Color Swatches ── */
+  .swatches { display: flex; flex-wrap: wrap; gap: 16px; }
+  .swatch {
+    width: 160px; border-radius: 12px; overflow: hidden;
+    background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .swatch-color { height: 80px; }
+  .swatch-info { padding: 12px; }
+  .swatch-hex { font-size: 13px; font-weight: 600; color: #2D3748; }
+  .swatch-label { font-size: 12px; color: #6B7280; margin-top: 2px; }
+
+  /* ── Typography ── */
+  .type-row {
+    display: flex; align-items: baseline; gap: 24px;
+    padding: 16px 0; border-bottom: 1px solid #E5E7EB;
+  }
+  .type-label { width: 200px; font-size: 12px; color: #6B7280; flex-shrink: 0; }
+  .type-sample { flex: 1; }
+
+  /* ── Component Cards ── */
+  .cards-row { display: flex; gap: 16px; flex-wrap: wrap; }
+
+  /* KPI Cards */
+  .kpi-card {
+    flex: 1; min-width: 200px; padding: 20px; border-radius: 12px;
+    color: #fff; position: relative;
+  }
+  .kpi-card.blue { background: linear-gradient(135deg, #3B7DDD, #2B6BC5); }
+  .kpi-card.red { background: linear-gradient(135deg, #E85D5D, #D94444); }
+  .kpi-card.green { background: linear-gradient(135deg, #28A745, #1E8E3E); }
+  .kpi-card.white {
+    background: #fff; color: #2D3748;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #E5E7EB;
+  }
+  .kpi-number { font-size: 28px; font-weight: 700; }
+  .kpi-label { font-size: 12px; opacity: 0.85; margin-top: 4px; }
+  .kpi-card.white .kpi-label { color: #6B7280; }
+  .kpi-icon {
+    position: absolute; top: 16px; right: 16px;
+    width: 36px; height: 36px; border-radius: 8px;
+    background: rgba(255,255,255,0.2); display: flex;
+    align-items: center; justify-content: center; font-size: 16px;
+  }
+  .kpi-card.white .kpi-icon { background: #EBF5FF; color: #3B7DDD; }
+
+  /* ── Buttons ── */
+  .buttons-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .btn {
+    padding: 10px 20px; border-radius: 6px; font-size: 14px;
+    font-weight: 500; cursor: pointer; border: 2px solid transparent;
+    font-family: 'Inter', sans-serif; transition: all 0.15s;
+  }
+  .btn-primary { background: #3B7DDD; color: #fff; }
+  .btn-primary:hover { background: #2B6BC5; }
+  .btn-success { background: #28A745; color: #fff; }
+  .btn-success:hover { background: #1E8E3E; }
+  .btn-danger { background: #E85D5D; color: #fff; }
+  .btn-danger:hover { background: #D94444; }
+  .btn-outline {
+    background: #fff; color: #3B7DDD;
+    border: 2px solid #3B7DDD;
+  }
+  .btn-outline:hover { background: #EBF5FF; }
+
+  /* Pill toggles */
+  .pills { display: flex; gap: 8px; }
+  .pill {
+    padding: 8px 18px; border-radius: 20px; font-size: 13px;
+    font-weight: 500; cursor: pointer; border: 1.5px solid #D1D5DB;
+    background: #fff; color: #6B7280; transition: all 0.15s;
+  }
+  .pill.active {
+    background: #3B7DDD; color: #fff; border-color: #3B7DDD;
+  }
+
+  /* ── Sidebar Preview ── */
+  .sidebar-preview {
+    width: 250px; background: #1B2A4A; border-radius: 12px;
+    padding: 24px 0; color: #fff; min-height: 500px;
+  }
+  .sidebar-logo {
+    padding: 0 20px 24px; font-size: 18px; font-weight: 700;
+    display: flex; align-items: center; gap: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .sidebar-logo span { color: #E85D5D; }
+  .sidebar-nav { padding: 16px 0; }
+  .nav-item {
+    padding: 10px 20px; font-size: 14px; font-weight: 500;
+    display: flex; align-items: center; gap: 12px;
+    cursor: pointer; transition: all 0.15s; color: rgba(255,255,255,0.7);
+  }
+  .nav-item:hover { background: rgba(59,125,221,0.1); color: #fff; }
+  .nav-item.active {
+    background: rgba(59,125,221,0.15); color: #fff;
+    border-left: 3px solid #3B7DDD;
+  }
+  .nav-icon {
+    width: 20px; height: 20px; display: flex;
+    align-items: center; justify-content: center; font-size: 14px;
+  }
+  .nav-section {
+    padding: 20px 20px 8px; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    color: rgba(255,255,255,0.4);
+  }
+
+  /* ── Table Preview ── */
+  .table-preview {
+    background: #fff; border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08); overflow: hidden;
+  }
+  .table-header {
+    padding: 16px 20px; display: flex; justify-content: space-between;
+    align-items: center; border-bottom: 1px solid #E5E7EB;
+  }
+  .table-header h3 { font-size: 16px; font-weight: 600; color: #1B2A4A; }
+  .table-row {
+    padding: 12px 20px; display: flex; align-items: center; gap: 16px;
+    border-bottom: 1px solid #F3F4F6; transition: background 0.1s;
+  }
+  .table-row:hover { background: #F9FAFB; }
+  .avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: 14px; color: #fff; flex-shrink: 0;
+  }
+  .row-main { flex: 1; }
+  .row-name { font-size: 14px; font-weight: 500; color: #2D3748; }
+  .row-sub { font-size: 13px; color: #6B7280; }
+  .row-right { text-align: right; }
+  .row-amount { font-size: 14px; font-weight: 600; }
+  .row-date { font-size: 12px; color: #6B7280; }
+  .amount-green { color: #28A745; }
+  .amount-red { color: #E85D5D; }
+
+  /* ── Form Preview ── */
+  .form-preview {
+    background: #fff; border-radius: 12px; padding: 32px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-label { font-size: 13px; font-weight: 500; color: #6B7280; }
+  .form-input {
+    height: 40px; padding: 0 12px; border: 1px solid #D1D5DB;
+    border-radius: 6px; font-size: 14px; color: #2D3748;
+    font-family: 'Inter', sans-serif; background: #fff;
+    transition: border-color 0.15s;
+  }
+  .form-input:focus { outline: none; border-color: #3B7DDD; box-shadow: 0 0 0 3px rgba(59,125,221,0.1); }
+  .form-input::placeholder { color: #9CA3AF; }
+
+  /* ── Spacing & Sizing Reference ── */
+  .spacing-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+  }
+  .spacing-item {
+    background: #fff; padding: 16px; border-radius: 8px;
+    border: 1px solid #E5E7EB; display: flex;
+    justify-content: space-between; align-items: center;
+  }
+  .spacing-name { font-size: 13px; color: #6B7280; }
+  .spacing-value { font-size: 14px; font-weight: 600; color: #1B2A4A; }
+
+  /* ── Full Layout Preview ── */
+  .layout-preview {
+    display: flex; border-radius: 12px; overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12); height: 600px;
+  }
+  .layout-main {
+    flex: 1; background: #F5F7FA; padding: 24px; overflow-y: auto;
+  }
+  .layout-topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 24px;
+  }
+  .layout-topbar h2 { font-size: 20px; font-weight: 700; color: #1B2A4A; }
+  .viewing-badge {
+    padding: 6px 16px; border-radius: 6px; font-size: 13px;
+    background: #fff; border: 1px solid #D1D5DB; color: #2D3748;
+  }
+
+  /* ── Badge ── */
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 11px; font-weight: 600;
+  }
+  .badge-green { background: #D1FAE5; color: #065F46; }
+  .badge-red { background: #FEE2E2; color: #991B1B; }
+  .badge-blue { background: #DBEAFE; color: #1E40AF; }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- SECTION 1: COLOR PALETTE                     -->
+<!-- ════════════════════════════════════════════ -->
+<div class="section">
+  <h1 class="section-title">Design Extraction — Pilotts Portal</h1>
+  <p class="section-sub">Visual reference for TALAccounting-software UI replication</p>
+
+  <hr>
+  <h2 class="section-title">1. Color Palette</h2>
+  <p class="section-sub">Primary and accent colors extracted from screenshots</p>
+
+  <div class="swatches">
+    <div class="swatch">
+      <div class="swatch-color" style="background: #1B2A4A;"></div>
+      <div class="swatch-info">
+        <div class="swatch-hex">#1B2A4A</div>
+        <div class="swatch-label">Sidebar Navy</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background: #3B7DDD;"></div>
+      <div class="swatch-info">
+        <div class="swatch-hex">#3B7DDD</div>
+        <div class="swatch-label">Primary Blue</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background: #2B6BC5;"></div>
+      <div class="swatch-info">
+        <div class="swatch-hex">#2B6BC5</div>
+        <div class="swatch-label">Blue Gradient End</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background: #28A745;"></div>
+      <div class="swatch-info">
+        <div class="swatch-hex">#28A745</div>
+        <div class="swatch-label">Success Green</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background: #E85D5D;"></div>
+      <div class="swatch-info">
+        <div class="swatch-hex">#E85D5D</div>
+        <div class="swatch-label">Danger / Expense Red</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background: #F5F7FA;"></div>
+      <div class="swatch-info">
+        <div class="swatch-hex">#F5F7FA</div>
+        <div class="swatch-label">Page Background</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background: #FFFFFF; border: 1px solid #E5E7EB;"></div>
+      <div class="swatch-info">
+        <div class="swatch-hex">#FFFFFF</div>
+        <div class="swatch-label">Card White</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background: #2D3748;"></div>
+      <div class="swatch-info">
+        <div class="swatch-hex">#2D3748</div>
+        <div class="swatch-label">Body Text</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background: #6B7280;"></div>
+      <div class="swatch-info">
+        <div class="swatch-hex">#6B7280</div>
+        <div class="swatch-label">Secondary / Labels</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background: #FFF8E7;"></div>
+      <div class="swatch-info">
+        <div class="swatch-hex">#FFF8E7</div>
+        <div class="swatch-label">Active Filter Yellow</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background: #E5E7EB;"></div>
+      <div class="swatch-info">
+        <div class="swatch-hex">#E5E7EB</div>
+        <div class="swatch-label">Border / Divider</div>
+      </div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background: #EBF5FF;"></div>
+      <div class="swatch-info">
+        <div class="swatch-hex">#EBF5FF</div>
+        <div class="swatch-label">Blue Tint / Hover</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- SECTION 2: TYPOGRAPHY                        -->
+<!-- ════════════════════════════════════════════ -->
+<div class="section">
+  <hr>
+  <h2 class="section-title">2. Typography</h2>
+  <p class="section-sub">Font: Inter &middot; All sizes and weights used in the portal</p>
+
+  <div style="background:#fff; border-radius:12px; padding:24px; box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+    <div class="type-row">
+      <div class="type-label">Page Title &middot; 20px Bold</div>
+      <div class="type-sample" style="font-size:20px; font-weight:700; color:#1B2A4A;">Dashboard</div>
+    </div>
+    <div class="type-row">
+      <div class="type-label">KPI Number &middot; 28px Bold</div>
+      <div class="type-sample" style="font-size:28px; font-weight:700; color:#3B7DDD;">169,487,000</div>
+    </div>
+    <div class="type-row">
+      <div class="type-label">Section Header &middot; 16px SemiBold</div>
+      <div class="type-sample" style="font-size:16px; font-weight:600; color:#2D3748;">Revenue Transactions</div>
+    </div>
+    <div class="type-row">
+      <div class="type-label">Body Text &middot; 14px Regular</div>
+      <div class="type-sample" style="font-size:14px; font-weight:400; color:#2D3748;">Room Revenue from Building A, Unit A210 for January 2024</div>
+    </div>
+    <div class="type-row">
+      <div class="type-label">Secondary Text &middot; 13px Regular</div>
+      <div class="type-sample" style="font-size:13px; font-weight:400; color:#6B7280;">musiliyu@example.com &middot; 2024-01-15</div>
+    </div>
+    <div class="type-row">
+      <div class="type-label">Form Label &middot; 13px Medium</div>
+      <div class="type-sample" style="font-size:13px; font-weight:500; color:#6B7280;">First Name</div>
+    </div>
+    <div class="type-row">
+      <div class="type-label">Small Badge &middot; 11px SemiBold</div>
+      <div class="type-sample">
+        <span class="badge badge-green">Verified</span>
+        <span class="badge badge-red">Expired</span>
+        <span class="badge badge-blue">Active</span>
+      </div>
+    </div>
+    <div class="type-row">
+      <div class="type-label">Nav Section Label &middot; 11px Upper</div>
+      <div class="type-sample" style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:#6B7280;">REPORTS</div>
+    </div>
+    <div class="type-row" style="border:none;">
+      <div class="type-label">Sidebar Nav &middot; 14px Medium</div>
+      <div class="type-sample" style="font-size:14px; font-weight:500; color:#1B2A4A;">Dashboard</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- SECTION 3: KPI CARDS                         -->
+<!-- ════════════════════════════════════════════ -->
+<div class="section">
+  <hr>
+  <h2 class="section-title">3. KPI Summary Cards</h2>
+  <p class="section-sub">Dashboard-style metric cards &mdash; blue gradient, red, green, and white variants</p>
+
+  <div class="cards-row" style="margin-bottom: 16px;">
+    <div class="kpi-card blue">
+      <div class="kpi-icon">&#x1f4ca;</div>
+      <div class="kpi-label">Total Revenue</div>
+      <div class="kpi-number">&#8358;169,487,000</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-icon">&#x1f4b0;</div>
+      <div class="kpi-label">Total Expenses</div>
+      <div class="kpi-number">&#8358;42,350,800</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-icon">&#x2714;</div>
+      <div class="kpi-label">Net Profit</div>
+      <div class="kpi-number">&#8358;127,136,200</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-icon">&#x26a0;</div>
+      <div class="kpi-label">Outstanding</div>
+      <div class="kpi-number">&#8358;8,200,000</div>
+    </div>
+  </div>
+
+  <div class="cards-row">
+    <div class="kpi-card white">
+      <div class="kpi-icon">&#x1f3e0;</div>
+      <div class="kpi-label">Total Units</div>
+      <div class="kpi-number">286</div>
+    </div>
+    <div class="kpi-card white">
+      <div class="kpi-icon" style="color:#28A745;">&#x2B06;</div>
+      <div class="kpi-label">65 Days To Expire</div>
+      <div class="kpi-number">8</div>
+    </div>
+    <div class="kpi-card white">
+      <div class="kpi-icon" style="color:#E85D5D;">&#x23F0;</div>
+      <div class="kpi-label">25 Days To Expire</div>
+      <div class="kpi-number">3</div>
+    </div>
+    <div class="kpi-card white">
+      <div class="kpi-icon" style="color:#E85D5D;">&#x274C;</div>
+      <div class="kpi-label">Expired</div>
+      <div class="kpi-number" style="color:#E85D5D;">6</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- SECTION 4: BUTTONS & PILLS                   -->
+<!-- ════════════════════════════════════════════ -->
+<div class="section">
+  <hr>
+  <h2 class="section-title">4. Buttons & Filter Pills</h2>
+  <p class="section-sub">All button variants and pill toggle states</p>
+
+  <div style="background:#fff; border-radius:12px; padding:32px; box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+    <p style="font-size:13px; color:#6B7280; margin-bottom:12px;">Buttons</p>
+    <div class="buttons-row" style="margin-bottom:32px;">
+      <button class="btn btn-primary">Primary Action</button>
+      <button class="btn btn-success">Update Account</button>
+      <button class="btn btn-danger">Delete</button>
+      <button class="btn btn-outline">Download Details</button>
+    </div>
+
+    <p style="font-size:13px; color:#6B7280; margin-bottom:12px;">Location Filter Pills</p>
+    <div class="pills" style="margin-bottom:32px;">
+      <div class="pill active">All</div>
+      <div class="pill">Agbowo</div>
+      <div class="pill">UI</div>
+    </div>
+
+    <p style="font-size:13px; color:#6B7280; margin-bottom:12px;">Category Filter Pills</p>
+    <div class="pills">
+      <div class="pill active">All Transactions</div>
+      <div class="pill">Room Revenue</div>
+      <div class="pill">Shop Rent</div>
+      <div class="pill">Caution Fee</div>
+      <div class="pill">Extra Charges</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- SECTION 5: TABLE                             -->
+<!-- ════════════════════════════════════════════ -->
+<div class="section">
+  <hr>
+  <h2 class="section-title">5. Table / List View</h2>
+  <p class="section-sub">Revenue transaction list — avatar, name, amount, date pattern</p>
+
+  <div class="table-preview">
+    <div class="table-header">
+      <h3>Revenue Transactions</h3>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input class="form-input" placeholder="Search..." style="width:200px; height:36px; font-size:13px;">
+        <button class="btn btn-primary" style="height:36px; padding:0 16px;">+ New</button>
+      </div>
+    </div>
+    <div class="table-row">
+      <div class="avatar" style="background:#3B7DDD;">MR</div>
+      <div class="row-main">
+        <div class="row-name">Room Revenue &middot; Anooore 1 <span class="badge badge-green">Paid</span></div>
+        <div class="row-sub">Building A, A210 &middot; Bank Transfer</div>
+      </div>
+      <div class="row-right">
+        <div class="row-amount amount-green">&#8358;450,000</div>
+        <div class="row-date">2024-01-15</div>
+      </div>
+    </div>
+    <div class="table-row">
+      <div class="avatar" style="background:#28A745;">SR</div>
+      <div class="row-main">
+        <div class="row-name">Shop Rent &middot; Provision Shop <span class="badge badge-green">Paid</span></div>
+        <div class="row-sub">Agbowo &middot; Cash</div>
+      </div>
+      <div class="row-right">
+        <div class="row-amount amount-green">&#8358;180,000</div>
+        <div class="row-date">2024-02-01</div>
+      </div>
+    </div>
+    <div class="table-row">
+      <div class="avatar" style="background:#E85D5D;">CF</div>
+      <div class="row-main">
+        <div class="row-name">Caution Fee Income &middot; Scholar 2 <span class="badge badge-blue">Refundable</span></div>
+        <div class="row-sub">UI &middot; Mobile Transfer</div>
+      </div>
+      <div class="row-right">
+        <div class="row-amount amount-green">&#8358;50,000</div>
+        <div class="row-date">2024-02-10</div>
+      </div>
+    </div>
+    <div class="table-row">
+      <div class="avatar" style="background:#6B7280;">EX</div>
+      <div class="row-main">
+        <div class="row-name">Maintenance &middot; Vine 1 <span class="badge badge-red">Overdue</span></div>
+        <div class="row-sub">Agbowo &middot; Pending approval</div>
+      </div>
+      <div class="row-right">
+        <div class="row-amount amount-red">-&#8358;85,000</div>
+        <div class="row-date">2024-03-05</div>
+      </div>
+    </div>
+    <div class="table-row">
+      <div class="avatar" style="background:#3B7DDD;">OI</div>
+      <div class="row-main">
+        <div class="row-name">Other Income &middot; Business Centre <span class="badge badge-green">Paid</span></div>
+        <div class="row-sub">Agbowo &middot; POS</div>
+      </div>
+      <div class="row-right">
+        <div class="row-amount amount-green">&#8358;25,000</div>
+        <div class="row-date">2024-03-12</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- SECTION 6: FORM                              -->
+<!-- ════════════════════════════════════════════ -->
+<div class="section">
+  <hr>
+  <h2 class="section-title">6. Form Layout</h2>
+  <p class="section-sub">3-column form grid matching the portal's detail view</p>
+
+  <div class="form-preview">
+    <h3 style="font-size:16px; font-weight:600; color:#1B2A4A; margin-bottom:24px;">Basic Info</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">First Name</label>
+        <input class="form-input" value="Musiliyu" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Middle Name</label>
+        <input class="form-input" value="Meta" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Last Name</label>
+        <input class="form-input" value="Mustapha" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Department</label>
+        <input class="form-input" value="Maintenance" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Monthly Salary (&#8358;)</label>
+        <input class="form-input" value="85,000" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Employee Ref</label>
+        <input class="form-input" value="E001" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" placeholder="email@example.com" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phone Number</label>
+        <input class="form-input" value="+234 8011234567" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Location</label>
+        <input class="form-input" value="Agbowo" />
+      </div>
+    </div>
+    <div style="margin-top:24px; display:flex; gap:12px; justify-content:flex-end;">
+      <button class="btn btn-outline">Cancel</button>
+      <button class="btn btn-success">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- SECTION 7: SPACING REFERENCE                 -->
+<!-- ════════════════════════════════════════════ -->
+<div class="section">
+  <hr>
+  <h2 class="section-title">7. Spacing & Sizing</h2>
+  <p class="section-sub">Key dimensions extracted from the portal</p>
+
+  <div class="spacing-grid">
+    <div class="spacing-item">
+      <span class="spacing-name">Sidebar Width</span>
+      <span class="spacing-value">250px</span>
+    </div>
+    <div class="spacing-item">
+      <span class="spacing-name">Content Padding</span>
+      <span class="spacing-value">24px</span>
+    </div>
+    <div class="spacing-item">
+      <span class="spacing-name">Card Padding</span>
+      <span class="spacing-value">20px</span>
+    </div>
+    <div class="spacing-item">
+      <span class="spacing-name">Card Border Radius</span>
+      <span class="spacing-value">8–12px</span>
+    </div>
+    <div class="spacing-item">
+      <span class="spacing-name">Card Shadow</span>
+      <span class="spacing-value">0 1px 3px rgba(0,0,0,0.08)</span>
+    </div>
+    <div class="spacing-item">
+      <span class="spacing-name">Table Row Height</span>
+      <span class="spacing-value">56px</span>
+    </div>
+    <div class="spacing-item">
+      <span class="spacing-name">Avatar Size</span>
+      <span class="spacing-value">40px</span>
+    </div>
+    <div class="spacing-item">
+      <span class="spacing-name">Input Height</span>
+      <span class="spacing-value">40px</span>
+    </div>
+    <div class="spacing-item">
+      <span class="spacing-name">Button Height</span>
+      <span class="spacing-value">36–40px</span>
+    </div>
+    <div class="spacing-item">
+      <span class="spacing-name">KPI Card Gap</span>
+      <span class="spacing-value">16px</span>
+    </div>
+    <div class="spacing-item">
+      <span class="spacing-name">Section Gap</span>
+      <span class="spacing-value">24px</span>
+    </div>
+    <div class="spacing-item">
+      <span class="spacing-name">Input Border Radius</span>
+      <span class="spacing-value">6px</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- SECTION 8: FULL LAYOUT PREVIEW               -->
+<!-- ════════════════════════════════════════════ -->
+<div class="section">
+  <hr>
+  <h2 class="section-title">8. Full Layout Preview</h2>
+  <p class="section-sub">Sidebar + main content area — as it would appear in TALAccounting</p>
+
+  <div class="layout-preview">
+    <!-- Sidebar -->
+    <div class="sidebar-preview" style="border-radius:0;">
+      <div class="sidebar-logo">
+        <span>&#9650;</span> Talents AIS
+      </div>
+      <div class="sidebar-nav">
+        <div class="nav-section">Main</div>
+        <div class="nav-item active">
+          <div class="nav-icon">&#x1F4CA;</div> Dashboard
+        </div>
+        <div class="nav-item">
+          <div class="nav-icon">&#x1F4B5;</div> Revenue
+        </div>
+        <div class="nav-item">
+          <div class="nav-icon">&#x1F4C9;</div> Expenses
+        </div>
+        <div class="nav-item">
+          <div class="nav-icon">&#x1F465;</div> Payroll
+        </div>
+        <div class="nav-item">
+          <div class="nav-icon">&#x1F4CB;</div> Budget
+        </div>
+
+        <div class="nav-section">Reports</div>
+        <div class="nav-item">
+          <div class="nav-icon">&#x1F4D6;</div> General Ledger
+        </div>
+        <div class="nav-item">
+          <div class="nav-icon">&#x1F4C8;</div> Profit & Loss
+        </div>
+        <div class="nav-item">
+          <div class="nav-icon">&#x1F4B3;</div> Cash Flow
+        </div>
+        <div class="nav-item">
+          <div class="nav-icon">&#x1F3E6;</div> Balance Sheet
+        </div>
+        <div class="nav-item">
+          <div class="nav-icon">&#x2696;</div> Trial Balance
+        </div>
+
+        <div class="nav-section">Settings</div>
+        <div class="nav-item">
+          <div class="nav-icon">&#x1F4D1;</div> Chart of Accounts
+        </div>
+        <div class="nav-item">
+          <div class="nav-icon">&#x1F464;</div> Employees
+        </div>
+        <div class="nav-item">
+          <div class="nav-icon">&#x1F3E0;</div> Locations
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="layout-main">
+      <div class="layout-topbar">
+        <h2>Dashboard</h2>
+        <div class="viewing-badge">Viewing: 2024 &middot; All Locations &#x25BE;</div>
+      </div>
+
+      <div class="cards-row" style="margin-bottom:24px;">
+        <div class="kpi-card blue">
+          <div class="kpi-label">Total Revenue</div>
+          <div class="kpi-number">&#8358;169.5M</div>
+        </div>
+        <div class="kpi-card blue">
+          <div class="kpi-label">Total Expenses</div>
+          <div class="kpi-number">&#8358;42.4M</div>
+        </div>
+        <div class="kpi-card green">
+          <div class="kpi-label">Net Profit</div>
+          <div class="kpi-number">&#8358;127.1M</div>
+        </div>
+        <div class="kpi-card red">
+          <div class="kpi-label">Budget Variance</div>
+          <div class="kpi-number">-2.3%</div>
+        </div>
+      </div>
+
+      <div class="pills" style="margin-bottom:16px;">
+        <div class="pill active">All Locations</div>
+        <div class="pill">Agbowo</div>
+        <div class="pill">UI</div>
+      </div>
+
+      <div class="table-preview" style="box-shadow:none; border:1px solid #E5E7EB;">
+        <div class="table-header">
+          <h3>Recent Transactions</h3>
+          <button class="btn btn-outline" style="height:32px; padding:0 12px; font-size:12px;">View All</button>
+        </div>
+        <div class="table-row">
+          <div class="avatar" style="background:#3B7DDD;">RR</div>
+          <div class="row-main">
+            <div class="row-name">Room Revenue &middot; Vine 1</div>
+            <div class="row-sub">Agbowo &middot; Bank Transfer</div>
+          </div>
+          <div class="row-right">
+            <div class="row-amount amount-green">&#8358;450,000</div>
+            <div class="row-date">Jan 15, 2024</div>
+          </div>
+        </div>
+        <div class="table-row">
+          <div class="avatar" style="background:#E85D5D;">MT</div>
+          <div class="row-main">
+            <div class="row-name">Maintenance &middot; Scholar 2</div>
+            <div class="row-sub">UI &middot; Cash</div>
+          </div>
+          <div class="row-right">
+            <div class="row-amount amount-red">-&#8358;85,000</div>
+            <div class="row-date">Jan 18, 2024</div>
+          </div>
+        </div>
+        <div class="table-row">
+          <div class="avatar" style="background:#28A745;">PY</div>
+          <div class="row-main">
+            <div class="row-name">Payroll &middot; January 2024</div>
+            <div class="row-sub">All Locations &middot; Bank Transfer</div>
+          </div>
+          <div class="row-right">
+            <div class="row-amount amount-red">-&#8358;1,200,000</div>
+            <div class="row-date">Jan 31, 2024</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="text-align:center; padding-bottom:60px;">
+  <hr>
+  <p style="font-size:13px; color:#6B7280;">TALAccounting Design System &middot; Extracted from Pilotts Portal &middot; Ready to apply</p>
+</div>
+
+</body>
+</html>

@@ -16,11 +16,11 @@
     "@fontsource/open-sans": "^5.2.7",
     "@mui/icons-material": "^5.16.0",
     "@mui/material": "^5.16.0",
+    "axios": "^1.7.9",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.1",
     "recharts": "^2.12.7",
-    "axios": "^1.7.9",
     "zustand": "^5.0.3"
   },
   "devDependencies": {
