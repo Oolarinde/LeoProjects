@@ -1,3 +1,10 @@
+# Environment
+.env
+.env.local
+.env.production
+credentials.json
+secrets.json
+
 # Python
 __pycache__/
 *.py[cod]
@@ -6,6 +13,7 @@ __pycache__/
 .Python
 env/
 venv/
+.venv/
 ENV/
 build/
 develop-eggs/
@@ -22,6 +30,11 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+
+# Node
+node_modules/
+dist/
+.vite/
 
 # IDE
 .vscode/
@@ -44,11 +57,7 @@ Thumbs.db
 # Logs
 *.log
 
-# Dependencies
-node_modules/
-
-# Credentials (never commit these!)
-.env
-.env.local
-credentials.json
-secrets.json
+# Temp
+.tmp/
+*.tmp
+~$*.xlsx
