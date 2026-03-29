@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Talents AIS — Soft UI Theme Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+<style>
+:root {
+  /* ── Soft UI Tokens ── */
+  --primary: #17C1E8;
+  --primary-dark: #0e9aba;
+  --secondary: #8392AB;
+  --success: #82d616;
+  --danger: #ea0606;
+  --warning: #fbcf33;
+  --info: #17c1e8;
+  --dark: #344767;
+  --pink: #cb0c9f;
+
+  --heading: #344767;
+  --text: #344767;
+  --muted: #67748e;
+  --body: #67748e;
+
+  --bg: #f8f9fa;
+  --card: #ffffff;
+  --input-bg: #f6f7f9;
+  --border: #e9ecef;
+
+  --sidebar-active: #17C1E8;
+  --sidebar-active-bg: rgba(23,193,232,0.08);
+  --util-bar-bg: #344767;
+
+  --grad-primary: linear-gradient(310deg, #2152FF, #21D4FD);
+  --grad-success: linear-gradient(310deg, #17AD37, #98EC2D);
+  --grad-warning: linear-gradient(310deg, #F53939, #FBCF33);
+  --grad-info:    linear-gradient(310deg, #7928CA, #FF0080);
+  --grad-dark:    linear-gradient(310deg, #141727, #3A416F);
+  --grad-pink:    linear-gradient(310deg, #d40000, #cb0c9f);
+
+  --shadow-soft: 0 20px 27px 0 rgba(0,0,0,0.05);
+  --shadow-card: 0 2px 6px -1px rgba(0,0,0,0.10), 0 1px 4px -1px rgba(0,0,0,0.06);
+  --radius: 12px;
+
+  --sidebar-w: 250px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Open Sans', sans-serif;
+  background: var(--bg);
+  color: var(--body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  position: fixed; left: 0; top: 0; bottom: 0;
+  width: var(--sidebar-w);
+  background: var(--card);
+  border-right: 1px solid var(--border);
+  z-index: 100;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.sidebar-logo {
+  padding: 16px 20px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sidebar-logo .logo-icon {
+  width: 36px; height: 36px;
+  background: var(--grad-primary);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 700; font-size: 14px;
+}
+.sidebar-logo .logo-text {
+  font-size: 14px; font-weight: 700; color: var(--heading);
+  line-height: 1.2;
+}
+.sidebar-logo .logo-sub {
+  font-size: 10px; color: var(--muted); font-weight: 400;
+}
+.sidebar-divider { height: 1px; background: var(--border); margin: 0 16px; }
+
+.nav-section-label {
+  font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--secondary);
+  padding: 16px 20px 6px;
+}
+/* Collapsible section header */
+.nav-section-head {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 20px; cursor: pointer;
+  font-size: 14px; font-weight: 400; color: var(--text);
+  border-left: 3px solid transparent;
+  transition: all 0.15s;
+  user-select: none;
+}
+.nav-section-head:hover { background: rgba(0,0,0,0.02); }
+.nav-section-head .material-icons-round { font-size: 18px; color: var(--secondary); }
+.nav-section-head .section-label { flex: 1; }
+.nav-section-head .arrow { font-size: 16px; color: var(--secondary); transition: transform 0.2s; }
+.nav-section-head.open { color: var(--primary); font-weight: 600; border-left-color: var(--primary); }
+.nav-section-head.open .material-icons-round { color: var(--primary); }
+.nav-section-head.open .arrow { transform: rotate(180deg); color: var(--primary); }
+.nav-children { overflow: hidden; transition: max-height 0.25s ease; }
+/* Sidebar footer */
+.sidebar-footer {
+  margin-top: auto; padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.sidebar-footer-avatar {
+  width: 34px; height: 34px; border-radius: 10px;
+  background: var(--grad-primary); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; flex-shrink: 0;
+}
+.sidebar-footer-info { flex: 1; overflow: hidden; }
+.sidebar-footer-name { font-size: 12px; font-weight: 600; color: var(--heading); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sidebar-footer-role { font-size: 10px; color: var(--muted); }
+.nav-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 20px; cursor: pointer;
+  font-size: 14px; font-weight: 400; color: var(--text);
+  border-left: 3px solid transparent;
+  transition: all 0.15s;
+  text-decoration: none;
+}
+.nav-item:hover { background: rgba(0,0,0,0.02); }
+.nav-item.active {
+  border-left-color: var(--primary);
+  background: rgba(23,193,232,0.06);
+  color: var(--primary);
+  font-weight: 600;
+}
+.nav-item .material-icons-round { font-size: 18px; color: var(--secondary); }
+.nav-item.active .material-icons-round { color: var(--primary); }
+.nav-item-indent { padding-left: 48px; font-size: 13px; }
+.nav-item-indent::before {
+  content: '';
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--border);
+  flex-shrink: 0;
+}
+.nav-item-indent.active::before { background: var(--primary); }
+.sub-icon { display: none; }
+.nav-section-toggle {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 20px; cursor: pointer;
+  font-size: 14px; font-weight: 400; color: var(--text);
+}
+.nav-section-toggle .material-icons-round:first-child { font-size: 18px; color: var(--secondary); margin-right: 12px; }
+.nav-section-toggle .arrow { font-size: 16px; color: var(--secondary); }
+
+/* ── MAIN AREA ── */
+.main { margin-left: var(--sidebar-w); min-height: 100vh; }
+
+/* Utility bar */
+.util-bar {
+  background: var(--util-bar-bg);
+  color: #fff;
+  height: 36px;
+  display: flex; align-items: center;
+  padding: 0 24px;
+  font-size: 12px; opacity: 0.85;
+}
+
+/* Page header */
+.page-header {
+  background: var(--card);
+  padding: 12px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+.page-header h1 { font-size: 20px; font-weight: 700; color: var(--heading); }
+.header-controls { display: flex; align-items: center; gap: 12px; }
+.header-select {
+  font-family: 'Open Sans', sans-serif;
+  font-size: 12px; font-weight: 600; color: var(--heading);
+  padding: 5px 28px 5px 10px;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--card);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%238392AB' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 8px center;
+  cursor: pointer; outline: none;
+}
+.header-select:focus { border-color: var(--primary); }
+.icon-btn {
+  width: 32px; height: 32px; border-radius: 8px; border: none;
+  background: transparent; cursor: pointer; position: relative;
+  display: flex; align-items: center; justify-content: center;
+}
+.icon-btn:hover { background: var(--bg); }
+.icon-btn .material-icons-round { font-size: 20px; color: var(--muted); }
+.badge-dot {
+  position: absolute; top: 4px; right: 4px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--danger); border: 2px solid var(--card);
+}
+.avatar {
+  width: 32px; height: 32px; border-radius: 10px;
+  background: var(--grad-primary); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+}
+.viewing-label { font-size: 12px; color: var(--muted); }
+
+/* ── CONTENT ── */
+.content { padding: 24px; }
+
+/* Page title */
+.page-title { font-size: 22px; font-weight: 700; color: var(--heading); margin-bottom: 2px; }
+.page-subtitle { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+
+/* ── KPI CARDS ── */
+.kpi-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 16px; margin-bottom: 24px; }
+.kpi-card {
+  background: var(--card); border-radius: var(--radius);
+  box-shadow: var(--shadow-card); padding: 16px 20px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.kpi-value { font-size: 24px; font-weight: 700; color: var(--heading); line-height: 1.2; }
+.kpi-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.kpi-change { font-size: 11px; font-weight: 700; margin-top: 4px; display: flex; align-items: center; gap: 3px; }
+.kpi-change.up { color: var(--success); }
+.kpi-change.down { color: var(--danger); }
+.kpi-icon {
+  width: 48px; height: 48px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+}
+.kpi-icon .material-icons-round { font-size: 24px; }
+
+/* ── CHART CARDS ── */
+.charts-grid { display: grid; grid-template-columns: 2.2fr 1fr; gap: 16px; margin-bottom: 24px; }
+.card {
+  background: var(--card); border-radius: var(--radius);
+  box-shadow: var(--shadow-card); border: none;
+}
+.card-header {
+  padding: 16px 20px 0;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.card-title { font-size: 15px; font-weight: 700; color: var(--heading); }
+.card-body { padding: 16px 20px; }
+
+/* Legend dots */
+.legend { display: flex; gap: 16px; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+/* Fake chart area */
+.chart-area {
+  width: 100%; height: 260px;
+  position: relative; overflow: hidden;
+}
+.chart-area svg { width: 100%; height: 100%; }
+
+/* Donut breakdown */
+.donut-area { width: 100%; height: 200px; display: flex; align-items: center; justify-content: center; }
+.breakdown-list { padding: 0 16px 16px; }
+.breakdown-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 4px 0; font-size: 12px;
+}
+.breakdown-left { display: flex; align-items: center; gap: 8px; color: var(--text); }
+.breakdown-dot { width: 8px; height: 8px; border-radius: 50%; }
+.breakdown-val { font-weight: 700; color: var(--heading); }
+
+/* ── TABLE ── */
+.table-card { margin-bottom: 24px; }
+.table-card table { width: 100%; border-collapse: collapse; }
+.table-card thead th {
+  text-align: left; padding: 12px 16px;
+  font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--secondary);
+  border-bottom: 1px solid var(--border);
+}
+.table-card tbody td {
+  padding: 12px 16px; font-size: 13px; color: var(--heading);
+  border-bottom: 1px solid #f0f2f5; vertical-align: middle;
+  white-space: nowrap;
+}
+.table-card tbody tr:last-child td { border-bottom: none; }
+.table-card tbody tr:hover { background: #fafbfc; }
+.cell-tenant { display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+.table-avatar {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 12px; font-weight: 700;
+  flex-shrink: 0;
+}
+.cell-name { font-weight: 600; }
+/* Export dropdown */
+.export-wrap { position: relative; display: inline-block; }
+.export-btn {
+  padding: 5px 14px; font-size: 11px; font-weight: 600;
+  border: 1px solid var(--border); border-radius: 6px;
+  background: var(--card); color: var(--heading);
+  cursor: pointer; font-family: 'Open Sans', sans-serif;
+  display: flex; align-items: center; gap: 4px;
+}
+.export-btn .material-icons-round { font-size: 14px; }
+.export-menu {
+  display: none; position: absolute; right: 0; top: 100%; margin-top: 4px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 8px; box-shadow: var(--shadow-soft);
+  min-width: 150px; z-index: 10; overflow: hidden;
+}
+.export-wrap:hover .export-menu { display: block; }
+.export-option {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 14px; font-size: 12px; font-weight: 600;
+  color: var(--heading); cursor: pointer; transition: background 0.1s;
+}
+.export-option:hover { background: var(--bg); }
+.export-option .material-icons-round { font-size: 18px; color: var(--muted); }
+.badge {
+  display: inline-block; padding: 3px 10px;
+  font-size: 11px; font-weight: 700; border-radius: 6px;
+}
+.badge-paid { background: rgba(130,214,22,0.12); color: #6aad0e; }
+.badge-pending { background: rgba(251,207,51,0.15); color: #c49c09; }
+.badge-overdue { background: rgba(234,6,6,0.08); color: #ea0606; }
+.actions { display: flex; gap: 4px; justify-content: center; }
+.act-btn {
+  width: 30px; height: 30px; border-radius: 8px; border: none;
+  cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.act-btn .material-icons-round { font-size: 16px; }
+.act-edit { background: rgba(23,193,232,0.1); color: var(--primary); }
+.act-edit:hover { background: rgba(23,193,232,0.2); }
+.act-delete { background: rgba(234,6,6,0.08); color: var(--danger); }
+.act-delete:hover { background: rgba(234,6,6,0.15); }
+.act-view { background: rgba(52,71,103,0.08); color: var(--dark); }
+.act-view:hover { background: rgba(52,71,103,0.15); }
+
+/* Breadcrumb */
+.breadcrumb {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--muted); margin-bottom: 16px;
+}
+.breadcrumb a { color: var(--primary); text-decoration: none; font-weight: 600; }
+.breadcrumb a:hover { text-decoration: underline; }
+.breadcrumb .sep { color: var(--secondary); font-size: 10px; }
+
+/* Table toolbar */
+.table-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 20px;
+}
+.table-search {
+  font-family: 'Open Sans', sans-serif;
+  font-size: 12px; padding: 6px 12px 6px 32px;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--input-bg); outline: none; width: 220px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%238392AB' viewBox='0 0 24 24'%3E%3Cpath d='M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: 10px center;
+}
+.table-search:focus { border-color: var(--primary); background-color: #fff; }
+.table-filter-chips { display: flex; gap: 6px; }
+.filter-chip {
+  font-family: 'Open Sans', sans-serif;
+  font-size: 11px; font-weight: 600; padding: 4px 12px;
+  border-radius: 20px; border: 1px solid var(--border);
+  background: var(--card); color: var(--muted); cursor: pointer;
+  transition: all 0.15s;
+}
+.filter-chip:hover { border-color: var(--primary); color: var(--primary); }
+.filter-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+/* Table pagination */
+.table-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 20px; border-top: 1px solid var(--border);
+}
+.table-info { font-size: 12px; color: var(--muted); }
+.pagination { display: flex; gap: 4px; }
+.page-btn {
+  width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--card); color: var(--heading);
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Open Sans', sans-serif; transition: all 0.15s;
+}
+.page-btn:hover { border-color: var(--primary); color: var(--primary); }
+.page-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.page-btn .material-icons-round { font-size: 16px; }
+
+/* Badge count (notification) */
+.badge-count {
+  position: absolute; top: 2px; right: 2px;
+  min-width: 16px; height: 16px; border-radius: 8px;
+  background: var(--danger); color: #fff;
+  font-size: 9px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 4px; border: 2px solid var(--card);
+}
+
+/* ── BOTTOM ROW ── */
+.bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+/* Progress list card */
+.progress-item { margin-bottom: 16px; }
+.progress-label {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; font-weight: 600; color: var(--heading); margin-bottom: 6px;
+}
+.progress-pct { font-weight: 700; }
+.progress-track { height: 6px; background: #e9ecef; border-radius: 1rem; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 1rem; }
+
+/* Quick actions */
+.quick-action {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 0; border-bottom: 1px solid #f0f2f5;
+  cursor: pointer;
+}
+.quick-action:last-child { border-bottom: none; }
+.qa-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+}
+.qa-icon .material-icons-round { font-size: 20px; }
+.qa-text { flex: 1; }
+.qa-title { font-size: 13px; font-weight: 600; color: var(--heading); }
+.qa-sub { font-size: 11px; color: var(--muted); }
+.qa-arrow { color: var(--muted); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 1024px) {
+  .kpi-grid { grid-template-columns: repeat(3,1fr); }
+  .charts-grid { grid-template-columns: 1fr; }
+  .bottom-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .main { margin-left: 0; }
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ SIDEBAR ═══════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <img src="frontend/public/ta-logo.webp" alt="Talents Apartments" style="width:200px; height:60px; object-fit:contain;">
+  </div>
+  <div class="sidebar-divider"></div>
+
+  <a class="nav-item active">
+    <span class="material-icons-round">dashboard</span> Dashboard
+  </a>
+  <a class="nav-item">
+    <span class="material-icons-round">person</span> My Profile
+  </a>
+
+  <!-- Bookkeeping (expanded) -->
+  <div class="nav-section-head open" onclick="this.classList.toggle('open');this.nextElementSibling.style.maxHeight=this.classList.contains('open')?'300px':'0'">
+    <span class="material-icons-round">receipt_long</span>
+    <span class="section-label">Bookkeeping</span>
+    <span class="material-icons-round arrow">expand_more</span>
+  </div>
+  <div class="nav-children" style="max-height:300px;">
+    <a class="nav-item nav-item-indent"><span class="material-icons-round sub-icon">attach_money</span> Revenue</a>
+    <a class="nav-item nav-item-indent"><span class="material-icons-round sub-icon">credit_card</span> Expenses</a>
+    <a class="nav-item nav-item-indent"><span class="material-icons-round sub-icon">people</span> Payroll</a>
+    <a class="nav-item nav-item-indent"><span class="material-icons-round sub-icon">account_balance</span> Budget</a>
+    <a class="nav-item nav-item-indent"><span class="material-icons-round sub-icon">menu_book</span> General Ledger</a>
+  </div>
+
+  <!-- Reports (collapsed) -->
+  <div class="nav-section-head" onclick="this.classList.toggle('open');this.nextElementSibling.style.maxHeight=this.classList.contains('open')?'300px':'0'">
+    <span class="material-icons-round">description</span>
+    <span class="section-label">Reports</span>
+    <span class="material-icons-round arrow">expand_more</span>
+  </div>
+  <div class="nav-children" style="max-height:0;">
+    <a class="nav-item nav-item-indent"><span class="material-icons-round sub-icon">assessment</span> Profit &amp; Loss</a>
+    <a class="nav-item nav-item-indent"><span class="material-icons-round sub-icon">show_chart</span> Cash Flow</a>
+    <a class="nav-item nav-item-indent"><span class="material-icons-round sub-icon">table_chart</span> Balance Sheet</a>
+    <a class="nav-item nav-item-indent"><span class="material-icons-round sub-icon">fact_check</span> Trial Balance</a>
+    <a class="nav-item nav-item-indent"><span class="material-icons-round sub-icon">bar_chart</span> Analysis</a>
+  </div>
+
+  <!-- Settings (collapsed) -->
+  <div class="nav-section-head" onclick="this.classList.toggle('open');this.nextElementSibling.style.maxHeight=this.classList.contains('open')?'300px':'0'">
+    <span class="material-icons-round">settings</span>
+    <span class="section-label">Settings</span>
+    <span class="material-icons-round arrow">expand_more</span>
+  </div>
+  <div class="nav-children" style="max-height:0;">
+    <a class="nav-item nav-item-indent"><span class="material-icons-round sub-icon">account_tree</span> Chart of Accounts</a>
+    <a class="nav-item nav-item-indent"><span class="material-icons-round sub-icon">badge</span> Employees</a>
+    <a class="nav-item nav-item-indent"><span class="material-icons-round sub-icon">location_on</span> Locations &amp; Units</a>
+    <a class="nav-item nav-item-indent"><span class="material-icons-round sub-icon">tune</span> Reference Data</a>
+  </div>
+
+  <!-- Sidebar footer -->
+  <div class="sidebar-footer">
+    <div class="sidebar-footer-avatar">AO</div>
+    <div class="sidebar-footer-info">
+      <div class="sidebar-footer-name">Adewale Ogunleye</div>
+      <div class="sidebar-footer-role">Owner / Admin</div>
+    </div>
+    <button class="icon-btn" style="width:28px;height:28px;">
+      <span class="material-icons-round" style="font-size:16px;">more_horiz</span>
+    </button>
+  </div>
+</aside>
+
+<!-- ═══════════ MAIN ═══════════ -->
+<div class="main">
+
+  <!-- Utility bar -->
+  <div class="util-bar">
+    Talents Apartments — Accounting Information System
+  </div>
+
+  <!-- Page header -->
+  <div class="page-header">
+    <h1>FY 2026</h1>
+    <div class="header-controls">
+      <span class="viewing-label">Viewing</span>
+      <select class="header-select">
+        <option>2026 (Full Year)</option>
+        <option>2025 (Full Year)</option>
+        <option>2024 (Full Year)</option>
+      </select>
+      <button class="icon-btn">
+        <span class="material-icons-round">notifications</span>
+        <span class="badge-count">3</span>
+      </button>
+      <button class="icon-btn">
+        <span class="material-icons-round">logout</span>
+      </button>
+      <div class="avatar">AO</div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+    <div class="breadcrumb">
+      <a href="#">Home</a>
+      <span class="sep">/</span>
+      <span>Dashboard</span>
+    </div>
+    <div class="page-title">Dashboard</div>
+    <div class="page-subtitle">Financial overview for FY 2026 — All Locations</div>
+
+    <!-- ── KPI Cards ── -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div>
+          <div class="kpi-value">&#8358;45.2M</div>
+          <div class="kpi-label">Total Revenue</div>
+          <div class="kpi-change up">
+            <span class="material-icons-round" style="font-size:14px">trending_up</span> +12.5%
+          </div>
+        </div>
+        <div class="kpi-icon" style="background:var(--grad-primary); box-shadow: 0 4px 12px rgba(33,82,255,0.3);">
+          <span class="material-icons-round">payments</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div>
+          <div class="kpi-value">&#8358;28.1M</div>
+          <div class="kpi-label">Total Expenses</div>
+          <div class="kpi-change down">
+            <span class="material-icons-round" style="font-size:14px">trending_down</span> +8.2%
+          </div>
+        </div>
+        <div class="kpi-icon" style="background:var(--grad-pink); box-shadow: 0 4px 12px rgba(203,12,159,0.3);">
+          <span class="material-icons-round">money_off</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div>
+          <div class="kpi-value">&#8358;17.1M</div>
+          <div class="kpi-label">Net Profit</div>
+          <div class="kpi-change up">
+            <span class="material-icons-round" style="font-size:14px">trending_up</span> +18.4%
+          </div>
+        </div>
+        <div class="kpi-icon" style="background:var(--grad-success); box-shadow: 0 4px 12px rgba(23,173,55,0.3);">
+          <span class="material-icons-round">show_chart</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div>
+          <div class="kpi-value">&#8358;4.8M</div>
+          <div class="kpi-label">Staff Salaries</div>
+          <div class="kpi-change up">
+            <span class="material-icons-round" style="font-size:14px">trending_flat</span> 0%
+          </div>
+        </div>
+        <div class="kpi-icon" style="background:var(--grad-info); box-shadow: 0 4px 12px rgba(121,40,202,0.3);">
+          <span class="material-icons-round">groups</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div>
+          <div class="kpi-value">37.8%</div>
+          <div class="kpi-label">Profit Margin</div>
+          <div class="kpi-change up">
+            <span class="material-icons-round" style="font-size:14px">trending_up</span> +3.2%
+          </div>
+        </div>
+        <div class="kpi-icon" style="background:var(--grad-dark); box-shadow: 0 4px 12px rgba(52,71,103,0.3);">
+          <span class="material-icons-round">trending_up</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Charts Row ── -->
+    <div class="charts-grid">
+      <!-- Line chart -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Revenue vs Expenses</div>
+          <div class="legend">
+            <span class="legend-item"><span class="legend-dot" style="background:#2152FF"></span>Revenue (&#8358;'000)</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#cb0c9f"></span>Expenses (&#8358;'000)</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="chart-area">
+            <svg viewBox="0 0 800 260" preserveAspectRatio="none">
+              <!-- Grid lines -->
+              <line x1="40" y1="40" x2="780" y2="40" stroke="#e9ecef" stroke-width="1"/>
+              <line x1="40" y1="95" x2="780" y2="95" stroke="#e9ecef" stroke-width="1"/>
+              <line x1="40" y1="150" x2="780" y2="150" stroke="#e9ecef" stroke-width="1"/>
+              <line x1="40" y1="205" x2="780" y2="205" stroke="#e9ecef" stroke-width="1"/>
+
+              <!-- Y-axis labels -->
+              <text x="30" y="44" fill="#8392AB" font-size="10" text-anchor="end">6K</text>
+              <text x="30" y="99" fill="#8392AB" font-size="10" text-anchor="end">4K</text>
+              <text x="30" y="154" fill="#8392AB" font-size="10" text-anchor="end">3K</text>
+              <text x="30" y="209" fill="#8392AB" font-size="10" text-anchor="end">2K</text>
+
+              <!-- X-axis labels -->
+              <text x="102" y="235" fill="#8392AB" font-size="10" text-anchor="middle">Jan</text>
+              <text x="164" y="235" fill="#8392AB" font-size="10" text-anchor="middle">Feb</text>
+              <text x="226" y="235" fill="#8392AB" font-size="10" text-anchor="middle">Mar</text>
+              <text x="288" y="235" fill="#8392AB" font-size="10" text-anchor="middle">Apr</text>
+              <text x="350" y="235" fill="#8392AB" font-size="10" text-anchor="middle">May</text>
+              <text x="412" y="235" fill="#8392AB" font-size="10" text-anchor="middle">Jun</text>
+              <text x="474" y="235" fill="#8392AB" font-size="10" text-anchor="middle">Jul</text>
+              <text x="536" y="235" fill="#8392AB" font-size="10" text-anchor="middle">Aug</text>
+              <text x="598" y="235" fill="#8392AB" font-size="10" text-anchor="middle">Sep</text>
+              <text x="660" y="235" fill="#8392AB" font-size="10" text-anchor="middle">Oct</text>
+              <text x="722" y="235" fill="#8392AB" font-size="10" text-anchor="middle">Nov</text>
+              <text x="780" y="235" fill="#8392AB" font-size="10" text-anchor="middle">Dec</text>
+
+              <!-- Revenue line (gradient fill underneath) -->
+              <defs>
+                <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#2152FF" stop-opacity="0.15"/>
+                  <stop offset="100%" stop-color="#21D4FD" stop-opacity="0"/>
+                </linearGradient>
+                <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#2152FF"/>
+                  <stop offset="100%" stop-color="#21D4FD"/>
+                </linearGradient>
+              </defs>
+              <path d="M102,108 L164,128 L226,72 L288,97 L350,120 L412,88 L474,52 L536,115 L598,140 L660,102 L722,155 L722,215 L102,215 Z" fill="url(#revGrad)"/>
+              <polyline points="102,108 164,128 226,72 288,97 350,120 412,88 474,52 536,115 598,140 660,102 722,155" fill="none" stroke="url(#lineGrad)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              <!-- Revenue dots -->
+              <circle cx="102" cy="108" r="4" fill="#2152FF"/>
+              <circle cx="226" cy="72" r="4" fill="#2152FF"/>
+              <circle cx="474" cy="52" r="4" fill="#21D4FD"/>
+              <circle cx="660" cy="102" r="4" fill="#21D4FD"/>
+
+              <!-- Expenses line -->
+              <polyline points="102,165 164,148 226,175 288,160 350,145 412,170 474,155 536,138 598,180 660,165 722,148" fill="none" stroke="#cb0c9f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none" opacity="0.8"/>
+              <circle cx="102" cy="165" r="3.5" fill="#cb0c9f"/>
+              <circle cx="350" cy="145" r="3.5" fill="#cb0c9f"/>
+              <circle cx="598" cy="180" r="3.5" fill="#cb0c9f"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Donut chart -->
+      <div class="card">
+        <div class="card-header" style="padding-bottom:0;">
+          <div class="card-title">Revenue Breakdown</div>
+        </div>
+        <div class="donut-area">
+          <svg width="180" height="180" viewBox="0 0 180 180">
+            <!-- Donut segments (pre-calculated) -->
+            <circle cx="90" cy="90" r="65" fill="none" stroke="#2152FF" stroke-width="24"
+              stroke-dasharray="265.46 143.26" stroke-dashoffset="0" transform="rotate(-90 90 90)"/>
+            <circle cx="90" cy="90" r="65" fill="none" stroke="#cb0c9f" stroke-width="24"
+              stroke-dasharray="49.01 359.71" stroke-dashoffset="-265.46" transform="rotate(-90 90 90)"/>
+            <circle cx="90" cy="90" r="65" fill="none" stroke="#82d616" stroke-width="24"
+              stroke-dasharray="40.84 367.88" stroke-dashoffset="-314.47" transform="rotate(-90 90 90)"/>
+            <circle cx="90" cy="90" r="65" fill="none" stroke="#17C1E8" stroke-width="24"
+              stroke-dasharray="32.67 376.05" stroke-dashoffset="-355.31" transform="rotate(-90 90 90)"/>
+            <circle cx="90" cy="90" r="65" fill="none" stroke="#8392AB" stroke-width="24"
+              stroke-dasharray="20.42 388.3" stroke-dashoffset="-387.98" transform="rotate(-90 90 90)"/>
+            <!-- Center text -->
+            <text x="90" y="85" text-anchor="middle" font-size="20" font-weight="700" fill="#344767">100%</text>
+            <text x="90" y="102" text-anchor="middle" font-size="10" fill="#8392AB">Total</text>
+          </svg>
+        </div>
+        <div class="breakdown-list">
+          <div class="breakdown-row">
+            <span class="breakdown-left"><span class="breakdown-dot" style="background:#2152FF"></span>Room Revenue</span>
+            <span class="breakdown-val">65%</span>
+          </div>
+          <div class="breakdown-row">
+            <span class="breakdown-left"><span class="breakdown-dot" style="background:#cb0c9f"></span>Shop Rent</span>
+            <span class="breakdown-val">12%</span>
+          </div>
+          <div class="breakdown-row">
+            <span class="breakdown-left"><span class="breakdown-dot" style="background:#82d616"></span>Caution Fees</span>
+            <span class="breakdown-val">10%</span>
+          </div>
+          <div class="breakdown-row">
+            <span class="breakdown-left"><span class="breakdown-dot" style="background:#17C1E8"></span>Extra Charges</span>
+            <span class="breakdown-val">8%</span>
+          </div>
+          <div class="breakdown-row">
+            <span class="breakdown-left"><span class="breakdown-dot" style="background:#8392AB"></span>Other</span>
+            <span class="breakdown-val">5%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Recent Transactions Table ── -->
+    <div class="card table-card">
+      <div class="card-header" style="padding-bottom:0;">
+        <div class="card-title">Recent Transactions</div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button style="padding:5px 14px;font-size:11px;font-weight:700;border:none;border-radius:6px;background:var(--grad-primary);color:#fff;cursor:pointer;font-family:'Open Sans',sans-serif;display:flex;align-items:center;gap:4px;">
+            <span class="material-icons-round" style="font-size:14px;">add</span> New Entry
+          </button>
+          <div class="export-wrap">
+            <button class="export-btn">
+              <span class="material-icons-round">download</span> Export <span class="material-icons-round" style="font-size:12px;">expand_more</span>
+            </button>
+            <div class="export-menu">
+              <div class="export-option"><span class="material-icons-round">picture_as_pdf</span> Export as PDF</div>
+              <div class="export-option"><span class="material-icons-round">table_view</span> Export as Excel</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Location filter buttons -->
+      <div style="display:flex;gap:8px;padding:10px 20px 12px;flex-wrap:wrap;align-items:center;">
+        <button class="filter-chip loc-chip active" onclick="document.querySelectorAll('.loc-chip').forEach(b=>b.classList.remove('active'));this.classList.add('active');">All Locations</button>
+        <button class="filter-chip loc-chip" onclick="document.querySelectorAll('.loc-chip').forEach(b=>b.classList.remove('active'));this.classList.add('active');">Agbowo</button>
+        <button class="filter-chip loc-chip" onclick="document.querySelectorAll('.loc-chip').forEach(b=>b.classList.remove('active'));this.classList.add('active');">UI</button>
+        <span style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+          <span style="font-size:12px;color:var(--muted);">Viewing</span>
+          <select class="header-select">
+            <option>All Locations</option>
+            <option>Agbowo</option>
+            <option>UI</option>
+          </select>
+        </span>
+      </div>
+      <div style="height:1px;background:var(--border);margin:0 20px;"></div>
+      <div class="table-toolbar">
+        <input class="table-search" type="text" placeholder="Search transactions...">
+        <div class="table-filter-chips">
+          <button class="filter-chip active">All</button>
+          <button class="filter-chip">Paid</button>
+          <button class="filter-chip">Pending</button>
+          <button class="filter-chip">Overdue</button>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Tenant</th>
+            <th>Unit</th>
+            <th>Location</th>
+            <th>Category</th>
+            <th>Amount</th>
+            <th>Method</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th style="text-align:center;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><div class="cell-tenant"><span class="table-avatar" style="background:var(--grad-primary);">AO</span><span class="cell-name">Adewale Ogunleye</span></div></td>
+            <td>Vine 2</td>
+            <td>Agbowo</td>
+            <td>Room Revenue</td>
+            <td style="font-weight:600;">&#8358;150,000</td>
+            <td>Bank Transfer</td>
+            <td><span class="badge badge-paid">Paid</span></td>
+            <td>Mar 15, 2026</td>
+            <td><div class="actions"><button class="act-btn act-view" title="View"><span class="material-icons-round">visibility</span></button><button class="act-btn act-edit" title="Edit"><span class="material-icons-round">edit</span></button><button class="act-btn act-delete" title="Delete"><span class="material-icons-round">delete</span></button></div></td>
+          </tr>
+          <tr>
+            <td><div class="cell-tenant"><span class="table-avatar" style="background:var(--grad-success);">FI</span><span class="cell-name">Fatima Ibrahim</span></div></td>
+            <td>Scholar</td>
+            <td>UI</td>
+            <td>Room Revenue</td>
+            <td style="font-weight:600;">&#8358;200,000</td>
+            <td>Mobile Transfer</td>
+            <td><span class="badge badge-pending">Pending</span></td>
+            <td>Mar 22, 2026</td>
+            <td><div class="actions"><button class="act-btn act-view" title="View"><span class="material-icons-round">visibility</span></button><button class="act-btn act-edit" title="Edit"><span class="material-icons-round">edit</span></button><button class="act-btn act-delete" title="Delete"><span class="material-icons-round">delete</span></button></div></td>
+          </tr>
+          <tr>
+            <td><div class="cell-tenant"><span class="table-avatar" style="background:var(--grad-warning);">CE</span><span class="cell-name">Chidi Emenike</span></div></td>
+            <td>Kollege</td>
+            <td>Agbowo</td>
+            <td>Room Revenue</td>
+            <td style="font-weight:600;">&#8358;180,000</td>
+            <td>Cash</td>
+            <td><span class="badge badge-overdue">Overdue</span></td>
+            <td>Feb 28, 2026</td>
+            <td><div class="actions"><button class="act-btn act-view" title="View"><span class="material-icons-round">visibility</span></button><button class="act-btn act-edit" title="Edit"><span class="material-icons-round">edit</span></button><button class="act-btn act-delete" title="Delete"><span class="material-icons-round">delete</span></button></div></td>
+          </tr>
+          <tr>
+            <td><div class="cell-tenant"><span class="table-avatar" style="background:var(--grad-info);">BN</span><span class="cell-name">Blessing Nwosu</span></div></td>
+            <td>Anooore 1</td>
+            <td>UI</td>
+            <td>Caution Fee</td>
+            <td style="font-weight:600;">&#8358;120,000</td>
+            <td>POS</td>
+            <td><span class="badge badge-paid">Paid</span></td>
+            <td>Mar 10, 2026</td>
+            <td><div class="actions"><button class="act-btn act-view" title="View"><span class="material-icons-round">visibility</span></button><button class="act-btn act-edit" title="Edit"><span class="material-icons-round">edit</span></button><button class="act-btn act-delete" title="Delete"><span class="material-icons-round">delete</span></button></div></td>
+          </tr>
+          <tr>
+            <td><div class="cell-tenant"><span class="table-avatar" style="background:var(--grad-dark);">OT</span><span class="cell-name">Oluwaseun Taiwo</span></div></td>
+            <td>Premier</td>
+            <td>Agbowo</td>
+            <td>Shop Rent</td>
+            <td style="font-weight:600;">&#8358;250,000</td>
+            <td>Bank Transfer</td>
+            <td><span class="badge badge-paid">Paid</span></td>
+            <td>Mar 18, 2026</td>
+            <td><div class="actions"><button class="act-btn act-view" title="View"><span class="material-icons-round">visibility</span></button><button class="act-btn act-edit" title="Edit"><span class="material-icons-round">edit</span></button><button class="act-btn act-delete" title="Delete"><span class="material-icons-round">delete</span></button></div></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="table-footer">
+        <div class="table-info">Showing 1 - 5 of 24 entries</div>
+        <div class="pagination">
+          <button class="page-btn"><span class="material-icons-round">chevron_left</span></button>
+          <button class="page-btn active">1</button>
+          <button class="page-btn">2</button>
+          <button class="page-btn">3</button>
+          <button class="page-btn">4</button>
+          <button class="page-btn">5</button>
+          <button class="page-btn"><span class="material-icons-round">chevron_right</span></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Bottom Row ── -->
+    <div class="bottom-grid">
+      <!-- Budget Progress -->
+      <div class="card">
+        <div class="card-header" style="padding-bottom:4px;">
+          <div class="card-title">Budget Progress</div>
+        </div>
+        <div class="card-body">
+          <div class="progress-item">
+            <div class="progress-label">
+              <span>Salaries</span>
+              <span class="progress-pct" style="color:#2152FF;">72%</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" style="width:72%; background:var(--grad-primary);"></div>
+            </div>
+          </div>
+          <div class="progress-item">
+            <div class="progress-label">
+              <span>Maintenance</span>
+              <span class="progress-pct" style="color:var(--success);">45%</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" style="width:45%; background:var(--grad-success);"></div>
+            </div>
+          </div>
+          <div class="progress-item">
+            <div class="progress-label">
+              <span>Utilities</span>
+              <span class="progress-pct" style="color:#F53939;">91%</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" style="width:91%; background:var(--grad-warning);"></div>
+            </div>
+          </div>
+          <div class="progress-item">
+            <div class="progress-label">
+              <span>Construction</span>
+              <span class="progress-pct" style="color:#7928CA;">38%</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" style="width:38%; background:var(--grad-info);"></div>
+            </div>
+          </div>
+          <div class="progress-item" style="margin-bottom:0;">
+            <div class="progress-label">
+              <span>Administrative</span>
+              <span class="progress-pct" style="color:var(--heading);">60%</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" style="width:60%; background:var(--grad-dark);"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="card">
+        <div class="card-header" style="padding-bottom:4px;">
+          <div class="card-title">Quick Actions</div>
+        </div>
+        <div class="card-body">
+          <div class="quick-action">
+            <div class="qa-icon" style="background:var(--grad-primary);">
+              <span class="material-icons-round">add_card</span>
+            </div>
+            <div class="qa-text">
+              <div class="qa-title">Record Revenue</div>
+              <div class="qa-sub">Add a new rent or fee payment</div>
+            </div>
+            <span class="material-icons-round qa-arrow" style="font-size:18px;">chevron_right</span>
+          </div>
+          <div class="quick-action">
+            <div class="qa-icon" style="background:var(--grad-pink);">
+              <span class="material-icons-round">receipt_long</span>
+            </div>
+            <div class="qa-text">
+              <div class="qa-title">Log Expense</div>
+              <div class="qa-sub">Record a new business expense</div>
+            </div>
+            <span class="material-icons-round qa-arrow" style="font-size:18px;">chevron_right</span>
+          </div>
+          <div class="quick-action">
+            <div class="qa-icon" style="background:var(--grad-success);">
+              <span class="material-icons-round">summarize</span>
+            </div>
+            <div class="qa-text">
+              <div class="qa-title">View P&amp;L Report</div>
+              <div class="qa-sub">Current year profit &amp; loss statement</div>
+            </div>
+            <span class="material-icons-round qa-arrow" style="font-size:18px;">chevron_right</span>
+          </div>
+          <div class="quick-action" style="border-bottom:none;">
+            <div class="qa-icon" style="background:var(--grad-info);">
+              <span class="material-icons-round">picture_as_pdf</span>
+            </div>
+            <div class="qa-text">
+              <div class="qa-title">Export Reports</div>
+              <div class="qa-sub">Download PDF financial statements</div>
+            </div>
+            <span class="material-icons-round qa-arrow" style="font-size:18px;">chevron_right</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+</body>
+</html>
