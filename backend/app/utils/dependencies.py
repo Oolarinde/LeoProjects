@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db
 from app.models.user import User
 from app.utils.security import decode_token
+from app.utils.permissions import Module, AccessLevel, has_access, SUPER_ADMIN, ADMIN
 
 security_scheme = HTTPBearer()
 
@@ -42,3 +43,26 @@ def require_role(*roles: str):
         return current_user
 
     return role_checker
+
+
+def require_permission(module: Module, level: AccessLevel):
+    """FastAPI dependency that checks module-level permission."""
+    async def checker(current_user: User = Depends(get_current_user)) -> User:
+        if not has_access(current_user, module, level):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"No {level.value} access to {module.value}",
+            )
+        return current_user
+
+    return checker
+
+
+def require_admin():
+    """Only SUPER_ADMIN and ADMIN can access (for user management)."""
+    async def checker(current_user: User = Depends(get_current_user)) -> User:
+        if current_user.role not in (SUPER_ADMIN, ADMIN):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        return current_user
+
+    return checker

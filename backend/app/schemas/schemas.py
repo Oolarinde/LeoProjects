@@ -35,6 +35,7 @@ class UserResponse(BaseModel):
     role: str
     company_id: UUID
     is_active: bool
+    permissions: dict[str, str] = {}
     created_at: datetime
 
     model_config = {"from_attributes": True}

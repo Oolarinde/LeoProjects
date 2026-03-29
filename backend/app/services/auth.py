@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.company import Company
 from app.models.user import User
 from app.utils.security import hash_password, verify_password, create_access_token, create_refresh_token, decode_token
+from app.utils.permissions import SUPER_ADMIN, get_default_permissions
 
 
 async def register_user(
@@ -18,7 +19,8 @@ async def register_user(
         email=email.lower().strip(),
         hashed_password=hash_password(password),
         full_name=full_name,
-        role="OWNER",
+        role=SUPER_ADMIN,
+        permissions=get_default_permissions(SUPER_ADMIN),
     )
     db.add(user)
     await db.flush()
@@ -36,7 +38,12 @@ async def authenticate_user(db: AsyncSession, email: str, password: str) -> User
 
 
 def generate_tokens(user: User) -> dict:
-    token_data = {"sub": str(user.id), "company_id": str(user.company_id), "role": user.role}
+    token_data = {
+        "sub": str(user.id),
+        "company_id": str(user.company_id),
+        "role": user.role,
+        "permissions": user.permissions or {},
+    }
     return {
         "access_token": create_access_token(token_data),
         "refresh_token": create_refresh_token(token_data),

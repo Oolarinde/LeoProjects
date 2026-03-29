@@ -58,4 +58,27 @@ export const referenceApi = {
   getDropdowns: () => api.get("/reference/dropdowns"),
 };
 
+// Users (admin)
+export const usersApi = {
+  list: () => api.get("/users"),
+  get: (id: string) => api.get(`/users/${id}`),
+  create: (data: {
+    email: string;
+    full_name: string;
+    role: string;
+    password: string;
+    permissions: Record<string, string>;
+  }) => api.post("/users", data),
+  update: (
+    id: string,
+    data: {
+      full_name?: string;
+      role?: string;
+      permissions?: Record<string, string>;
+      is_active?: boolean;
+    }
+  ) => api.patch(`/users/${id}`, data),
+  deactivate: (id: string) => api.delete(`/users/${id}`),
+};
+
 export default api;

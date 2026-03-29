@@ -11,6 +11,7 @@ interface User {
   full_name: string;
   role: string;
   company_id: string;
+  permissions: Record<string, string>;
 }
 
 interface AppState {
@@ -24,6 +25,24 @@ interface AppState {
   setUser: (user: User | null) => void;
   setTokens: (access: string, refresh: string) => void;
   logout: () => void;
+}
+
+export function hasAccess(
+  user: User | null,
+  module: string,
+  level: "read" | "write" = "read"
+): boolean {
+  if (!user) return false;
+  if (user.role === "SUPER_ADMIN") return true;
+  const perm = user.permissions?.[module] ?? "none";
+  if (level === "read") return perm === "read" || perm === "write";
+  if (level === "write") return perm === "write";
+  return false;
+}
+
+export function isAdmin(user: User | null): boolean {
+  if (!user) return false;
+  return user.role === "SUPER_ADMIN" || user.role === "ADMIN";
 }
 
 export const useAppStore = create<AppState>((set) => ({

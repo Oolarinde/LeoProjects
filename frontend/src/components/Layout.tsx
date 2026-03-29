@@ -31,7 +31,6 @@ import {
   AccountTree,
   Settings,
   LocationOn,
-  ReportProblem,
   ExpandMore,
   ExpandLess,
   Notifications,
@@ -39,19 +38,31 @@ import {
   Logout,
 } from "@mui/icons-material";
 import { tokens } from "../theme/theme";
-import { useAppStore } from "../utils/store";
+import { useAppStore, hasAccess, isAdmin } from "../utils/store";
+import { GroupWork } from "@mui/icons-material";
 
 const SIDEBAR_WIDTH = 230;
 
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
+interface NavItem {
+  label: string;
+  path: string;
+  icon: JSX.Element;
+  module?: string; // permission module slug — omit for always-visible items
+}
+
 function SidebarContent() {
   const navigate = useNavigate();
   const location = useLocation();
+  const user = useAppStore((s) => s.user);
   const [openBookkeeping, setOpenBookkeeping] = useState(true);
   const [openReports, setOpenReports] = useState(false);
   const [openSettings, setOpenSettings] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
+
+  const filterByPermission = (items: NavItem[]) =>
+    items.filter((item) => !item.module || hasAccess(user, item.module, "read"));
 
   const navItem = (label: string, path: string, icon: JSX.Element, indent = false) => (
     <ListItemButton
@@ -91,28 +102,56 @@ function SidebarContent() {
   const section = (
     label: string,
     icon: JSX.Element,
-    items: { label: string; path: string; icon: JSX.Element }[],
+    items: NavItem[],
     open: boolean,
     toggle: () => void,
-  ) => (
-    <Box key={label}>
-      <ListItemButton onClick={toggle} sx={{ py: 0.85, px: 2, minHeight: 38 }}>
-        <Box sx={{ minWidth: 30, display: "flex", alignItems: "center", color: tokens.muted }}>
-          {icon}
-        </Box>
-        <ListItemText
-          primary={label}
-          primaryTypographyProps={{ fontSize: 14, fontWeight: 600, color: tokens.heading }}
-        />
-        {open ? <ExpandLess sx={{ fontSize: 16, color: tokens.muted }} /> : <ExpandMore sx={{ fontSize: 16, color: tokens.muted }} />}
-      </ListItemButton>
-      <Collapse in={open}>
-        <List disablePadding>
-          {items.map((item) => navItem(item.label, item.path, item.icon, true))}
-        </List>
-      </Collapse>
-    </Box>
-  );
+  ) => {
+    const visible = filterByPermission(items);
+    if (visible.length === 0) return null;
+    return (
+      <Box key={label}>
+        <ListItemButton onClick={toggle} sx={{ py: 0.85, px: 2, minHeight: 38 }}>
+          <Box sx={{ minWidth: 30, display: "flex", alignItems: "center", color: tokens.muted }}>
+            {icon}
+          </Box>
+          <ListItemText
+            primary={label}
+            primaryTypographyProps={{ fontSize: 14, fontWeight: 600, color: tokens.heading }}
+          />
+          {open ? <ExpandLess sx={{ fontSize: 16, color: tokens.muted }} /> : <ExpandMore sx={{ fontSize: 16, color: tokens.muted }} />}
+        </ListItemButton>
+        <Collapse in={open}>
+          <List disablePadding>
+            {visible.map((item) => navItem(item.label, item.path, item.icon, true))}
+          </List>
+        </Collapse>
+      </Box>
+    );
+  };
+
+  const bookkeepingItems: NavItem[] = [
+    { label: "Revenue", path: "/revenue", icon: <AttachMoney sx={{ fontSize: 18 }} />, module: "revenue" },
+    { label: "Expenses", path: "/expenses", icon: <CreditCard sx={{ fontSize: 18 }} />, module: "expenses" },
+    { label: "Payroll", path: "/payroll", icon: <People sx={{ fontSize: 18 }} />, module: "payroll" },
+    { label: "Budget", path: "/budget", icon: <AccountBalance sx={{ fontSize: 18 }} />, module: "budget" },
+    { label: "General Ledger", path: "/ledger", icon: <LibraryBooks sx={{ fontSize: 18 }} />, module: "ledger" },
+  ];
+
+  const reportItems: NavItem[] = [
+    { label: "Profit & Loss", path: "/reports/pnl", icon: <Description sx={{ fontSize: 18 }} />, module: "pnl" },
+    { label: "Cash Flow", path: "/reports/cashflow", icon: <ShowChart sx={{ fontSize: 18 }} />, module: "cashflow" },
+    { label: "Balance Sheet", path: "/reports/balance-sheet", icon: <TableChart sx={{ fontSize: 18 }} />, module: "balance_sheet" },
+    { label: "Trial Balance", path: "/reports/trial-balance", icon: <Description sx={{ fontSize: 18 }} />, module: "trial_balance" },
+    { label: "Analysis", path: "/analysis", icon: <BarChart sx={{ fontSize: 18 }} />, module: "analysis" },
+  ];
+
+  const settingsItems: NavItem[] = [
+    { label: "Chart of Accounts", path: "/settings/accounts", icon: <AccountTree sx={{ fontSize: 18 }} />, module: "accounts" },
+    { label: "Employees", path: "/settings/employees", icon: <People sx={{ fontSize: 18 }} />, module: "employees" },
+    { label: "Locations & Units", path: "/settings/locations", icon: <LocationOn sx={{ fontSize: 18 }} />, module: "locations" },
+    { label: "Reference Data", path: "/settings/reference", icon: <Settings sx={{ fontSize: 18 }} />, module: "reference" },
+    ...(isAdmin(user) ? [{ label: "User Management", path: "/settings/users", icon: <GroupWork sx={{ fontSize: 18 }} /> }] : []),
+  ];
 
   return (
     <Box sx={{ overflow: "auto", height: "100%" }}>
@@ -127,28 +166,9 @@ function SidebarContent() {
         {navItem("Dashboard", "/dashboard", <DashboardIcon sx={{ fontSize: 20 }} />)}
         {navItem("My Profile", "/profile", <Person sx={{ fontSize: 20 }} />)}
 
-        {section("Bookkeeping", <ReceiptLong sx={{ fontSize: 20 }} />, [
-          { label: "Revenue", path: "/revenue", icon: <AttachMoney sx={{ fontSize: 18 }} /> },
-          { label: "Expenses", path: "/expenses", icon: <CreditCard sx={{ fontSize: 18 }} /> },
-          { label: "Payroll", path: "/payroll", icon: <People sx={{ fontSize: 18 }} /> },
-          { label: "Budget", path: "/budget", icon: <AccountBalance sx={{ fontSize: 18 }} /> },
-          { label: "General Ledger", path: "/ledger", icon: <LibraryBooks sx={{ fontSize: 18 }} /> },
-        ], openBookkeeping, () => setOpenBookkeeping(!openBookkeeping))}
-
-        {section("Reports", <Description sx={{ fontSize: 20 }} />, [
-          { label: "Profit & Loss", path: "/reports/pnl", icon: <Description sx={{ fontSize: 18 }} /> },
-          { label: "Cash Flow", path: "/reports/cashflow", icon: <ShowChart sx={{ fontSize: 18 }} /> },
-          { label: "Balance Sheet", path: "/reports/balance-sheet", icon: <TableChart sx={{ fontSize: 18 }} /> },
-          { label: "Trial Balance", path: "/reports/trial-balance", icon: <Description sx={{ fontSize: 18 }} /> },
-          { label: "Analysis", path: "/analysis", icon: <BarChart sx={{ fontSize: 18 }} /> },
-        ], openReports, () => setOpenReports(!openReports))}
-
-        {section("Settings", <Settings sx={{ fontSize: 20 }} />, [
-          { label: "Chart of Accounts", path: "/settings/accounts", icon: <AccountTree sx={{ fontSize: 18 }} /> },
-          { label: "Employees", path: "/settings/employees", icon: <People sx={{ fontSize: 18 }} /> },
-          { label: "Locations & Units", path: "/settings/locations", icon: <LocationOn sx={{ fontSize: 18 }} /> },
-          { label: "Reference Data", path: "/settings/reference", icon: <Settings sx={{ fontSize: 18 }} /> },
-        ], openSettings, () => setOpenSettings(!openSettings))}
+        {section("Bookkeeping", <ReceiptLong sx={{ fontSize: 20 }} />, bookkeepingItems, openBookkeeping, () => setOpenBookkeeping(!openBookkeeping))}
+        {section("Reports", <Description sx={{ fontSize: 20 }} />, reportItems, openReports, () => setOpenReports(!openReports))}
+        {section("Settings", <Settings sx={{ fontSize: 20 }} />, settingsItems, openSettings, () => setOpenSettings(!openSettings))}
       </List>
     </Box>
   );
