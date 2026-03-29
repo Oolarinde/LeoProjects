@@ -1,64 +1,60 @@
-import { createTheme, alpha } from '@mui/material/styles';
+import { createTheme } from "@mui/material/styles";
 
-// ─── Brand Tokens ────────────────────────────────────────────────────────────
+// ─── Portal Brand Tokens (pixel-matched from Talents Apartment portal) ───────
 export const tokens = {
-  // Primary brand gradient pair — matches Talents Apartments portal blue
-  primaryDark: '#2946af',
-  primary: '#435ebe',
+  primary: "#435ebe",
+  primaryDark: "#2946af",
+  info: "#17c1e8",
+  success: "#2dce89",
+  danger: "#ea0606",
+  pink: "#cb0c9f",
 
-  // Metric accent colors
-  rent: '#cb0c9f',      // Rent / key financial metric
-  info: '#17c1e8',      // Secondary metric / others
-  blue: '#2152ff',      // Bright blue / text gradients
-  green: '#2dce89',     // Success / migrate / download buttons
+  heading: "#252f40",
+  text: "#344767",
+  muted: "#67748e",
+  axisLabel: "#9ca2b7",
 
-  // Surface
-  bg: '#f8f9fa',
-  card: '#ffffff',
-  inputBg: '#f6f7f9',
-  border: '#e7eaf1',
+  bg: "#f8f9fa",
+  card: "#ffffff",
+  inputBg: "#f6f7f9",
+  border: "#e9ecef",
 
-  // Text
-  text: '#444444',
-  heading: '#344767',
-  muted: '#67748e',
-  axisLabel: '#9ca2b7',
+  sidebarActive: "#435ebe",
+  sidebarActiveBg: "rgba(67,94,190,0.10)",
+  utilBarBg: "#1e3c8a",
 
-  // Gradients (use as inline style or sx backgroundImage)
-  gradientPrimary: 'linear-gradient(310deg, #2946af 0%, #435ebe 100%)',
-  gradientBlue: 'linear-gradient(310deg, #2266ff 0%, #4b7cef 100%)',
-  gradientRent: 'linear-gradient(310deg, #d40000 0%, #cb0c9f 100%)',
-  gradientGreen: 'linear-gradient(310deg, #17ad37 0%, #2dce89 100%)',
+  gradPrimary: "linear-gradient(310deg, #2946af 0%, #435ebe 100%)",
+  gradPink: "linear-gradient(310deg, #d40000 0%, #cb0c9f 100%)",
+  gradGreen: "linear-gradient(310deg, #17ad37 0%, #2dce89 100%)",
+  gradBlue: "linear-gradient(310deg, #1171ef 0%, #17c1e8 100%)",
 } as const;
 
-// ─── MUI v5 Theme ────────────────────────────────────────────────────────────
 const theme = createTheme({
   palette: {
-    mode: 'light',
-
+    mode: "light",
     primary: {
       main: tokens.primary,
       dark: tokens.primaryDark,
-      light: '#6b84d4',
-      contrastText: '#ffffff',
-    },
-    success: {
-      main: tokens.green,
-      contrastText: '#ffffff',
+      light: "#6b84d4",
+      contrastText: "#ffffff",
     },
     secondary: {
       main: tokens.muted,
-      contrastText: '#ffffff',
+      contrastText: "#ffffff",
+    },
+    success: {
+      main: tokens.success,
+      contrastText: "#ffffff",
     },
     info: {
       main: tokens.info,
-      contrastText: '#ffffff',
+      contrastText: "#ffffff",
     },
     error: {
-      main: '#ea0606',
+      main: tokens.danger,
     },
     warning: {
-      main: '#f53939',
+      main: "#f53939",
     },
     background: {
       default: tokens.bg,
@@ -79,157 +75,101 @@ const theme = createTheme({
     fontWeightMedium: 600,
     fontWeightBold: 700,
 
-    h1: { fontWeight: 700, color: tokens.heading },
-    h2: { fontWeight: 700, color: tokens.heading },
-    h3: { fontWeight: 700, color: tokens.heading },
+    h1: { fontWeight: 700, color: tokens.heading, fontSize: "1.375rem" },
+    h2: { fontWeight: 700, color: tokens.heading, fontSize: "1.125rem" },
+    h3: { fontWeight: 600, color: tokens.heading, fontSize: "0.9375rem" },
     h4: { fontWeight: 700, color: tokens.heading },
-    h5: { fontWeight: 700, color: tokens.heading, fontSize: '1.25rem' },
-    h6: { fontWeight: 700, color: tokens.heading, fontSize: '1rem' },
+    h5: { fontWeight: 700, color: tokens.heading, fontSize: "1.25rem" },
+    h6: { fontWeight: 700, color: tokens.heading, fontSize: "1rem" },
 
-    body1: { fontSize: '0.875rem', color: tokens.text },   // 14px
-    body2: { fontSize: '0.75rem', color: tokens.muted },   // 12px
+    body1: { fontSize: "0.875rem", color: tokens.text },
+    body2: { fontSize: "0.75rem", color: tokens.muted },
 
-    caption: {
-      fontSize: '0.625rem',   // 10px — .text-xxs
-      color: tokens.muted,
-    },
+    caption: { fontSize: "0.625rem", color: tokens.muted },
 
     button: {
-      fontSize: '0.75rem',
-      fontWeight: 700,
-      textTransform: 'uppercase',
-      letterSpacing: '-0.025rem',
+      fontSize: "0.8125rem",
+      fontWeight: 600,
+      textTransform: "none" as const,
     },
 
     overline: {
-      fontSize: '0.625rem',
+      fontSize: "0.625rem",
       fontWeight: 700,
-      textTransform: 'uppercase',
-      letterSpacing: '0.08em',
+      textTransform: "uppercase" as const,
+      letterSpacing: "0.08em",
       color: tokens.muted,
     },
   },
 
-  shape: {
-    borderRadius: 12, // --base-border-radius
-  },
+  shape: { borderRadius: 12 },
 
   shadows: [
-    'none',
-    '0 2px 4px -1px rgba(0,0,0,0.07), 0 4px 7px -1px rgba(0,0,0,0.11)',
-    '0 4px 7px -1px rgba(0,0,0,0.11), 0 6px 20px rgba(0,0,0,0.07)',
-    '0 6px 20px rgba(0,0,0,0.07)',
-    '0 8px 24px rgba(0,0,0,0.08)',
-    '0 12px 32px rgba(0,0,0,0.10)',
-    // MUI requires 25 shadow entries — fill the rest with a consistent value
-    ...Array(19).fill('0 12px 32px rgba(0,0,0,0.10)'),
+    "none",
+    "0 2px 4px -1px rgba(0,0,0,0.07), 0 4px 7px -1px rgba(0,0,0,0.11)",
+    "0 4px 7px -1px rgba(0,0,0,0.11), 0 6px 20px rgba(0,0,0,0.07)",
+    "0 6px 20px rgba(0,0,0,0.07)",
+    "0 8px 24px rgba(0,0,0,0.08)",
+    "0 12px 32px rgba(0,0,0,0.10)",
+    ...Array(19).fill("0 12px 32px rgba(0,0,0,0.10)"),
   ] as any,
 
   components: {
-    // ── Card ──────────────────────────────────────────────────────────────────
     MuiCard: {
       styleOverrides: {
         root: {
-          borderRadius: 16,         // border-radius-xl
-          boxShadow: '0 4px 7px -1px rgba(0,0,0,0.11), 0 2px 4px -1px rgba(0,0,0,0.07)',
-          border: 'none',
+          borderRadius: 12,
+          boxShadow: "0 2px 6px -1px rgba(0,0,0,0.10), 0 1px 4px -1px rgba(0,0,0,0.06)",
+          border: "none",
         },
       },
     },
     MuiCardContent: {
       styleOverrides: {
         root: {
-          padding: '12px',
-          '&:last-child': { paddingBottom: '12px' },
+          padding: "16px",
+          "&:last-child": { paddingBottom: "16px" },
         },
       },
     },
-    MuiCardHeader: {
-      styleOverrides: {
-        root: { padding: '12px 12px 0' },
-      },
-    },
-
-    // ── Paper ─────────────────────────────────────────────────────────────────
-    MuiPaper: {
-      styleOverrides: {
-        root: {
-          borderRadius: 16,
-          backgroundImage: 'none',
-        },
-      },
-    },
-
-    // ── Button ────────────────────────────────────────────────────────────────
     MuiButton: {
       styleOverrides: {
         root: {
           borderRadius: 8,
-          textTransform: 'uppercase',
-          letterSpacing: '-0.025rem',
-          fontWeight: 700,
-          fontSize: '0.75rem',
-          boxShadow: '0 4px 7px -1px rgba(0,0,0,0.11), 0 2px 4px -1px rgba(0,0,0,0.07)',
-          '&:hover': {
-            boxShadow: '0 6px 20px rgba(0,0,0,0.12)',
-          },
-        },
-        containedPrimary: {
-          background: tokens.gradientPrimary,
-          '&:hover': {
-            background: tokens.gradientPrimary,
-            opacity: 0.9,
-          },
+          textTransform: "none" as const,
+          fontWeight: 600,
+          boxShadow: "none",
+          "&:hover": { boxShadow: "0 2px 6px rgba(0,0,0,0.12)" },
         },
       },
     },
-    MuiIconButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: '50%',
-        },
-      },
-    },
-
-    // ── Input / TextField ─────────────────────────────────────────────────────
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
           borderRadius: 8,
           backgroundColor: tokens.inputBg,
-          fontSize: '0.875rem',
-          '& .MuiOutlinedInput-notchedOutline': {
+          fontSize: "0.875rem",
+          "& .MuiOutlinedInput-notchedOutline": {
             borderColor: tokens.border,
           },
-          '&:hover .MuiOutlinedInput-notchedOutline': {
+          "&:hover .MuiOutlinedInput-notchedOutline": {
             borderColor: tokens.primary,
           },
         },
       },
     },
-    MuiInputLabel: {
-      styleOverrides: {
-        root: {
-          fontSize: '0.75rem',
-          fontWeight: 600,
-          color: tokens.heading,
-        },
-      },
-    },
-
-    // ── Table ─────────────────────────────────────────────────────────────────
     MuiTableHead: {
       styleOverrides: {
         root: {
-          '& .MuiTableCell-head': {
-            fontSize: '0.6875rem',   // 11px
+          "& .MuiTableCell-head": {
+            fontSize: "0.6875rem",
             fontWeight: 700,
-            textTransform: 'uppercase',
-            letterSpacing: '0.04em',
+            textTransform: "uppercase" as const,
+            letterSpacing: "0.05em",
             color: tokens.muted,
             opacity: 0.7,
-            padding: '8px',
-            backgroundColor: 'transparent',
+            padding: "10px 12px",
+            backgroundColor: "transparent",
             borderBottom: `1px solid ${tokens.border}`,
           },
         },
@@ -238,122 +178,58 @@ const theme = createTheme({
     MuiTableBody: {
       styleOverrides: {
         root: {
-          '& .MuiTableCell-body': {
-            fontSize: '0.75rem',   // 12px
-            padding: '8px',
+          "& .MuiTableCell-body": {
+            fontSize: "0.8125rem",
+            padding: "12px",
             borderBottom: `1px solid ${tokens.border}`,
           },
         },
       },
     },
-
-    // ── Chip / Badge ──────────────────────────────────────────────────────────
-    MuiChip: {
-      styleOverrides: {
-        root: {
-          borderRadius: 20,          // pill shape
-          fontSize: '0.625rem',
-          fontWeight: 700,
-          height: 'auto',
-          padding: '0 5px',
-        },
-      },
-    },
-
-    // ── Tabs ──────────────────────────────────────────────────────────────────
-    MuiTab: {
-      styleOverrides: {
-        root: {
-          fontSize: '0.75rem',
-          fontWeight: 600,
-          textTransform: 'none',
-          borderRadius: 20,
-          padding: '4px 12px',
-          minHeight: 'unset',
-          '&.Mui-selected': {
-            color: '#ffffff',
-            background: tokens.gradientPrimary,
-          },
-        },
-      },
-    },
-    MuiTabs: {
-      styleOverrides: {
-        indicator: {
-          display: 'none',  // active state handled by background on tab
-        },
-      },
-    },
-
-    // ── Tooltip ───────────────────────────────────────────────────────────────
-    MuiTooltip: {
-      styleOverrides: {
-        tooltip: {
-          backgroundColor: tokens.primaryDark,
-          fontSize: '0.75rem',
-          borderRadius: 8,
-        },
-      },
-    },
-
-    // ── AppBar / Navbar ───────────────────────────────────────────────────────
-    MuiAppBar: {
-      styleOverrides: {
-        root: {
-          borderRadius: 16,
-          boxShadow: '0 4px 7px -1px rgba(0,0,0,0.11)',
-          backgroundColor: alpha('#ffffff', 0.8),
-          backdropFilter: 'blur(20px)',
-          color: tokens.heading,
-        },
-      },
-    },
-
-    // ── Drawer (Sidebar) ──────────────────────────────────────────────────────
     MuiDrawer: {
       styleOverrides: {
         paper: {
-          borderRadius: 16,
-          border: 'none',
-          margin: '12px',
-          height: 'calc(100vh - 24px)',
-          boxShadow: '0 4px 7px -1px rgba(0,0,0,0.11), 0 2px 4px -1px rgba(0,0,0,0.07)',
+          borderRadius: 0,
+          border: "none",
+          borderRight: `1px solid ${tokens.border}`,
         },
       },
     },
-
-    // ── List (sidebar nav items) ──────────────────────────────────────────────
     MuiListItemButton: {
       styleOverrides: {
         root: {
-          borderRadius: 8,
-          marginBottom: 4,
-          '&.Mui-selected': {
-            background: tokens.gradientPrimary,
-            color: '#ffffff',
-            '& .MuiListItemIcon-root': { color: '#ffffff' },
-            '& .MuiListItemText-primary': { color: '#ffffff' },
-            '&:hover': {
-              background: tokens.gradientPrimary,
-              opacity: 0.9,
-            },
+          borderRadius: 0,
+          "&.Mui-selected": {
+            backgroundColor: tokens.sidebarActiveBg,
+            color: tokens.sidebarActive,
+            "& .MuiListItemIcon-root": { color: tokens.sidebarActive },
+            "&:hover": { backgroundColor: tokens.sidebarActiveBg },
           },
         },
       },
     },
     MuiListItemIcon: {
       styleOverrides: {
+        root: { minWidth: 30, color: tokens.muted },
+      },
+    },
+    MuiAppBar: {
+      styleOverrides: {
         root: {
-          minWidth: 36,
-          color: tokens.primaryDark,
+          borderRadius: 0,
+          boxShadow: "none",
+          backgroundColor: tokens.card,
+          color: tokens.heading,
+          borderBottom: `1px solid ${tokens.border}`,
         },
       },
     },
-    MuiListItemText: {
+    MuiChip: {
       styleOverrides: {
-        primary: {
-          fontSize: '0.875rem',
-          fontWeight: 600,
+        root: {
+          borderRadius: 4,
+          fontSize: "0.6875rem",
+          fontWeight: 700,
         },
       },
     },

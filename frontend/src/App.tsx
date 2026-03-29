@@ -1,56 +1,53 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, CssBaseline } from '@mui/material';
-import { theme } from './theme';
-import AppShell from './components/layout/AppShell';
-import Dashboard from './pages/Dashboard';
-import DesignPreview from './pages/DesignPreview';
+import { Routes, Route, Navigate } from "react-router-dom";
+import { useAppStore } from "./utils/store";
+import Layout from "./components/Layout";
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import Placeholder from "./pages/Placeholder";
 
-// Placeholder — swap for real pages as they're built
-function Placeholder({ name }: { name: string }) {
-  return (
-    <div style={{ padding: 32, color: '#344767', fontFamily: 'Open Sans, sans-serif' }}>
-      <h2 style={{ margin: 0 }}>{name}</h2>
-      <p style={{ color: '#67748e', fontSize: 14 }}>Page coming soon.</p>
-    </div>
-  );
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const user = useAppStore((s) => s.user);
+  if (!user) return <Navigate to="/login" replace />;
+  return <>{children}</>;
 }
 
 export default function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <BrowserRouter>
-        <Routes>
-          {/* Shell wraps all authenticated pages */}
-          <Route path="/" element={<AppShell />}>
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="revenue"   element={<Placeholder name="Revenue" />} />
-            <Route path="expenses"  element={<Placeholder name="Expenses" />} />
-            <Route path="payroll"   element={<Placeholder name="Payroll" />} />
-            <Route path="budget"    element={<Placeholder name="Budget" />} />
-            <Route path="analysis"  element={<Placeholder name="Analysis" />} />
-            <Route path="ledger"    element={<Placeholder name="General Ledger" />} />
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route
+        element={
+          <ProtectedRoute>
+            <Layout />
+          </ProtectedRoute>
+        }
+      >
+        {/* Daily Input */}
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/revenue" element={<Placeholder />} />
+        <Route path="/expenses" element={<Placeholder />} />
+        <Route path="/payroll" element={<Placeholder />} />
+        <Route path="/budget" element={<Placeholder />} />
 
-            <Route path="reports">
-              <Route path="pnl"           element={<Placeholder name="Profit & Loss" />} />
-              <Route path="cashflow"      element={<Placeholder name="Cash Flow" />} />
-              <Route path="balance-sheet" element={<Placeholder name="Balance Sheet" />} />
-              <Route path="trial-balance" element={<Placeholder name="Trial Balance" />} />
-            </Route>
+        {/* Reports */}
+        <Route path="/analysis" element={<Placeholder />} />
+        <Route path="/ledger" element={<Placeholder />} />
+        <Route path="/reports/pnl" element={<Placeholder />} />
+        <Route path="/reports/cashflow" element={<Placeholder />} />
+        <Route path="/reports/balance-sheet" element={<Placeholder />} />
+        <Route path="/reports/trial-balance" element={<Placeholder />} />
 
-            <Route path="settings">
-              <Route path="accounts"  element={<Placeholder name="Chart of Accounts" />} />
-              <Route path="employees" element={<Placeholder name="Employees" />} />
-              <Route path="locations" element={<Placeholder name="Locations & Units" />} />
-              <Route path="reference" element={<Placeholder name="Reference Data" />} />
-            </Route>
+        {/* Settings */}
+        <Route path="/settings/accounts" element={<Placeholder />} />
+        <Route path="/settings/employees" element={<Placeholder />} />
+        <Route path="/settings/locations" element={<Placeholder />} />
+        <Route path="/settings/reference" element={<Placeholder />} />
 
-            {/* Dev-only design preview — remove before production */}
-            <Route path="design-preview" element={<DesignPreview />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </ThemeProvider>
+        {/* Profile */}
+        <Route path="/profile" element={<Placeholder />} />
+      </Route>
+
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+    </Routes>
   );
 }
