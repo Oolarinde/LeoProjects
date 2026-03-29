@@ -39,8 +39,6 @@ async def create_user(
         permissions=data.permissions,
         acting_user=current_user,
     )
-    await db.commit()
-    await db.refresh(user)
     return user
 
 
@@ -70,8 +68,6 @@ async def update_user(
         permissions=data.permissions,
         is_active=data.is_active,
     )
-    await db.commit()
-    await db.refresh(user)
     return user
 
 
@@ -87,6 +83,4 @@ async def deactivate_user(
         company_id=current_user.company_id,
         acting_user=current_user,
     )
-    await db.commit()
-    await db.refresh(user)
     return user

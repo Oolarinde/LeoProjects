@@ -73,6 +73,7 @@ export default function UserManagement() {
     permissions: {} as Record<string, string>,
   });
   const [saving, setSaving] = useState(false);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
   const [dialogError, setDialogError] = useState("");
 
   const fetchUsers = async () => {
@@ -122,7 +123,20 @@ export default function UserManagement() {
     setForm((f) => ({ ...f, role, permissions }));
   };
 
+  const validateForm = (): string | null => {
+    if (!form.full_name.trim()) return "Full name is required";
+    if (!editingUser && !form.email.trim()) return "Email is required";
+    if (!editingUser && form.password.length < 8) return "Password must be at least 8 characters";
+    return null;
+  };
+
   const handleSave = async () => {
+    const validationError = validateForm();
+    if (validationError) {
+      setDialogError(validationError);
+      return;
+    }
+
     setSaving(true);
     setDialogError("");
     try {
@@ -133,11 +147,6 @@ export default function UserManagement() {
           permissions: form.permissions,
         });
       } else {
-        if (!form.password) {
-          setDialogError("Password is required for new users");
-          setSaving(false);
-          return;
-        }
         await usersApi.create({
           email: form.email,
           full_name: form.full_name,
@@ -156,11 +165,15 @@ export default function UserManagement() {
   };
 
   const handleToggleActive = async (user: UserRecord) => {
+    if (togglingId) return;
+    setTogglingId(user.id);
     try {
       await usersApi.update(user.id, { is_active: !user.is_active });
-      fetchUsers();
+      await fetchUsers();
     } catch (err: any) {
       setError(err.response?.data?.detail || "Failed to update user status");
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -214,7 +227,7 @@ export default function UserManagement() {
                     <Switch
                       checked={u.is_active}
                       onChange={() => handleToggleActive(u)}
-                      disabled={!canManage(u)}
+                      disabled={!canManage(u) || togglingId === u.id}
                       size="small"
                     />
                   </TableCell>
@@ -283,7 +296,11 @@ export default function UserManagement() {
               value={form.role}
               label="Role"
               onChange={(e) => handleRoleChange(e.target.value)}
+              disabled={editingUser?.role === "SUPER_ADMIN"}
             >
+              {(editingUser?.role === "SUPER_ADMIN") && (
+                <MenuItem value="SUPER_ADMIN">Super Admin</MenuItem>
+              )}
               {currentUser?.role === "SUPER_ADMIN" && (
                 <MenuItem value="ADMIN">Admin</MenuItem>
               )}

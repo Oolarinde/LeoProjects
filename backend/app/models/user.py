@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import String, Boolean, ForeignKey, DateTime
+from sqlalchemy import String, Boolean, ForeignKey, DateTime, text
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -17,7 +17,7 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     full_name: Mapped[str] = mapped_column(String(200), nullable=False)
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="STAFF")  # SUPER_ADMIN, ADMIN, STAFF
-    permissions: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default="{}")
+    permissions: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at = mapped_column(DateTime(timezone=True), server_default=func.now())
 

@@ -31,16 +31,19 @@ ALL_READ = (
 
 
 def upgrade() -> None:
-    # Add permissions column
-    op.add_column("users", sa.Column("permissions", JSONB, nullable=False, server_default="{}"))
+    # Add permissions column with proper JSONB default
+    op.add_column("users", sa.Column("permissions", JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")))
+
+    # Add index on company_id for multi-tenant queries
+    op.create_index("ix_users_company_id", "users", ["company_id"])
 
     # Rename roles: OWNER -> SUPER_ADMIN, VIEWER -> STAFF
-    op.execute("UPDATE users SET role = 'SUPER_ADMIN' WHERE role = 'OWNER'")
-    op.execute("UPDATE users SET role = 'STAFF' WHERE role = 'VIEWER'")
+    op.execute(sa.text("UPDATE users SET role = 'SUPER_ADMIN' WHERE role = 'OWNER'"))
+    op.execute(sa.text("UPDATE users SET role = 'STAFF' WHERE role = 'VIEWER'"))
 
     # Backfill permissions based on role
-    op.execute(f"UPDATE users SET permissions = '{ALL_WRITE}'::jsonb WHERE role IN ('SUPER_ADMIN', 'ADMIN')")
-    op.execute(f"UPDATE users SET permissions = '{ALL_READ}'::jsonb WHERE role = 'STAFF'")
+    op.execute(sa.text(f"UPDATE users SET permissions = '{ALL_WRITE}'::jsonb WHERE role IN ('SUPER_ADMIN', 'ADMIN')"))
+    op.execute(sa.text(f"UPDATE users SET permissions = '{ALL_READ}'::jsonb WHERE role = 'STAFF'"))
 
     # Update the server default for role column
     op.alter_column("users", "role", server_default="STAFF")
@@ -48,11 +51,12 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     # Revert role names
-    op.execute("UPDATE users SET role = 'OWNER' WHERE role = 'SUPER_ADMIN'")
-    op.execute("UPDATE users SET role = 'VIEWER' WHERE role = 'STAFF'")
+    op.execute(sa.text("UPDATE users SET role = 'OWNER' WHERE role = 'SUPER_ADMIN'"))
+    op.execute(sa.text("UPDATE users SET role = 'VIEWER' WHERE role = 'STAFF'"))
 
     # Revert server default
     op.alter_column("users", "role", server_default="VIEWER")
 
-    # Drop permissions column
+    # Drop index and column
+    op.drop_index("ix_users_company_id", "users")
     op.drop_column("users", "permissions")

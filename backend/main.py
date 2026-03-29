@@ -2,6 +2,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 from app.routes import auth, users
 from app.utils.config import settings
@@ -17,6 +19,9 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+# Rate limit error handler
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,

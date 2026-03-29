@@ -3,7 +3,7 @@
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User

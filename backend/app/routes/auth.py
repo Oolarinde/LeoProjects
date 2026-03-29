@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
@@ -14,10 +16,12 @@ from app.services.auth import authenticate_user, generate_tokens, refresh_access
 from app.utils.dependencies import get_current_user
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-async def register(request: RegisterRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("5/15minutes")
+async def register(request: RegisterRequest, req: Request, db: AsyncSession = Depends(get_db)):
     user, _company = await register_user(
         db,
         email=request.email,
@@ -29,7 +33,8 @@ async def register(request: RegisterRequest, db: AsyncSession = Depends(get_db))
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(request: LoginRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("5/15minutes")
+async def login(request: LoginRequest, req: Request, db: AsyncSession = Depends(get_db)):
     user = await authenticate_user(db, request.email, request.password)
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
