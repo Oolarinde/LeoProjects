@@ -1,3 +1,6 @@
+# Separate project — do not push to TALAccounting-software
+Accounting/
+
 # Environment
 .env
 .env.local
