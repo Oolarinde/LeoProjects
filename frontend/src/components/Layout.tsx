@@ -44,7 +44,7 @@ import {
 } from "@mui/icons-material";
 import { tokens } from "../theme/theme";
 import { useAppStore, hasAccess, isAdmin } from "../utils/store";
-import { languageApi, configApi } from "../services/api";
+import { languageApi, configApi, referenceApi } from "../services/api";
 
 const SIDEBAR_FULL = 210;
 const SIDEBAR_MINI = 56;
@@ -343,12 +343,16 @@ export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [langAnchor, setLangAnchor] = useState<null | HTMLElement>(null);
-  const { year, setYear, user, logout, setUser, appVersion, companyName, setAppConfig } = useAppStore();
+  const { year, setYear, location, setLocation, user, logout, setUser, appVersion, companyName, setAppConfig } = useAppStore();
   const navigate = useNavigate();
+  const [locationOptions, setLocationOptions] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
     configApi.get().then((resp) => {
       setAppConfig(resp.data.version, resp.data.app_name);
+    }).catch(() => {});
+    referenceApi.getLocations().then((resp) => {
+      setLocationOptions(resp.data);
     }).catch(() => {});
   }, []);
 
@@ -456,6 +460,47 @@ export default function Layout() {
                 <MenuItem key={y} value={y} sx={{ fontSize: 11 }}>{y} ({t("dashboard.fullYear")})</MenuItem>
               ))}
             </Select>
+
+            {/* Location filter — global, applies to all pages */}
+            {locationOptions.length > 0 && (
+              <Select
+                size="small"
+                value={location?.id ?? ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (!val) {
+                    setLocation(null);
+                  } else {
+                    const loc = locationOptions.find((l) => l.id === val) ?? null;
+                    setLocation(loc);
+                  }
+                }}
+                displayEmpty
+                sx={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  height: 30,
+                  minWidth: 120,
+                  "& .MuiOutlinedInput-notchedOutline": { borderColor: tokens.border },
+                  borderRadius: 2,
+                }}
+              >
+                <MenuItem value="" sx={{ fontSize: 11 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <LocationOn sx={{ fontSize: 13, color: tokens.muted }} />
+                    {t("dashboard.allLocations")}
+                  </Box>
+                </MenuItem>
+                {locationOptions.map((loc) => (
+                  <MenuItem key={loc.id} value={loc.id} sx={{ fontSize: 11 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                      <LocationOn sx={{ fontSize: 13, color: tokens.primary }} />
+                      {loc.name}
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
+            )}
 
             {/* Language switcher — round flag button + dropdown */}
             <Tooltip title={t("language.select")}>
