@@ -946,7 +946,7 @@ function LeavePoliciesTab({ onError, onSuccess }: { onError: (msg: string) => vo
   useEffect(() => { fetchData(); }, []);
 
   const existingTypes = items.map((i) => i.leave_type);
-  const availableTypes = Object.keys(LEAVE_TYPE_LABELS).filter((lt) => !existingTypes.includes(lt));
+  const availableTypes = Object.keys(LEAVE_TYPE_LABELS).filter((lt) => !existingTypes.includes(lt as typeof existingTypes[number]));
 
   const openAdd = () => {
     setEditing(null);

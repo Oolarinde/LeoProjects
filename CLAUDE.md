@@ -227,9 +227,36 @@ AFRICAS_TALKING_USERNAME=
 
 ## Current Status
 
-**Phase 0 — Foundation: COMPLETE.** Auth (JWT + RBAC), User Management, Group/Role Management, multi-tenancy, React shell with sidebar, i18n (en/fr).
+**Phase 0 — Foundation: COMPLETE.** Auth (JWT + RBAC), User Management, Group/Role Management, multi-tenancy, React shell with collapsible sidebar, i18n (en/fr), design system matched to portal.
+
+**Design System:** Mulish font, portal-matched tokens (navy #1B2A4A, primary #17C1E8, WCAG AA contrast-fixed muted/secondary colors). See `frontend/src/theme/theme.ts` for all tokens.
+
+**Dashboard:** Accounting-focused — 5 KPIs (Revenue, Expenses, Net Profit, Margin, Salaries), P&L trend chart with 5 expense lines, 6 revenue streams donut, Expense vs Budget bar chart, Cash Position summary, Trial Balance snapshot, GL entries table with Debit/Credit.
 
 **Payroll Module — Sprint 1 COMPLETE, Sprint 2 in progress.**
+
+### Council Audit (2026-03-30) — Critical Fixes Applied
+
+| Fix | Migration | Status |
+|---|---|---|
+| `float` → `Decimal` on all financial model fields | — (model only) | DONE |
+| Mass assignment whitelist on payroll service `setattr()` calls | — | DONE |
+| `employee_ref` global unique → compound `(company_id, employee_ref)` | 005 | DONE |
+| Missing `company_id` indexes on locations, accounts, employees, reference_data | 005 | DONE |
+| CORS restricted to explicit methods/headers | — | DONE |
+| Language endpoint `dict` → `LanguageUpdate` Pydantic schema | — | DONE |
+| React Error Boundary added | — | DONE |
+| `ApiError` type + `getErrorMessage` helper added | — | DONE |
+
+**Run `alembic upgrade head` to apply migration 005.**
+
+### Known Issues (from council audit, not yet fixed)
+
+- No audit logging on write operations (Phase 1 prerequisite)
+- No pagination on list endpoints (users, groups, payroll types)
+- JWT contains company_id + permissions in payload (acceptable for now, review Phase 6+)
+- Dashboard/PayrollSetup components are large — split into sub-components when building Phase 1
+- No test coverage yet — add with Phase 1 CRUD
 
 ### Payroll Sprint Status
 
@@ -241,14 +268,26 @@ AFRICAS_TALKING_USERNAME=
 | 4 | Payslip generation + PDF export (WeasyPrint) | |
 | 5 | Integration tests + edge cases + 13th month bonus | |
 
-### Payroll Tables (Migration 004 — exists, needs `alembic upgrade head`)
+### Payroll Tables (Migration 004 — applied)
 
 `payroll_settings`, `allowance_types`, `deduction_types`, `tax_brackets`, `leave_policies`
 
-### Payroll Tables (Migration 005 — Sprint 2, not yet created)
+### Migration 005 — Constraint & Index Fixes (needs `alembic upgrade head`)
+
+- Fix `employee_ref` compound unique constraint
+- Add indexes on `locations.company_id`, `accounts.company_id`, `employees.company_id`, `reference_data.company_id`
+
+### Payroll Tables (Migration 006 — Sprint 2, not yet created)
 
 `employee_payroll_profiles`, `employee_allowances`, `employee_deductions`, `employee_leave_balances`, `leave_requests`
 
 ### Payroll Tables (Sprint 3 — not yet created)
 
 `payroll_runs`, `payroll_items`, `payroll_item_lines`
+
+### Known Backend Gotchas
+
+- **DO NOT** add `from __future__ import annotations` to FastAPI route files — breaks Pydantic v2 body parsing
+- **Login rate limit** is 30/15min during dev (tighten to 5/15min before production)
+- **Vite proxy** points to `http://localhost:8000` — only works when running frontend locally (not inside Docker)
+- **Docker frontend container** must be stopped when running `npm run dev` locally (port 5173 conflict)

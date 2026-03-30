@@ -1,4 +1,5 @@
 from __future__ import annotations
+from decimal import Decimal
 from typing import Optional
 import uuid
 
@@ -24,7 +25,7 @@ class DeductionType(Base):
     calculation_method: Mapped[str] = mapped_column(
         String(30), default="FIXED"
     )  # FIXED, PERCENTAGE_GROSS, PERCENTAGE_BASIC, TAX_TABLE, MANUAL
-    default_value: Mapped[Optional[float]] = mapped_column(Numeric(15, 2))
+    default_value: Mapped[Optional[Decimal]] = mapped_column(Numeric(15, 2))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     description: Mapped[Optional[str]] = mapped_column(Text)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)

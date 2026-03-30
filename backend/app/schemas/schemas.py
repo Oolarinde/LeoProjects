@@ -2,7 +2,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 # --- Auth ---
@@ -34,6 +34,10 @@ class TokenResponse(BaseModel):
 
 class RefreshRequest(BaseModel):
     refresh_token: str
+
+
+class LanguageUpdate(BaseModel):
+    preferred_language: str = Field(..., pattern="^(en|fr)$")
 
 
 class UserResponse(BaseModel):

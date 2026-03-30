@@ -1,4 +1,5 @@
 from __future__ import annotations
+from decimal import Decimal
 import uuid
 
 from sqlalchemy import Boolean, Integer, Numeric, String, ForeignKey, DateTime
@@ -17,10 +18,10 @@ class PayrollSettings(Base):
         UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False, unique=True
     )
     pay_period: Mapped[str] = mapped_column(String(20), default="MONTHLY")
-    pension_employee_pct: Mapped[float] = mapped_column(Numeric(5, 2), default=8.00)
-    pension_employer_pct: Mapped[float] = mapped_column(Numeric(5, 2), default=10.00)
-    nhf_pct: Mapped[float] = mapped_column(Numeric(5, 2), default=2.50)
-    nsitf_employee_pct: Mapped[float] = mapped_column(Numeric(5, 2), default=1.00)
+    pension_employee_pct: Mapped[Decimal] = mapped_column(Numeric(5, 2), default=8.00)
+    pension_employer_pct: Mapped[Decimal] = mapped_column(Numeric(5, 2), default=10.00)
+    nhf_pct: Mapped[Decimal] = mapped_column(Numeric(5, 2), default=2.50)
+    nsitf_employee_pct: Mapped[Decimal] = mapped_column(Numeric(5, 2), default=1.00)
     tax_method: Mapped[str] = mapped_column(String(30), default="PAYE_PROGRESSIVE")
     enable_13th_month: Mapped[bool] = mapped_column(Boolean, default=False)
     fiscal_year_start_month: Mapped[int] = mapped_column(Integer, default=1)

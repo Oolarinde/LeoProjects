@@ -23,13 +23,25 @@ async def get_or_create_settings(db: AsyncSession, company_id: UUID) -> PayrollS
     return settings
 
 
+UPDATABLE_SETTINGS_FIELDS = {
+    "pay_period",
+    "pension_employee_pct",
+    "pension_employer_pct",
+    "nhf_pct",
+    "nsitf_employee_pct",
+    "tax_method",
+    "enable_13th_month",
+    "fiscal_year_start_month",
+}
+
+
 async def update_settings(
     db: AsyncSession, company_id: UUID, data: dict
 ) -> PayrollSettings:
     """Update payroll settings for a company."""
     settings = await get_or_create_settings(db, company_id)
     for key, value in data.items():
-        if value is not None and hasattr(settings, key):
+        if value is not None and key in UPDATABLE_SETTINGS_FIELDS:
             setattr(settings, key, value)
     await db.flush()
     return settings

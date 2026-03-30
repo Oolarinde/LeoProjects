@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db
 from app.models.user import User
 from app.schemas.schemas import (
+    LanguageUpdate,
     LoginRequest,
     RefreshRequest,
     RegisterRequest,
@@ -56,13 +57,10 @@ async def me(current_user: User = Depends(get_current_user)):
 
 @router.patch("/me/language", response_model=UserResponse)
 async def update_language(
-    body: dict,
+    body: LanguageUpdate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    lang = body.get("preferred_language", "en")
-    if lang not in ("en", "fr"):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Supported languages: en, fr")
-    current_user.preferred_language = lang
+    current_user.preferred_language = body.preferred_language
     await db.flush()
     return current_user

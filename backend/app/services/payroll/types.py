@@ -14,6 +14,11 @@ from app.models.payroll.tax_bracket import TaxBracket
 from app.models.payroll.leave_policy import LeavePolicy
 
 
+UPDATABLE_ALLOWANCE_FIELDS = {"name", "code", "is_taxable", "is_active", "description", "sort_order"}
+UPDATABLE_DEDUCTION_FIELDS = {"name", "code", "is_statutory", "calculation_method", "default_value", "is_active", "description", "sort_order"}
+UPDATABLE_LEAVE_POLICY_FIELDS = {"leave_type", "days_per_year", "is_paid", "carry_over_allowed", "max_carry_over_days", "requires_approval", "is_active"}
+
+
 # ── Allowance Types ──────────────────────────────────────────────
 
 
@@ -71,7 +76,7 @@ async def update_allowance_type(
                 detail=f"Allowance type with code '{data['code']}' already exists",
             )
     for key, value in data.items():
-        if value is not None and hasattr(item, key):
+        if value is not None and key in UPDATABLE_ALLOWANCE_FIELDS:
             setattr(item, key, value)
     await db.flush()
     return item
@@ -147,7 +152,7 @@ async def update_deduction_type(
                 detail=f"Deduction type with code '{data['code']}' already exists",
             )
     for key, value in data.items():
-        if value is not None and hasattr(item, key):
+        if value is not None and key in UPDATABLE_DEDUCTION_FIELDS:
             setattr(item, key, value)
     await db.flush()
     return item
@@ -245,7 +250,7 @@ async def update_leave_policy(
     if item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Leave policy not found")
     for key, value in data.items():
-        if value is not None and hasattr(item, key):
+        if value is not None and key in UPDATABLE_LEAVE_POLICY_FIELDS:
             setattr(item, key, value)
     await db.flush()
     return item

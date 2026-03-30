@@ -1,6 +1,16 @@
 import axios from "axios";
 import { useAppStore } from "../utils/store";
 
+export interface ApiError {
+  response?: { data?: { detail?: string }; status?: number };
+  message?: string;
+}
+
+export function getErrorMessage(err: unknown): string {
+  const apiErr = err as ApiError;
+  return apiErr?.response?.data?.detail ?? apiErr?.message ?? "An unexpected error occurred";
+}
+
 const api = axios.create({
   baseURL: "/api",
   headers: { "Content-Type": "application/json" },
