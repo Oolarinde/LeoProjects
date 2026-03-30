@@ -86,7 +86,32 @@ export default function Dashboard() {
     setLoading(true);
     dashboardApi
       .summary(year, location?.id)
-      .then((resp) => setData(resp.data))
+      .then((resp) => {
+        // Coerce Decimal strings from Python to JS numbers
+        const d = resp.data;
+        setData({
+          ...d,
+          total_revenue: Number(d.total_revenue),
+          total_expenses: Number(d.total_expenses),
+          net_profit: Number(d.net_profit),
+          profit_margin: Number(d.profit_margin),
+          staff_salaries: Number(d.staff_salaries),
+          revenue_change_pct: d.revenue_change_pct != null ? Number(d.revenue_change_pct) : null,
+          expense_change_pct: d.expense_change_pct != null ? Number(d.expense_change_pct) : null,
+          monthly_pnl: (d.monthly_pnl || []).map((r: any) => ({ ...r, revenue: Number(r.revenue), expenses: Number(r.expenses) })),
+          revenue_streams: (d.revenue_streams || []).map((r: any) => ({ ...r, value: Number(r.value) })),
+          expense_budget: (d.expense_budget || []).map((r: any) => ({ ...r, spent: Number(r.spent), budget: Number(r.budget) })),
+          cash_position: d.cash_position ? {
+            opening_balance: Number(d.cash_position.opening_balance),
+            cash_in: Number(d.cash_position.cash_in),
+            cash_out: Number(d.cash_position.cash_out),
+            net_cash_flow: Number(d.cash_position.net_cash_flow),
+            closing_balance: Number(d.cash_position.closing_balance),
+          } : { opening_balance: 0, cash_in: 0, cash_out: 0, net_cash_flow: 0, closing_balance: 0 },
+          trial_balance: (d.trial_balance || []).map((r: any) => ({ ...r, debit: Number(r.debit), credit: Number(r.credit) })),
+          recent_gl_entries: d.recent_gl_entries || [],
+        });
+      })
       .catch(() => setData(null))
       .finally(() => setLoading(false));
   }, [year, location]);
