@@ -224,6 +224,22 @@ export const payrollApi = {
     api.patch(`/payroll/leave-requests/${requestId}/status`, data),
   cancelLeaveRequest: (requestId: string) =>
     api.patch(`/payroll/leave-requests/${requestId}/cancel`),
+
+  // Sprint 3 — Payroll Runs
+  listRuns: (year?: number) =>
+    api.get("/payroll/runs", { params: year ? { year } : {} }),
+  getRunDetail: (runId: string) =>
+    api.get(`/payroll/runs/${runId}`),
+  createRun: (data: { year: number; month: number; notes?: string }) =>
+    api.post("/payroll/runs", data),
+  calculateRun: (runId: string) =>
+    api.post(`/payroll/runs/${runId}/calculate`),
+  approveRun: (runId: string) =>
+    api.post(`/payroll/runs/${runId}/approve`),
+  cancelRun: (runId: string) =>
+    api.post(`/payroll/runs/${runId}/cancel`),
+  deleteRun: (runId: string) =>
+    api.delete(`/payroll/runs/${runId}`),
 };
 
 // Revenue
@@ -273,6 +289,55 @@ export const settingsApi = {
   createReferenceData: (data: Record<string, unknown>) => api.post("/settings/reference-data", data),
   updateReferenceData: (id: string, data: Record<string, unknown>) => api.patch(`/settings/reference-data/${id}`, data),
   deleteReferenceData: (id: string) => api.delete(`/settings/reference-data/${id}`),
+};
+
+// Reports
+export const reportsApi = {
+  pnlSummary: (year: number, locationId?: string) =>
+    api.get("/reports/pnl/summary", { params: { year, location_id: locationId || undefined } }),
+  cashFlowSummary: (year: number, locationId?: string) =>
+    api.get("/reports/cashflow/summary", { params: { year, location_id: locationId || undefined } }),
+  setOpeningBalance: (year: number, amount: number, notes = "") =>
+    api.put("/reports/cashflow/opening-balance", { amount, notes }, { params: { year } }),
+  balanceSheetSummary: (year: number, locationId?: string) =>
+    api.get("/reports/balance-sheet/summary", { params: { year, location_id: locationId || undefined } }),
+  trialBalanceSummary: (year: number, locationId?: string) =>
+    api.get("/reports/trial-balance/summary", { params: { year, location_id: locationId || undefined } }),
+};
+
+// General Ledger
+export const ledgerApi = {
+  entries: (params: Record<string, unknown>) => api.get("/ledger/entries", { params }),
+};
+
+// Budget
+export const budgetApi = {
+  getGrid: (year: number, lineType = "EXPENSE") =>
+    api.get("/budget/grid", { params: { year, line_type: lineType } }),
+  bulkSave: (data: { year: number; line_type: string; cells: { category: string; month: number; amount: number }[] }) =>
+    api.put("/budget/bulk", data),
+  clearAll: (year: number, lineType = "EXPENSE") =>
+    api.delete("/budget/clear/", { params: { year, line_type: lineType } }),
+};
+
+// Tenants
+export const tenantApi = {
+  list: (search?: string) => api.get("/tenants/", { params: search ? { search } : {} }),
+  create: (data: Record<string, unknown>) => api.post("/tenants/", data),
+  update: (id: string, data: Record<string, unknown>) => api.patch(`/tenants/${id}`, data),
+  delete: (id: string) => api.delete(`/tenants/${id}`),
+  listLeases: (params?: Record<string, unknown>) => api.get("/tenants/leases", { params }),
+  createLease: (data: Record<string, unknown>) => api.post("/tenants/leases", data),
+  updateLeaseStatus: (id: string, status: string) => api.patch(`/tenants/leases/${id}/status`, null, { params: { new_status: status } }),
+  listPayments: (params?: Record<string, unknown>) => api.get("/tenants/rent-payments", { params }),
+  createPayment: (data: Record<string, unknown>) => api.post("/tenants/rent-payments", data),
+  summary: () => api.get("/tenants/summary"),
+};
+
+// Analysis
+export const analysisApi = {
+  summary: (year: number, locationId?: string) =>
+    api.get("/analysis/summary", { params: { year, location_id: locationId || undefined } }),
 };
 
 export default api;

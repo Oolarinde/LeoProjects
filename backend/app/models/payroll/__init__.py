@@ -9,3 +9,6 @@ from app.models.payroll.employee_allowance import EmployeeAllowance  # noqa: F40
 from app.models.payroll.employee_deduction import EmployeeDeduction  # noqa: F401
 from app.models.payroll.employee_leave_balance import EmployeeLeaveBalance  # noqa: F401
 from app.models.payroll.leave_request import LeaveRequest  # noqa: F401
+from app.models.payroll.payroll_run import PayrollRun  # noqa: F401
+from app.models.payroll.payroll_item import PayrollItem  # noqa: F401
+from app.models.payroll.payroll_item_line import PayrollItemLine  # noqa: F401

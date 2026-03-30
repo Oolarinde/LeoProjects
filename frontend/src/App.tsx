@@ -5,7 +5,6 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Revenue from "./pages/Revenue";
 import Expenses from "./pages/Expenses";
-import Placeholder from "./pages/Placeholder";
 import Profile from "./pages/Profile";
 import UserManagement from "./pages/UserManagement";
 import GroupManagement from "./pages/GroupManagement";
@@ -16,6 +15,15 @@ import ChartOfAccounts from "./pages/settings/ChartOfAccounts";
 import LocationsAndUnits from "./pages/settings/Locations";
 import Employees from "./pages/settings/Employees";
 import ReferenceData from "./pages/settings/ReferenceData";
+import ProfitLoss from "./pages/reports/ProfitLoss";
+import CashFlow from "./pages/reports/CashFlow";
+import BalanceSheet from "./pages/reports/BalanceSheet";
+import TrialBalance from "./pages/reports/TrialBalance";
+import GeneralLedger from "./pages/GeneralLedger";
+import Budget from "./pages/Budget";
+import PayrollProcessing from "./pages/payroll/PayrollProcessing";
+import Analysis from "./pages/Analysis";
+import TenantOps from "./pages/TenantOps";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const user = useAppStore((s) => s.user);
@@ -60,19 +68,19 @@ export default function App() {
         {/* Bookkeeping */}
         <Route path="/revenue" element={<PermissionRoute module="revenue"><Revenue /></PermissionRoute>} />
         <Route path="/expenses" element={<PermissionRoute module="expenses"><Expenses /></PermissionRoute>} />
-        <Route path="/payroll" element={<PermissionRoute module="payroll"><Placeholder /></PermissionRoute>} />
+        <Route path="/payroll" element={<PermissionRoute module="payroll"><PayrollProcessing /></PermissionRoute>} />
         <Route path="/payroll/setup" element={<PermissionRoute module="payroll"><PayrollSetup /></PermissionRoute>} />
         <Route path="/payroll/employees" element={<PermissionRoute module="payroll"><PayrollEmployees /></PermissionRoute>} />
         <Route path="/payroll/leave" element={<PermissionRoute module="payroll"><LeaveRequests /></PermissionRoute>} />
-        <Route path="/budget" element={<PermissionRoute module="budget"><Placeholder /></PermissionRoute>} />
+        <Route path="/budget" element={<PermissionRoute module="budget"><Budget /></PermissionRoute>} />
 
         {/* Reports */}
-        <Route path="/analysis" element={<PermissionRoute module="analysis"><Placeholder /></PermissionRoute>} />
-        <Route path="/ledger" element={<PermissionRoute module="ledger"><Placeholder /></PermissionRoute>} />
-        <Route path="/reports/pnl" element={<PermissionRoute module="pnl"><Placeholder /></PermissionRoute>} />
-        <Route path="/reports/cashflow" element={<PermissionRoute module="cashflow"><Placeholder /></PermissionRoute>} />
-        <Route path="/reports/balance-sheet" element={<PermissionRoute module="balance_sheet"><Placeholder /></PermissionRoute>} />
-        <Route path="/reports/trial-balance" element={<PermissionRoute module="trial_balance"><Placeholder /></PermissionRoute>} />
+        <Route path="/analysis" element={<PermissionRoute module="analysis"><Analysis /></PermissionRoute>} />
+        <Route path="/ledger" element={<PermissionRoute module="ledger"><GeneralLedger /></PermissionRoute>} />
+        <Route path="/reports/pnl" element={<PermissionRoute module="pnl"><ProfitLoss /></PermissionRoute>} />
+        <Route path="/reports/cashflow" element={<PermissionRoute module="cashflow"><CashFlow /></PermissionRoute>} />
+        <Route path="/reports/balance-sheet" element={<PermissionRoute module="balance_sheet"><BalanceSheet /></PermissionRoute>} />
+        <Route path="/reports/trial-balance" element={<PermissionRoute module="trial_balance"><TrialBalance /></PermissionRoute>} />
 
         {/* Settings */}
         <Route path="/settings/accounts" element={<PermissionRoute module="accounts"><ChartOfAccounts /></PermissionRoute>} />
@@ -81,6 +89,9 @@ export default function App() {
         <Route path="/settings/reference" element={<PermissionRoute module="reference"><ReferenceData /></PermissionRoute>} />
         <Route path="/settings/users" element={<AdminRoute><UserManagement /></AdminRoute>} />
         <Route path="/settings/roles" element={<AdminRoute><GroupManagement /></AdminRoute>} />
+
+        {/* Tenant Ops */}
+        <Route path="/tenants" element={<PermissionRoute module="revenue"><TenantOps /></PermissionRoute>} />
 
         {/* Profile */}
         <Route path="/profile" element={<Profile />} />

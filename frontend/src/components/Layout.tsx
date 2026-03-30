@@ -46,8 +46,8 @@ import { tokens } from "../theme/theme";
 import { useAppStore, hasAccess, isAdmin } from "../utils/store";
 import { languageApi, configApi, referenceApi } from "../services/api";
 
-const SIDEBAR_FULL = 210;
-const SIDEBAR_MINI = 56;
+const SIDEBAR_FULL = 166;
+const SIDEBAR_MINI = 40;
 
 const LANGUAGES = [
   { code: "en", label: "English", flag: "\u{1F1EC}\u{1F1E7}" },
@@ -84,10 +84,10 @@ function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle:
         selected={active}
         onClick={() => navigate(path)}
         sx={{
-          py: 0.75,
-          pl: collapsed ? 0 : indent ? 5.75 : 2.25,
-          pr: collapsed ? 0 : 2.25,
-          minHeight: 36,
+          py: 0.35,
+          pl: collapsed ? 0 : indent ? 2.5 : 1.25,
+          pr: collapsed ? 0 : 1.25,
+          minHeight: 26,
           justifyContent: collapsed ? "center" : "flex-start",
           borderLeft: collapsed ? "none" : active ? `3px solid ${tokens.sidebarActive}` : "3px solid transparent",
           bgcolor: active ? tokens.sidebarActiveBg : "transparent",
@@ -101,17 +101,17 @@ function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle:
         {indent && !collapsed ? (
           <Box
             sx={{
-              width: 5,
-              height: 5,
+              width: 4,
+              height: 4,
               borderRadius: "50%",
               bgcolor: active ? tokens.sidebarActive : tokens.border,
-              mr: 1.5,
+              mr: 1,
               flexShrink: 0,
             }}
           />
         ) : (
           <Box sx={{
-            minWidth: collapsed ? "auto" : 28,
+            minWidth: collapsed ? "auto" : 20,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -124,7 +124,7 @@ function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle:
           <ListItemText
             primary={label}
             primaryTypographyProps={{
-              fontSize: indent ? 13 : 14,
+              fontSize: indent ? 12 : 11,
               fontWeight: active ? 700 : 500,
               color: active ? tokens.sidebarActive : tokens.heading,
             }}
@@ -162,7 +162,7 @@ function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle:
           <ListItemButton
             onClick={() => navigate(visible[0].path)}
             sx={{
-              py: 0.75,
+              py: 0.5,
               justifyContent: "center",
               bgcolor: visible.some((i) => isActive(i.path)) ? tokens.sidebarActiveBg : "transparent",
             }}
@@ -186,19 +186,19 @@ function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle:
           onClick={toggle}
           aria-expanded={open}
           sx={{
-            py: 0.75,
-            px: 2.25,
-            minHeight: 36,
+            py: 0.4,
+            px: 1.25,
+            minHeight: 26,
             borderLeft: open ? `3px solid ${tokens.sidebarActive}` : "3px solid transparent",
             color: open ? tokens.sidebarActive : tokens.text,
           }}
         >
-          <Box sx={{ minWidth: 28, display: "flex", alignItems: "center", color: open ? tokens.sidebarActive : tokens.secondaryText }}>
+          <Box sx={{ minWidth: 20, display: "flex", alignItems: "center", color: open ? tokens.sidebarActive : tokens.secondaryText }}>
             {icon}
           </Box>
           <ListItemText
             primary={label}
-            primaryTypographyProps={{ fontSize: 14, fontWeight: 700, color: open ? tokens.sidebarActive : tokens.heading }}
+            primaryTypographyProps={{ fontSize: 11, fontWeight: 700, color: open ? tokens.sidebarActive : tokens.heading }}
           />
           {open ? <ExpandLess sx={{ fontSize: 16, color: tokens.sidebarActive }} /> : <ExpandMore sx={{ fontSize: 16, color: tokens.secondaryText }} />}
         </ListItemButton>
@@ -212,32 +212,33 @@ function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle:
   };
 
   const bookkeepingItems: NavItem[] = [
-    { label: t("nav.revenue"), path: "/revenue", icon: <AttachMoney sx={{ fontSize: 18 }} />, module: "revenue" },
-    { label: t("nav.expenses"), path: "/expenses", icon: <CreditCard sx={{ fontSize: 18 }} />, module: "expenses" },
-    { label: t("nav.payroll"), path: "/payroll", icon: <People sx={{ fontSize: 18 }} />, module: "payroll" },
-    { label: t("nav.payrollSetup"), path: "/payroll/setup", icon: <Settings sx={{ fontSize: 18 }} />, module: "payroll" },
-    { label: t("nav.payrollEmployees"), path: "/payroll/employees", icon: <People sx={{ fontSize: 18 }} />, module: "payroll" },
-    { label: t("nav.leaveRequests"), path: "/payroll/leave", icon: <People sx={{ fontSize: 18 }} />, module: "payroll" },
-    { label: t("nav.budget"), path: "/budget", icon: <AccountBalance sx={{ fontSize: 18 }} />, module: "budget" },
-    { label: t("nav.generalLedger"), path: "/ledger", icon: <LibraryBooks sx={{ fontSize: 18 }} />, module: "ledger" },
+    { label: t("nav.revenue"), path: "/revenue", icon: <AttachMoney sx={{ fontSize: 15 }} />, module: "revenue" },
+    { label: t("nav.expenses"), path: "/expenses", icon: <CreditCard sx={{ fontSize: 15 }} />, module: "expenses" },
+    { label: t("nav.payroll"), path: "/payroll", icon: <People sx={{ fontSize: 15 }} />, module: "payroll" },
+    { label: t("nav.payrollSetup"), path: "/payroll/setup", icon: <Settings sx={{ fontSize: 15 }} />, module: "payroll" },
+    { label: t("nav.payrollEmployees"), path: "/payroll/employees", icon: <People sx={{ fontSize: 15 }} />, module: "payroll" },
+    { label: t("nav.leaveRequests"), path: "/payroll/leave", icon: <People sx={{ fontSize: 15 }} />, module: "payroll" },
+    { label: t("nav.budget"), path: "/budget", icon: <AccountBalance sx={{ fontSize: 15 }} />, module: "budget" },
+    { label: t("nav.generalLedger"), path: "/ledger", icon: <LibraryBooks sx={{ fontSize: 15 }} />, module: "ledger" },
+    { label: t("nav.tenants"), path: "/tenants", icon: <People sx={{ fontSize: 15 }} />, module: "revenue" },
   ];
 
   const reportItems: NavItem[] = [
-    { label: t("nav.profitLoss"), path: "/reports/pnl", icon: <Description sx={{ fontSize: 18 }} />, module: "pnl" },
-    { label: t("nav.cashFlow"), path: "/reports/cashflow", icon: <ShowChart sx={{ fontSize: 18 }} />, module: "cashflow" },
-    { label: t("nav.balanceSheet"), path: "/reports/balance-sheet", icon: <TableChart sx={{ fontSize: 18 }} />, module: "balance_sheet" },
-    { label: t("nav.trialBalance"), path: "/reports/trial-balance", icon: <Description sx={{ fontSize: 18 }} />, module: "trial_balance" },
-    { label: t("nav.analysis"), path: "/analysis", icon: <BarChart sx={{ fontSize: 18 }} />, module: "analysis" },
+    { label: t("nav.profitLoss"), path: "/reports/pnl", icon: <Description sx={{ fontSize: 15 }} />, module: "pnl" },
+    { label: t("nav.cashFlow"), path: "/reports/cashflow", icon: <ShowChart sx={{ fontSize: 15 }} />, module: "cashflow" },
+    { label: t("nav.balanceSheet"), path: "/reports/balance-sheet", icon: <TableChart sx={{ fontSize: 15 }} />, module: "balance_sheet" },
+    { label: t("nav.trialBalance"), path: "/reports/trial-balance", icon: <Description sx={{ fontSize: 15 }} />, module: "trial_balance" },
+    { label: t("nav.analysis"), path: "/analysis", icon: <BarChart sx={{ fontSize: 15 }} />, module: "analysis" },
   ];
 
   const settingsItems: NavItem[] = [
-    { label: t("nav.chartOfAccounts"), path: "/settings/accounts", icon: <AccountTree sx={{ fontSize: 18 }} />, module: "accounts" },
-    { label: t("nav.employees"), path: "/settings/employees", icon: <People sx={{ fontSize: 18 }} />, module: "employees" },
-    { label: t("nav.locationsUnits"), path: "/settings/locations", icon: <LocationOn sx={{ fontSize: 18 }} />, module: "locations" },
-    { label: t("nav.referenceData"), path: "/settings/reference", icon: <Settings sx={{ fontSize: 18 }} />, module: "reference" },
+    { label: t("nav.chartOfAccounts"), path: "/settings/accounts", icon: <AccountTree sx={{ fontSize: 15 }} />, module: "accounts" },
+    { label: t("nav.employees"), path: "/settings/employees", icon: <People sx={{ fontSize: 15 }} />, module: "employees" },
+    { label: t("nav.locationsUnits"), path: "/settings/locations", icon: <LocationOn sx={{ fontSize: 15 }} />, module: "locations" },
+    { label: t("nav.referenceData"), path: "/settings/reference", icon: <Settings sx={{ fontSize: 15 }} />, module: "reference" },
     ...(isAdmin(user) ? [
-      { label: t("nav.userManagement"), path: "/settings/users", icon: <People sx={{ fontSize: 18 }} /> },
-      { label: t("nav.roleManagement"), path: "/settings/roles", icon: <GroupWork sx={{ fontSize: 18 }} /> },
+      { label: t("nav.userManagement"), path: "/settings/users", icon: <People sx={{ fontSize: 15 }} /> },
+      { label: t("nav.roleManagement"), path: "/settings/roles", icon: <GroupWork sx={{ fontSize: 15 }} /> },
     ] : []),
   ];
 
@@ -259,7 +260,7 @@ function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle:
               component="img"
               src="/logo.jpg"
               alt="Talents Apartments — home away from home"
-              sx={{ width: 160, height: 48, objectFit: "contain" }}
+              sx={{ width: 110, height: 38, objectFit: "contain" }}
             />
             <IconButton onClick={onToggle} size="small" aria-label="Collapse sidebar" sx={{ ml: 0.5 }}>
               <ChevronLeft sx={{ fontSize: 18, color: tokens.secondaryText }} />
@@ -272,14 +273,14 @@ function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle:
 
       <Box sx={{ overflow: "auto", flex: 1 }}>
         <List disablePadding sx={{ mt: 0.5 }}>
-          {navItem(t("nav.dashboard"), "/dashboard", <DashboardIcon sx={{ fontSize: 18 }} />)}
-          {navItem(t("nav.myProfile"), "/profile", <Person sx={{ fontSize: 18 }} />)}
+          {navItem(t("nav.dashboard"), "/dashboard", <DashboardIcon sx={{ fontSize: 15 }} />)}
+          {navItem(t("nav.myProfile"), "/profile", <Person sx={{ fontSize: 15 }} />)}
 
           {!collapsed && <Divider sx={{ borderColor: tokens.border, mx: 1.75, my: 0.5 }} />}
 
-          {section(t("nav.bookkeeping"), <ReceiptLong sx={{ fontSize: 18 }} />, bookkeepingItems, openBookkeeping, () => setOpenBookkeeping(!openBookkeeping))}
-          {section(t("nav.reports"), <Description sx={{ fontSize: 18 }} />, reportItems, openReports, () => setOpenReports(!openReports))}
-          {section(t("nav.settings"), <Settings sx={{ fontSize: 18 }} />, settingsItems, openSettings, () => setOpenSettings(!openSettings))}
+          {section(t("nav.bookkeeping"), <ReceiptLong sx={{ fontSize: 15 }} />, bookkeepingItems, openBookkeeping, () => setOpenBookkeeping(!openBookkeeping))}
+          {section(t("nav.reports"), <Description sx={{ fontSize: 15 }} />, reportItems, openReports, () => setOpenReports(!openReports))}
+          {section(t("nav.settings"), <Settings sx={{ fontSize: 15 }} />, settingsItems, openSettings, () => setOpenSettings(!openSettings))}
         </List>
       </Box>
 
@@ -327,7 +328,7 @@ function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle:
             >
               {user?.full_name ?? "User"}
             </Typography>
-            <Typography sx={{ fontSize: 10, color: tokens.muted }}>
+            <Typography sx={{ fontSize: 11, color: tokens.muted }}>
               {user?.role?.replace(/_/g, " ") ?? "—"}
             </Typography>
           </Box>
@@ -407,7 +408,7 @@ export default function Layout() {
       </Drawer>
 
       {/* Main content */}
-      <Box sx={{ flex: 1, ml: { sm: `${sidebarWidth}px` }, transition: "margin-left 0.2s ease" }}>
+      <Box sx={{ flex: 1, ml: { sm: `${sidebarWidth}px` }, transition: "margin-left 0.2s ease", display: "flex", flexDirection: "column", minHeight: "100vh" }}>
         {/* Header */}
         <Box
           component="header"
@@ -584,23 +585,40 @@ export default function Layout() {
         </Box>
 
         {/* Page content */}
-        <Box component="main" sx={{ p: 3 }}>
+        <Box component="main" sx={{ p: 3, flex: 1 }}>
           <Outlet />
         </Box>
 
-        {/* Footer */}
+        {/* Footer — sticky at page bottom */}
         <Box
           component="footer"
           sx={{
             px: 3,
-            py: 1.75,
-            textAlign: "center",
+            py: 1.25,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
             borderTop: `1px solid ${tokens.border}`,
+            bgcolor: "#fff",
+            gap: 0.5,
           }}
         >
-          <Typography sx={{ fontSize: 12, color: tokens.muted }}>
-            {companyName || t("footer.copyright")} &copy; {new Date().getFullYear()}, {t("footer.poweredBy")}{" "}
-            {appVersion && <span style={{ float: "right" }}>{t("footer.version", { version: appVersion })}</span>}
+          <Typography sx={{ fontSize: 11, color: tokens.muted }}>
+            {companyName || "Talents Apartment Management AIS"} &copy; {new Date().getFullYear()},&nbsp;Powered by&nbsp;
+            <Box
+              component="a"
+              href="https://www.executivetalentsinc.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ color: tokens.primary, fontWeight: 700, textDecoration: "none", "&:hover": { textDecoration: "underline" } }}
+            >
+              Executive Talents Inc.
+            </Box>
+            {appVersion && (
+              <Box component="span" sx={{ ml: 1.5, color: tokens.muted }}>
+                Version {appVersion}
+              </Box>
+            )}
           </Typography>
         </Box>
       </Box>

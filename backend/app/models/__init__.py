@@ -19,3 +19,4 @@ from app.models.revenue_transaction import RevenueTransaction  # noqa: F401
 from app.models.expense_transaction import ExpenseTransaction  # noqa: F401
 from app.models.budget_line import BudgetLine  # noqa: F401
 from app.models.payroll_record import PayrollRecord  # noqa: F401
+from app.models.tenant import Tenant, Lease, RentPayment  # noqa: F401

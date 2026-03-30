@@ -21,7 +21,10 @@
     "noData": "Aucune donnée trouvée",
     "showing": "Affichage de",
     "of": "sur",
-    "entries": "entrées"
+    "entries": "entrées",
+    "view": "Voir",
+    "previousPage": "Page précédente",
+    "nextPage": "Page suivante"
   },
   "nav": {
     "dashboard": "Tableau de bord",
@@ -47,7 +50,9 @@
     "roleManagement": "Gestion des Rôles",
     "payrollSetup": "Configuration Paie",
     "payrollEmployees": "Profils Paie",
-    "leaveRequests": "Demandes de Congé"
+    "leaveRequests": "Demandes de Congé",
+    "payrollProcessing": "Exécuter la Paie",
+    "tenants": "Locataires"
   },
   "auth": {
     "login": "Connexion",
@@ -265,6 +270,37 @@
       "noRequests": "Aucune demande de congé trouvée.",
       "requiredFields": "Employé, type, dates et jours sont obligatoires"
     },
+    "processing": {
+      "title": "Exécution de la Paie",
+      "selectPeriod": "Sélectionner la Période",
+      "calculate": "Calculer",
+      "reviewApprove": "Vérifier & Approuver",
+      "runCalculation": "Lancer le Calcul de Paie",
+      "recalculate": "Recalculer",
+      "approve": "Approuver",
+      "cancel": "Annuler",
+      "calculating": "Calcul en cours…",
+      "calculated": "Paie calculée avec succès",
+      "approved": "Paie approuvée",
+      "cancelled": "Paie annulée",
+      "employees": "Employés",
+      "totalGross": "Total Brut",
+      "totalNet": "Total Net",
+      "payeTax": "Impôt PAYE",
+      "pensionEe": "Pension (EE)",
+      "totalDeductions": "Total Retenues",
+      "basic": "Base",
+      "allowances": "Indemnités",
+      "gross": "Brut",
+      "paye": "PAYE",
+      "pension": "Pension",
+      "deductions": "Retenues",
+      "netPay": "Net à Payer",
+      "previousRuns": "Exécutions Précédentes",
+      "viewRecalculate": "Voir / Recalculer",
+      "continue": "Continuer",
+      "back": "Retour"
+    },
     "setup": {
       "title": "Configuration de la Paie",
       "tabs": {
@@ -414,6 +450,22 @@
     "noData": "Aucune transaction de depense. Cliquez sur Ajouter une Depense pour en creer une.",
     "requiredFields": "Le compte, la categorie, la date et le montant sont requis"
   },
+  "budget": {
+    "title": "Planification Budgétaire",
+    "expense": "Dépenses",
+    "revenue": "Revenus",
+    "category": "Catégorie",
+    "total": "Total",
+    "grandTotal": "Total Général",
+    "saveAll": "Tout Enregistrer",
+    "clear": "Effacer",
+    "clearConfirm": "Effacer tout le budget {{type}} pour l'exercice {{year}} ?",
+    "saved": "{{count}} entrées budgétaires enregistrées",
+    "cleared": "Budget effacé",
+    "failedLoad": "Échec du chargement du budget",
+    "failedSave": "Échec de l'enregistrement du budget",
+    "failedClear": "Échec de la suppression du budget"
+  },
   "placeholder": {
     "laterPhase": "Ce module sera mis en place dans une phase ultérieure."
   },
@@ -421,5 +473,80 @@
     "SUPER_ADMIN": "Super Admin",
     "ADMIN": "Admin",
     "STAFF": "Personnel"
+  },
+  "reports": {
+    "pnl": {
+      "title": "Compte de Résultat",
+      "income": "PRODUITS",
+      "expenses": "CHARGES",
+      "totalIncome": "TOTAL PRODUITS",
+      "totalExpenses": "TOTAL CHARGES",
+      "netProfit": "BÉNÉFICE NET",
+      "netLoss": "PERTE NETTE",
+      "profitMargin": "Marge Bénéficiaire",
+      "annual": "Annuel",
+      "monthly": "Mensuel"
+    },
+    "cashflow": {
+      "title": "Tableau de Flux de Trésorerie",
+      "openingBalance": "Solde d'Ouverture",
+      "totalCashIn": "Total Entrées",
+      "totalCashOut": "Total Sorties",
+      "netCashFlow": "Flux Net",
+      "closingBalance": "Solde de Clôture",
+      "monthlyBreakdown": "Détail Mensuel",
+      "cashIn": "Entrées (₦)",
+      "cashOut": "Sorties (₦)",
+      "net": "Net (₦)",
+      "runningBalance": "Solde Courant (₦)",
+      "saveOpeningBalance": "Enregistrer",
+      "openingBalanceHint": "À définir une fois par an pour ancrer vos calculs de trésorerie."
+    },
+    "balanceSheet": {
+      "title": "Bilan Comptable",
+      "assets": "ACTIF",
+      "cashAndBank": "Caisse et Banque",
+      "accountsReceivable": "Créances Clients",
+      "totalAssets": "TOTAL ACTIF",
+      "liabilities": "PASSIF",
+      "cautionDeposits": "Dépôts de Caution",
+      "totalLiabilities": "TOTAL PASSIF",
+      "equity": "CAPITAUX PROPRES",
+      "retainedEarnings": "Bénéfices Reportés",
+      "currentYearProfit": "Résultat de l'Exercice",
+      "totalEquity": "TOTAL CAPITAUX PROPRES",
+      "totalLiabilitiesEquity": "TOTAL PASSIF + CAPITAUX PROPRES",
+      "balanced": "✓ Équilibré",
+      "imbalance": "⚠ Déséquilibre"
+    },
+    "trialBalance": {
+      "title": "Balance Générale",
+      "code": "Code",
+      "accountName": "Nom du Compte",
+      "type": "Type",
+      "debit": "Débit (₦)",
+      "credit": "Crédit (₦)",
+      "total": "TOTAL",
+      "difference": "Différence",
+      "balanced": "✓ Équilibrée",
+      "imbalance": "⚠ Déséquilibre"
+    }
+  },
+  "ledger": {
+    "title": "Grand Livre",
+    "date": "Date",
+    "code": "Code",
+    "account": "Compte",
+    "entryType": "Type d'Écriture",
+    "description": "Description",
+    "location": "Site",
+    "refNo": "Réf #",
+    "debit": "Débit (₦)",
+    "credit": "Crédit (₦)",
+    "income": "Produit",
+    "expense": "Charge",
+    "allTypes": "Tous",
+    "allAccounts": "Tous les Comptes",
+    "noEntries": "Aucune écriture trouvée pour les filtres sélectionnés."
   }
 }

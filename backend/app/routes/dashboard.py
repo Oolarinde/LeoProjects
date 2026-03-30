@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db
 from app.models.user import User
 from app.utils.dependencies import get_current_user
+from app.utils.report_helpers import loc_filter as _loc_filter_fn, base_params as _base_params_fn
 
 router = APIRouter()
 
@@ -83,18 +84,11 @@ class DashboardSummaryResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 def _loc_filter(alias: str, location_id: Optional[UUID]) -> str:
-    """Return an extra AND clause if location_id is set, else empty string."""
-    if location_id is not None:
-        return f" AND {alias}.location_id = :loc_id"
-    return ""
+    return _loc_filter_fn(alias, location_id)
 
 
 def _base_params(company_id: UUID, year: int, location_id: Optional[UUID]) -> dict:
-    """Return the base parameter dict for all queries."""
-    params: dict = {"cid": company_id, "year": year}
-    if location_id is not None:
-        params["loc_id"] = location_id
-    return params
+    return _base_params_fn(company_id, year, location_id)
 
 
 # ---------------------------------------------------------------------------
@@ -248,27 +242,46 @@ async def get_dashboard_summary(
     ]
 
     # ------------------------------------------------------------------
-    # 4. Expense budget — by category (budget column is 0 until budget table)
+    # 4. Expense budget — actual spend vs budgeted amounts
     # ------------------------------------------------------------------
     budget_result = await db.execute(
         sa.text(f"""
-            SELECT e.category, COALESCE(SUM(e.amount), 0) AS spent
-            FROM expense_transactions e
-            WHERE e.company_id = :cid AND e.fiscal_year = :year{loc_exp}
-            GROUP BY e.category
-            ORDER BY spent DESC
+            SELECT
+                COALESCE(s.category, b.category) AS category,
+                COALESCE(s.spent, 0) AS spent,
+                COALESCE(b.budget, 0) AS budget
+            FROM (
+                SELECT e.category, SUM(e.amount) AS spent
+                FROM expense_transactions e
+                WHERE e.company_id = :cid AND e.fiscal_year = :year{loc_exp}
+                GROUP BY e.category
+            ) s
+            FULL OUTER JOIN (
+                SELECT bl.category, SUM(bl.amount) AS budget
+                FROM budget_lines bl
+                WHERE bl.company_id = :cid AND bl.year = :year AND bl.line_type = 'EXPENSE'
+                GROUP BY bl.category
+            ) b ON s.category = b.category
+            ORDER BY COALESCE(s.spent, 0) DESC
         """),
         params,
     )
     expense_budget = [
-        ExpenseBudgetRow(category=row.category, spent=row.spent, budget=Decimal(0))
+        ExpenseBudgetRow(category=row.category, spent=row.spent, budget=row.budget)
         for row in budget_result
     ]
 
     # ------------------------------------------------------------------
-    # 5. Cash position (simplified until opening balance table exists)
+    # 5. Cash position — uses opening_balances table
     # ------------------------------------------------------------------
-    opening_balance = Decimal(0)
+    ob_result = await db.execute(
+        sa.text(
+            "SELECT COALESCE(amount, 0) FROM opening_balances "
+            "WHERE company_id = :cid AND year = :year"
+        ),
+        {"cid": cid, "year": year},
+    )
+    opening_balance = Decimal(str(ob_result.scalar() or 0))
     cash_in = total_revenue
     cash_out = total_expenses
     net_cash_flow = cash_in - cash_out

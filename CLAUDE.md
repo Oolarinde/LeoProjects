@@ -235,7 +235,17 @@ AFRICAS_TALKING_USERNAME=
 
 **Phase 1 — Data Entry: COMPLETE** (Revenue, Expense, Settings CRUD, Dashboard live data, Seed migration 009)
 
-**Payroll Module — Sprint 1 COMPLETE, Sprint 2 COMPLETE.**
+**Phase 2 — Reports: COMPLETE** (P&L, Cash Flow, Balance Sheet, Trial Balance, General Ledger, Budget Planning — all wired to live SQL. Migration 011: opening_balances table. Shared `report_helpers.py`. Option A balance sheet — cumulative cash-basis. Budget grid with bulk upsert, dashboard Expense vs Budget wired to real budget_lines data.)
+
+**Phase 3 — Analytics: COMPLETE** (Analysis page with 6 Recharts charts, printable HTML export for P&L + Balance Sheet)
+
+**Payroll Module — Sprints 1-4 COMPLETE.** (Config → Profiles → PAYE Engine → Payslip HTML export)
+
+**Phase 5 — Tenant Ops: COMPLETE** (Tenant registry, leases, rent payments, AR summary. Migration 013.)
+
+### Infrastructure Fixes (2026-03-30)
+- `docker-compose.yml`: `DATABASE_URL` override for API container (`localhost` → `db` service)
+- `app/utils/config.py`: Pydantic Settings `extra: "ignore"` to allow `POSTGRES_PASSWORD` in `.env`
 
 ### Council Audit (2026-03-30) — All Fixes Applied
 
@@ -267,17 +277,13 @@ AFRICAS_TALKING_USERNAME=
 |---|---|---|
 | 1 | Config tables + PayrollSetup.tsx UI + Nigerian PAYE/pension/NHF/NSITF defaults | DONE |
 | 2 | Employee payroll profiles + allowances/deductions + leave balances + leave requests with approval workflow | DONE |
-| 3 | Payroll calculation engine (PAYE progressive tax, CRA) + PayrollProcessing.tsx stepper | NEXT |
-| 4 | Payslip generation + PDF export (WeasyPrint) | |
+| 3 | PAYE calculation engine (CRA, progressive brackets, pension, NHF, NSITF) + PayrollProcessing.tsx stepper | DONE |
+| 4 | Payslip HTML export (printable, browser print-to-PDF) | DONE |
 | 5 | Integration tests + edge cases + 13th month bonus | |
 
 ### Migration Chain (all applied)
 
-001 → 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010
-
-### Payroll Tables (Sprint 3 — not yet created)
-
-`payroll_runs`, `payroll_items`, `payroll_item_lines`
+001 → 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011 → 012 → 013
 
 ### Known Backend Gotchas
 

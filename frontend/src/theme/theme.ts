@@ -104,26 +104,26 @@ const theme = createTheme({
     fontWeightMedium: 600,
     fontWeightBold: 700,
 
-    h1: { fontWeight: 800, color: tokens.heading, fontSize: "1.5rem" },
-    h2: { fontWeight: 700, color: tokens.heading, fontSize: "1.25rem" },
-    h3: { fontWeight: 600, color: tokens.heading, fontSize: "1.0625rem" },
-    h4: { fontWeight: 700, color: tokens.heading },
-    h5: { fontWeight: 800, color: tokens.heading, fontSize: "1.375rem" },
-    h6: { fontWeight: 700, color: tokens.heading, fontSize: "1.0625rem" },
+    h1: { fontWeight: 800, color: tokens.heading, fontSize: "1.25rem" },
+    h2: { fontWeight: 700, color: tokens.heading, fontSize: "1.0625rem" },
+    h3: { fontWeight: 600, color: tokens.heading, fontSize: "0.9375rem" },
+    h4: { fontWeight: 700, color: tokens.heading, fontSize: "0.875rem" },
+    h5: { fontWeight: 800, color: tokens.heading, fontSize: "1.125rem" },
+    h6: { fontWeight: 700, color: tokens.heading, fontSize: "0.9375rem" },
 
-    body1: { fontSize: "0.875rem", color: tokens.text },
-    body2: { fontSize: "0.8125rem", color: tokens.muted },
+    body1: { fontSize: "0.75rem", color: tokens.text },
+    body2: { fontSize: "0.6875rem", color: tokens.muted },
 
-    caption: { fontSize: "0.6875rem", color: tokens.muted },
+    caption: { fontSize: "0.625rem", color: tokens.muted },
 
     button: {
-      fontSize: "0.875rem",
+      fontSize: "0.75rem",
       fontWeight: 700,
       textTransform: "none" as const,
     },
 
     overline: {
-      fontSize: "0.6875rem",
+      fontSize: "0.625rem",
       fontWeight: 700,
       textTransform: "uppercase" as const,
       letterSpacing: "0.08em",
@@ -181,13 +181,24 @@ const theme = createTheme({
       },
     },
     MuiButton: {
+      defaultProps: {
+        size: "small" as const,
+      },
       styleOverrides: {
         root: {
           borderRadius: 8,
           textTransform: "none" as const,
           fontWeight: 700,
+          fontSize: "0.75rem",
+          padding: "4px 12px",
+          minHeight: 28,
           boxShadow: "none",
           "&:hover": { boxShadow: "0 2px 6px rgba(0,0,0,0.12)" },
+        },
+        sizeSmall: {
+          fontSize: "0.6875rem",
+          padding: "3px 10px",
+          minHeight: 24,
         },
       },
     },
@@ -196,7 +207,7 @@ const theme = createTheme({
         root: {
           borderRadius: 8,
           backgroundColor: tokens.inputBg,
-          fontSize: "0.8125rem",
+          fontSize: "0.75rem",
           "& .MuiOutlinedInput-notchedOutline": {
             borderColor: "#dde0e5",
           },
@@ -216,12 +227,12 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           "& .MuiTableCell-head": {
-            fontSize: "0.6875rem",
+            fontSize: "0.625rem",
             fontWeight: 700,
             textTransform: "uppercase" as const,
             letterSpacing: "0.04em",
             color: tokens.secondaryText,
-            padding: "10px 14px",
+            padding: "8px 14px",
             backgroundColor: "transparent",
             borderBottom: `1px solid ${tokens.border}`,
           },
@@ -232,8 +243,8 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           "& .MuiTableCell-body": {
-            fontSize: "0.8125rem",
-            padding: "10px 14px",
+            fontSize: "0.75rem",
+            padding: "8px 14px",
             borderBottom: `1px solid ${tokens.borderFaint}`,
           },
         },
@@ -253,9 +264,9 @@ const theme = createTheme({
         root: {
           borderRadius: 0,
           borderLeft: "3px solid transparent",
-          padding: "10px 18px",
-          gap: 11,
-          fontSize: "0.8125rem",
+          padding: "8px 14px",
+          gap: 7,
+          fontSize: "0.75rem",
           fontWeight: 500,
           color: tokens.text,
           "&.Mui-selected": {

@@ -22,6 +22,11 @@ from app.routes.settings import locations as locations_routes
 from app.routes.settings import units as units_routes
 from app.routes.settings import employees as employees_routes
 from app.routes.settings import reference_data as reference_data_routes
+from app.routes.reports import router as reports_router
+from app.routes import ledger as ledger_routes
+from app.routes import budget as budget_routes
+from app.routes import analysis as analysis_routes
+from app.routes import tenants as tenant_routes
 from app.utils.config import settings
 from app.utils.audit_context import set_audit_context
 from app.utils.request_context import get_client_ip
@@ -95,6 +100,11 @@ app.include_router(locations_routes.router, prefix="/api/settings/locations", ta
 app.include_router(units_routes.router, prefix="/api/settings/units", tags=["settings"])
 app.include_router(employees_routes.router, prefix="/api/settings/employees", tags=["settings"])
 app.include_router(reference_data_routes.router, prefix="/api/settings/reference-data", tags=["settings"])
+app.include_router(reports_router, prefix="/api/reports", tags=["reports"])
+app.include_router(ledger_routes.router, prefix="/api/ledger", tags=["ledger"])
+app.include_router(budget_routes.router, prefix="/api/budget", tags=["budget"])
+app.include_router(analysis_routes.router, prefix="/api/analysis", tags=["analysis"])
+app.include_router(tenant_routes.router, prefix="/api/tenants", tags=["tenants"])
 
 
 @app.get("/api/health")

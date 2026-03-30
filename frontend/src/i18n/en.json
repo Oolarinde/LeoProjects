@@ -21,7 +21,10 @@
     "noData": "No data found",
     "showing": "Showing",
     "of": "of",
-    "entries": "entries"
+    "entries": "entries",
+    "view": "View",
+    "previousPage": "Previous page",
+    "nextPage": "Next page"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -47,7 +50,9 @@
     "roleManagement": "Role Management",
     "payrollSetup": "Payroll Setup",
     "payrollEmployees": "Payroll Profiles",
-    "leaveRequests": "Leave Requests"
+    "leaveRequests": "Leave Requests",
+    "payrollProcessing": "Run Payroll",
+    "tenants": "Tenants"
   },
   "auth": {
     "login": "Login",
@@ -265,6 +270,37 @@
       "noRequests": "No leave requests found.",
       "requiredFields": "Employee, leave type, dates, and days are required"
     },
+    "processing": {
+      "title": "Payroll Processing",
+      "selectPeriod": "Select Payroll Period",
+      "calculate": "Calculate",
+      "reviewApprove": "Review & Approve",
+      "runCalculation": "Run Payroll Calculation",
+      "recalculate": "Recalculate",
+      "approve": "Approve",
+      "cancel": "Cancel",
+      "calculating": "Calculating…",
+      "calculated": "Payroll calculated successfully",
+      "approved": "Payroll approved",
+      "cancelled": "Payroll run cancelled",
+      "employees": "Employees",
+      "totalGross": "Total Gross",
+      "totalNet": "Total Net Pay",
+      "payeTax": "PAYE Tax",
+      "pensionEe": "Pension (EE)",
+      "totalDeductions": "Total Deductions",
+      "basic": "Basic",
+      "allowances": "Allowances",
+      "gross": "Gross",
+      "paye": "PAYE",
+      "pension": "Pension",
+      "deductions": "Deductions",
+      "netPay": "Net Pay",
+      "previousRuns": "Previous Runs",
+      "viewRecalculate": "View / Recalculate",
+      "continue": "Continue",
+      "back": "Back"
+    },
     "setup": {
       "title": "Payroll Setup",
       "tabs": {
@@ -414,6 +450,22 @@
     "noData": "No expense transactions found. Click Add Expense to create one.",
     "requiredFields": "Account, category, date, and amount are required"
   },
+  "budget": {
+    "title": "Budget Planning",
+    "expense": "Expense",
+    "revenue": "Revenue",
+    "category": "Category",
+    "total": "Total",
+    "grandTotal": "Grand Total",
+    "saveAll": "Save All",
+    "clear": "Clear",
+    "clearConfirm": "Clear all {{type}} budget for FY {{year}}?",
+    "saved": "Saved {{count}} budget entries",
+    "cleared": "Budget cleared",
+    "failedLoad": "Failed to load budget data",
+    "failedSave": "Failed to save budget",
+    "failedClear": "Failed to clear budget"
+  },
   "placeholder": {
     "laterPhase": "This module will be implemented in a later phase."
   },
@@ -421,5 +473,80 @@
     "SUPER_ADMIN": "Super Admin",
     "ADMIN": "Admin",
     "STAFF": "Staff"
+  },
+  "reports": {
+    "pnl": {
+      "title": "Profit & Loss Statement",
+      "income": "INCOME",
+      "expenses": "EXPENSES",
+      "totalIncome": "TOTAL INCOME",
+      "totalExpenses": "TOTAL EXPENSES",
+      "netProfit": "NET PROFIT",
+      "netLoss": "NET LOSS",
+      "profitMargin": "Profit Margin",
+      "annual": "Annual",
+      "monthly": "Monthly"
+    },
+    "cashflow": {
+      "title": "Cash Flow Statement",
+      "openingBalance": "Opening Cash Balance",
+      "totalCashIn": "Total Cash In",
+      "totalCashOut": "Total Cash Out",
+      "netCashFlow": "Net Cash Flow",
+      "closingBalance": "Closing Balance",
+      "monthlyBreakdown": "Monthly Breakdown",
+      "cashIn": "Cash In (₦)",
+      "cashOut": "Cash Out (₦)",
+      "net": "Net (₦)",
+      "runningBalance": "Running Balance (₦)",
+      "saveOpeningBalance": "Save",
+      "openingBalanceHint": "Set this once per year to anchor your cash flow calculations."
+    },
+    "balanceSheet": {
+      "title": "Balance Sheet",
+      "assets": "ASSETS",
+      "cashAndBank": "Cash & Bank",
+      "accountsReceivable": "Accounts Receivable",
+      "totalAssets": "TOTAL ASSETS",
+      "liabilities": "LIABILITIES",
+      "cautionDeposits": "Caution Deposits Payable",
+      "totalLiabilities": "TOTAL LIABILITIES",
+      "equity": "EQUITY",
+      "retainedEarnings": "Retained Earnings (prior)",
+      "currentYearProfit": "Net Profit / (Loss)",
+      "totalEquity": "TOTAL EQUITY",
+      "totalLiabilitiesEquity": "TOTAL LIABILITIES + EQUITY",
+      "balanced": "✓ Balanced",
+      "imbalance": "⚠ Imbalance"
+    },
+    "trialBalance": {
+      "title": "Trial Balance",
+      "code": "Code",
+      "accountName": "Account Name",
+      "type": "Type",
+      "debit": "Debit (₦)",
+      "credit": "Credit (₦)",
+      "total": "TOTAL",
+      "difference": "Difference",
+      "balanced": "✓ Balanced",
+      "imbalance": "⚠ Imbalance"
+    }
+  },
+  "ledger": {
+    "title": "General Ledger",
+    "date": "Date",
+    "code": "Code",
+    "account": "Account",
+    "entryType": "Entry Type",
+    "description": "Description",
+    "location": "Location",
+    "refNo": "Ref #",
+    "debit": "Debit (₦)",
+    "credit": "Credit (₦)",
+    "income": "Income",
+    "expense": "Expense",
+    "allTypes": "All",
+    "allAccounts": "All Accounts",
+    "noEntries": "No ledger entries found for the selected filters."
   }
 }

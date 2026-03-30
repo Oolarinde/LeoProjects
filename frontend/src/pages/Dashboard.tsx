@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   Box,
@@ -18,6 +19,10 @@ import {
   Button,
   Skeleton,
   Alert,
+  Menu as MuiMenu,
+  MenuItem,
+  ListItemIcon,
+  Tooltip as MuiTooltip,
 } from "@mui/material";
 import {
   Payments,
@@ -39,11 +44,12 @@ import {
   PictureAsPdf,
   AccountBalance,
   Assessment,
+  TableChart,
+  KeyboardArrowDown,
 } from "@mui/icons-material";
 import {
   AreaChart,
   Area,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -76,6 +82,7 @@ function formatChangePct(pct: number | null): string {
 
 export default function Dashboard() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { year, location } = useAppStore();
   const locationLabel = location?.name ?? t("dashboard.allLocations");
 
@@ -83,6 +90,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [exportAnchor, setExportAnchor] = useState<null | HTMLElement>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -126,7 +134,7 @@ export default function Dashboard() {
           value: formatNaira(data.total_revenue),
           accent: tokens.primary,
           gradient: tokens.gradPrimary,
-          icon: <Payments sx={{ fontSize: 20, color: "#fff" }} />,
+          icon: <Payments sx={{ fontSize: 16, color: "#fff" }} />,
           change: formatChangePct(data.revenue_change_pct),
           up: data.revenue_change_pct !== null ? (data.revenue_change_pct > 0 ? true : data.revenue_change_pct < 0 ? false : null) : null,
         },
@@ -135,7 +143,7 @@ export default function Dashboard() {
           value: formatNaira(data.total_expenses),
           accent: tokens.pink,
           gradient: tokens.gradPink,
-          icon: <MoneyOff sx={{ fontSize: 20, color: "#fff" }} />,
+          icon: <MoneyOff sx={{ fontSize: 16, color: "#fff" }} />,
           change: formatChangePct(data.expense_change_pct),
           up: data.expense_change_pct !== null ? (data.expense_change_pct > 0 ? false : data.expense_change_pct < 0 ? true : null) : null,
         },
@@ -144,7 +152,7 @@ export default function Dashboard() {
           value: formatNaira(data.net_profit),
           accent: "#17AD37",
           gradient: tokens.gradSuccess,
-          icon: <ShowChart sx={{ fontSize: 20, color: "#fff" }} />,
+          icon: <ShowChart sx={{ fontSize: 16, color: "#fff" }} />,
           change: data.net_profit >= 0 ? t("dashboard.profit") : t("dashboard.loss"),
           up: data.net_profit >= 0 ? true : false,
         },
@@ -153,7 +161,7 @@ export default function Dashboard() {
           value: `${data.profit_margin.toFixed(1)}%`,
           accent: tokens.dark,
           gradient: tokens.gradDark,
-          icon: <TrendingUp sx={{ fontSize: 20, color: "#fff" }} />,
+          icon: <TrendingUp sx={{ fontSize: 16, color: "#fff" }} />,
           change: "",
           up: data.profit_margin > 0 ? true : data.profit_margin < 0 ? false : null,
         },
@@ -162,7 +170,7 @@ export default function Dashboard() {
           value: formatNaira(data.staff_salaries),
           accent: "#7928CA",
           gradient: tokens.gradInfo,
-          icon: <AccountBalance sx={{ fontSize: 20, color: "#fff" }} />,
+          icon: <AccountBalance sx={{ fontSize: 16, color: "#fff" }} />,
           change: "",
           up: null,
         },
@@ -205,29 +213,10 @@ export default function Dashboard() {
 
   return (
     <Box>
-      {/* Breadcrumb */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 0.625, mb: 1.5 }}>
-        <Typography
-          component="a"
-          sx={{
-            fontSize: 12,
-            color: tokens.primary,
-            fontWeight: 600,
-            textDecoration: "none",
-            cursor: "pointer",
-            "&:hover": { textDecoration: "underline" },
-          }}
-        >
-          {t("dashboard.home")}
-        </Typography>
-        <Typography sx={{ fontSize: 11, color: tokens.secondaryText }}>/</Typography>
-        <Typography sx={{ fontSize: 13, color: tokens.muted }}>{t("dashboard.title")}</Typography>
-      </Box>
-
-      <Typography sx={{ fontSize: 21, fontWeight: 700, color: tokens.heading, mb: 0.25 }}>
+      <Typography sx={{ fontSize: 16, fontWeight: 700, color: tokens.heading, mb: 0.25 }}>
         {t("dashboard.title")}
       </Typography>
-      <Typography sx={{ fontSize: 13, color: tokens.muted, mb: 2.25 }}>
+      <Typography sx={{ fontSize: 11, color: tokens.muted, mb: 2 }}>
         {t("dashboard.financialOverview", { year, location: locationLabel })}
       </Typography>
 
@@ -271,43 +260,45 @@ export default function Dashboard() {
                     top: 0,
                     left: 0,
                     right: 0,
-                    height: 3,
+                    height: 2,
                     bgcolor: kpi.accent,
                   },
                   "&:hover": { boxShadow: tokens.shadowHover },
                   transition: "box-shadow 0.15s",
                 }}
               >
-                <CardContent sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <Box>
-                    <Typography sx={{ fontSize: 13, color: tokens.muted, fontWeight: 500, mb: 0.375 }}>
+                <CardContent sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: 72 }}>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography sx={{ fontSize: 12, color: tokens.muted, fontWeight: 500, mb: 0.375, whiteSpace: "nowrap" }}>
                       {kpi.label}
                     </Typography>
-                    <Typography sx={{ fontSize: 22, fontWeight: 800, color: tokens.heading, lineHeight: 1.2 }}>
+                    <Typography sx={{ fontSize: 18, fontWeight: 800, color: tokens.heading, lineHeight: 1.2 }}>
                       {kpi.value}
                     </Typography>
-                    {kpi.change && (
-                      <Box sx={{ display: "flex", alignItems: "center", mt: 0.375, gap: 0.25 }}>
-                        {kpi.up === true && <TrendingUp sx={{ fontSize: 12, color: "#17AD37" }} />}
-                        {kpi.up === false && <TrendingDown sx={{ fontSize: 12, color: tokens.danger }} />}
-                        {kpi.up === null && <TrendingFlat sx={{ fontSize: 13, color: tokens.muted }} />}
-                        <Typography
-                          sx={{
-                            fontSize: 14,
-                            fontWeight: 700,
-                            color: kpi.up === true ? "#17AD37" : kpi.up === false ? tokens.danger : tokens.muted,
-                          }}
-                        >
-                          {kpi.change}
-                        </Typography>
-                      </Box>
-                    )}
+                    <Box sx={{ display: "flex", alignItems: "center", mt: 0.375, gap: 0.25, minHeight: 16 }}>
+                      {kpi.change ? (
+                        <>
+                          {kpi.up === true && <TrendingUp sx={{ fontSize: 11, color: "#17AD37" }} />}
+                          {kpi.up === false && <TrendingDown sx={{ fontSize: 11, color: tokens.danger }} />}
+                          {kpi.up === null && <TrendingFlat sx={{ fontSize: 12, color: tokens.muted }} />}
+                          <Typography
+                            sx={{
+                              fontSize: 11,
+                              fontWeight: 700,
+                              color: kpi.up === true ? "#17AD37" : kpi.up === false ? tokens.danger : tokens.muted,
+                            }}
+                          >
+                            {kpi.change}
+                          </Typography>
+                        </>
+                      ) : null}
+                    </Box>
                   </Box>
                   <Box
                     sx={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: 2.5,
+                      width: 30,
+                      height: 30,
+                      borderRadius: 2,
                       background: kpi.gradient,
                       display: "flex",
                       alignItems: "center",
@@ -335,7 +326,10 @@ export default function Dashboard() {
             <Card>
               <CardContent>
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-                  <Typography sx={{ fontSize: 15, fontWeight: 700, color: tokens.heading }}>
+                  <Typography
+                    onClick={() => navigate("/reports/pnl")}
+                    sx={{ fontSize: 13, fontWeight: 700, color: tokens.heading, cursor: "pointer", "&:hover": { color: tokens.primary } }}
+                  >
                     {t("dashboard.pnlTrend")}
                   </Typography>
                   <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
@@ -344,7 +338,7 @@ export default function Dashboard() {
                       { label: t("nav.expenses"), color: tokens.pink },
                     ].map((l) => (
                       <Box key={l.label} sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                        <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: l.color }} />
+                        <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: l.color }} />
                         <Typography sx={{ fontSize: 11, color: tokens.muted }}>{l.label}</Typography>
                       </Box>
                     ))}
@@ -353,55 +347,63 @@ export default function Dashboard() {
                 <Box
                   role="img"
                   aria-label="Monthly profit and loss trend chart showing revenue and expenses"
-                  sx={{ height: 280 }}
+                  sx={{ height: 220 }}
                 >
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={data?.monthly_pnl ?? []}>
+                    <AreaChart data={data?.monthly_pnl ?? []} margin={{ top: 8, right: 12, bottom: 4, left: 0 }}>
                       <defs>
                         <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#2152FF" stopOpacity={0.12} />
-                          <stop offset="95%" stopColor="#21D4FD" stopOpacity={0} />
+                          <stop offset="0%" stopColor="#2152FF" stopOpacity={0.18} />
+                          <stop offset="100%" stopColor="#21D4FD" stopOpacity={0.02} />
+                        </linearGradient>
+                        <linearGradient id="expGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={tokens.pink} stopOpacity={0.10} />
+                          <stop offset="100%" stopColor={tokens.pink} stopOpacity={0.01} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke={tokens.border} vertical={false} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={tokens.borderFaint} vertical={false} />
                       <XAxis
                         dataKey="month"
-                        tick={{ fontSize: 11, fill: tokens.secondaryText }}
+                        tick={{ fontSize: 10, fill: tokens.secondaryText }}
                         axisLine={false}
                         tickLine={false}
                       />
                       <YAxis
-                        tick={{ fontSize: 11, fill: tokens.secondaryText }}
+                        tick={{ fontSize: 10, fill: tokens.secondaryText }}
                         axisLine={false}
                         tickLine={false}
-                        width={40}
+                        width={44}
                         tickFormatter={(v) => `${v / 1000}K`}
                       />
                       <Tooltip
-                        contentStyle={{ borderRadius: 8, border: `1px solid ${tokens.border}`, fontSize: 12 }}
+                        contentStyle={{ borderRadius: 10, border: `1px solid ${tokens.border}`, fontSize: 11, boxShadow: tokens.shadowCard, padding: "8px 12px" }}
                         formatter={(value: number, name: string) => [
                           `\u20A6${value.toLocaleString()}`,
                           name.charAt(0).toUpperCase() + name.slice(1),
                         ]}
+                        cursor={{ stroke: tokens.border, strokeWidth: 1 }}
                       />
                       <Area
                         type="monotone"
                         dataKey="revenue"
                         stroke="#2152FF"
-                        strokeWidth={2.5}
+                        strokeWidth={2}
                         fill="url(#revGrad)"
                         dot={false}
-                        activeDot={{ r: 4 }}
+                        activeDot={{ r: 3.5, strokeWidth: 2, fill: "#fff", stroke: "#2152FF" }}
                         name={t("nav.revenue")}
+                        animationDuration={800}
                       />
-                      <Line
+                      <Area
                         type="monotone"
                         dataKey="expenses"
                         stroke={tokens.pink}
                         strokeWidth={2}
+                        fill="url(#expGrad)"
                         dot={false}
-                        activeDot={{ r: 3 }}
+                        activeDot={{ r: 3, strokeWidth: 2, fill: "#fff", stroke: tokens.pink }}
                         name={t("nav.expenses")}
+                        animationDuration={800}
                       />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -412,29 +414,34 @@ export default function Dashboard() {
             {/* Revenue Streams */}
             <Card>
               <CardContent sx={{ p: "14px !important" }}>
-                <Typography sx={{ fontSize: 15, fontWeight: 700, color: tokens.heading, mb: 1 }}>
+                <Typography
+                  onClick={() => navigate("/revenue")}
+                  sx={{ fontSize: 13, fontWeight: 700, color: tokens.heading, mb: 1, cursor: "pointer", "&:hover": { color: tokens.primary } }}
+                >
                   {t("dashboard.revenueStreams")}
                 </Typography>
                 {revenueStreams.length > 0 ? (
                   <>
-                    <Box role="img" aria-label="Revenue streams donut chart" sx={{ height: 170 }}>
+                    <Box role="img" aria-label="Revenue streams donut chart" sx={{ height: 140 }}>
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
                             data={revenueStreams}
                             cx="50%"
                             cy="50%"
-                            innerRadius={48}
-                            outerRadius={68}
-                            paddingAngle={2}
+                            innerRadius={38}
+                            outerRadius={56}
+                            paddingAngle={3}
                             dataKey="value"
+                            cornerRadius={3}
+                            animationDuration={800}
                           >
                             {revenueStreams.map((entry) => (
-                              <Cell key={entry.name} fill={entry.color} />
+                              <Cell key={entry.name} fill={entry.color} stroke="none" />
                             ))}
                           </Pie>
                           <Tooltip
-                            contentStyle={{ borderRadius: 8, border: `1px solid ${tokens.border}`, fontSize: 12 }}
+                            contentStyle={{ borderRadius: 10, border: `1px solid ${tokens.border}`, fontSize: 11, boxShadow: tokens.shadowCard, padding: "8px 12px" }}
                             formatter={(value: number) => [`\u20A6${value.toLocaleString()}`, ""]}
                           />
                         </PieChart>
@@ -452,10 +459,10 @@ export default function Dashboard() {
                           }}
                         >
                           <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-                            <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: d.color }} />
-                            <Typography sx={{ fontSize: 12, color: tokens.text }}>{d.name}</Typography>
+                            <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: d.color }} />
+                            <Typography sx={{ fontSize: 11, color: tokens.text }}>{d.name}</Typography>
                           </Box>
-                          <Typography sx={{ fontSize: 14, fontWeight: 700, color: tokens.heading }}>
+                          <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.heading }}>
                             {formatNaira(d.value)}
                           </Typography>
                         </Box>
@@ -463,7 +470,7 @@ export default function Dashboard() {
                     </Box>
                   </>
                 ) : (
-                  <Typography sx={{ fontSize: 13, color: tokens.muted, py: 4, textAlign: "center" }}>
+                  <Typography sx={{ fontSize: 11, color: tokens.muted, py: 4, textAlign: "center" }}>
                     {t("dashboard.noRevenueData")}
                   </Typography>
                 )}
@@ -493,50 +500,59 @@ export default function Dashboard() {
             {/* Expense vs Budget */}
             <Card>
               <Box sx={{ px: 2.25, pt: 1.75, pb: 0.5 }}>
-                <Typography sx={{ fontSize: 15, fontWeight: 700, color: tokens.heading }}>{t("dashboard.expenseVsBudget")}</Typography>
+                <Typography
+                  onClick={() => navigate("/budget")}
+                  sx={{ fontSize: 13, fontWeight: 700, color: tokens.heading, cursor: "pointer", "&:hover": { color: tokens.primary } }}
+                >{t("dashboard.expenseVsBudget")}</Typography>
               </Box>
               <CardContent sx={{ pt: 0.5 }}>
-                {(data?.expense_budget ?? []).length > 0 ? (
+                {(data?.expense_budget ?? []).filter((r) => r.spent > 0 || r.budget > 0).length > 0 ? (
                   <>
-                    <Box role="img" aria-label="Expense vs budget bar chart" sx={{ height: 180 }}>
+                    <Box role="img" aria-label="Expense vs budget bar chart" sx={{ height: Math.max(180, (data?.expense_budget ?? []).filter((r) => r.spent > 0 || r.budget > 0).length * 36) }}>
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={data?.expense_budget ?? []} layout="vertical" margin={{ left: 0, right: 8 }}>
+                        <BarChart
+                          data={(data?.expense_budget ?? []).filter((r) => r.spent > 0 || r.budget > 0)}
+                          layout="vertical"
+                          margin={{ left: 0, right: 8, top: 4, bottom: 4 }}
+                        >
                           <XAxis
                             type="number"
-                            tick={{ fontSize: 11, fill: tokens.secondaryText }}
+                            tick={{ fontSize: 10, fill: tokens.secondaryText }}
                             axisLine={false}
                             tickLine={false}
+                            tickFormatter={(v: number) => `₦${v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v}`}
                           />
                           <YAxis
                             type="category"
                             dataKey="category"
-                            tick={{ fontSize: 11, fill: tokens.heading }}
+                            tick={{ fontSize: 10, fill: tokens.heading }}
                             axisLine={false}
                             tickLine={false}
-                            width={70}
+                            width={80}
                           />
                           <Tooltip
-                            contentStyle={{ borderRadius: 8, border: `1px solid ${tokens.border}`, fontSize: 12 }}
-                            formatter={(value: number) => [`\u20A6${value.toLocaleString()}`, ""]}
+                            contentStyle={{ borderRadius: 10, border: `1px solid ${tokens.border}`, fontSize: 11, boxShadow: tokens.shadowCard, padding: "6px 10px" }}
+                            formatter={(value: number, name: string) => [`₦${value.toLocaleString()}`, name === "budget" ? "Budget" : "Spent"]}
+                            cursor={{ fill: "rgba(0,0,0,0.03)" }}
                           />
-                          <Bar dataKey="budget" fill="#e9ecef" radius={[0, 4, 4, 0]} barSize={10} />
-                          <Bar dataKey="spent" fill="#2152FF" radius={[0, 4, 4, 0]} barSize={10} />
+                          <Bar dataKey="budget" name="Budget" fill={tokens.secondary} radius={[0, 6, 6, 0]} barSize={8} animationDuration={800} />
+                          <Bar dataKey="spent" name="Spent" fill="#2152FF" radius={[0, 6, 6, 0]} barSize={8} animationDuration={800} />
                         </BarChart>
                       </ResponsiveContainer>
                     </Box>
                     <Box sx={{ display: "flex", gap: 2, mt: 1 }}>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                        <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#2152FF" }} />
-                        <Typography sx={{ fontSize: 13, color: tokens.muted }}>{t("dashboard.spent")}</Typography>
+                        <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "#2152FF" }} />
+                        <Typography sx={{ fontSize: 11, color: tokens.muted }}>{t("dashboard.spent")}</Typography>
                       </Box>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                        <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#e9ecef" }} />
-                        <Typography sx={{ fontSize: 13, color: tokens.muted }}>{t("nav.budget")}</Typography>
+                        <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: tokens.secondary }} />
+                        <Typography sx={{ fontSize: 11, color: tokens.muted }}>{t("nav.budget")}</Typography>
                       </Box>
                     </Box>
                   </>
                 ) : (
-                  <Typography sx={{ fontSize: 13, color: tokens.muted, py: 4, textAlign: "center" }}>
+                  <Typography sx={{ fontSize: 11, color: tokens.muted, py: 4, textAlign: "center" }}>
                     {t("dashboard.noBudgetData")}
                   </Typography>
                 )}
@@ -546,7 +562,10 @@ export default function Dashboard() {
             {/* Cash Position summary */}
             <Card>
               <Box sx={{ px: 2.25, pt: 1.75, pb: 0.5 }}>
-                <Typography sx={{ fontSize: 15, fontWeight: 700, color: tokens.heading }}>{t("dashboard.cashPosition")}</Typography>
+                <Typography
+                  onClick={() => navigate("/reports/cashflow")}
+                  sx={{ fontSize: 13, fontWeight: 700, color: tokens.heading, cursor: "pointer", "&:hover": { color: tokens.primary } }}
+                >{t("dashboard.cashPosition")}</Typography>
               </Box>
               <CardContent sx={{ pt: 1 }}>
                 {data?.cash_position ? (
@@ -567,8 +586,8 @@ export default function Dashboard() {
                           "&:last-child": { borderBottom: "none" },
                         }}
                       >
-                        <Typography sx={{ fontSize: 13, color: tokens.muted }}>{row.label}</Typography>
-                        <Typography sx={{ fontSize: 14, fontWeight: 700, color: row.color }}>{row.value}</Typography>
+                        <Typography sx={{ fontSize: 11, color: tokens.muted }}>{row.label}</Typography>
+                        <Typography sx={{ fontSize: 12, fontWeight: 700, color: row.color }}>{row.value}</Typography>
                       </Box>
                     ))}
                     <Box
@@ -580,14 +599,14 @@ export default function Dashboard() {
                         justifyContent: "space-between",
                       }}
                     >
-                      <Typography sx={{ fontSize: 14, fontWeight: 700, color: tokens.heading }}>{t("dashboard.closingBalance")}</Typography>
-                      <Typography sx={{ fontSize: 14, fontWeight: 800, color: tokens.heading }}>
+                      <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.heading }}>{t("dashboard.closingBalance")}</Typography>
+                      <Typography sx={{ fontSize: 12, fontWeight: 800, color: tokens.heading }}>
                         {formatNaira(data.cash_position.closing_balance)}
                       </Typography>
                     </Box>
                   </>
                 ) : (
-                  <Typography sx={{ fontSize: 13, color: tokens.muted, py: 4, textAlign: "center" }}>
+                  <Typography sx={{ fontSize: 11, color: tokens.muted, py: 4, textAlign: "center" }}>
                     {t("dashboard.noCashData")}
                   </Typography>
                 )}
@@ -597,7 +616,10 @@ export default function Dashboard() {
             {/* Trial Balance snapshot */}
             <Card>
               <Box sx={{ px: 2.25, pt: 1.75, pb: 0.5 }}>
-                <Typography sx={{ fontSize: 15, fontWeight: 700, color: tokens.heading }}>{t("dashboard.trialBalance")}</Typography>
+                <Typography
+                  onClick={() => navigate("/reports/trial-balance")}
+                  sx={{ fontSize: 13, fontWeight: 700, color: tokens.heading, cursor: "pointer", "&:hover": { color: tokens.primary } }}
+                >{t("dashboard.trialBalance")}</Typography>
               </Box>
               <CardContent sx={{ pt: 1 }}>
                 {(data?.trial_balance ?? []).length > 0 ? (
@@ -613,10 +635,10 @@ export default function Dashboard() {
                           "&:last-child": { borderBottom: "none" },
                         }}
                       >
-                        <Typography sx={{ fontSize: 13, color: tokens.heading, flex: 1 }}>{row.label}</Typography>
+                        <Typography sx={{ fontSize: 11, color: tokens.heading, flex: 1 }}>{row.label}</Typography>
                         <Typography
                           sx={{
-                            fontSize: 14,
+                            fontSize: 12,
                             fontWeight: 700,
                             color: row.debit ? tokens.heading : "transparent",
                             width: 70,
@@ -627,7 +649,7 @@ export default function Dashboard() {
                         </Typography>
                         <Typography
                           sx={{
-                            fontSize: 14,
+                            fontSize: 12,
                             fontWeight: 700,
                             color: row.credit ? tokens.heading : "transparent",
                             width: 70,
@@ -653,13 +675,13 @@ export default function Dashboard() {
                               borderTop: `2px solid ${tokens.border}`,
                             }}
                           >
-                            <Typography sx={{ fontSize: 14, fontWeight: 700, color: tokens.heading, flex: 1 }}>
+                            <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.heading, flex: 1 }}>
                               {t("dashboard.total")}
                             </Typography>
-                            <Typography sx={{ fontSize: 14, fontWeight: 800, color: "#17AD37", width: 70, textAlign: "right" }}>
+                            <Typography sx={{ fontSize: 12, fontWeight: 800, color: "#17AD37", width: 70, textAlign: "right" }}>
                               {formatNaira(totalDebit)}
                             </Typography>
-                            <Typography sx={{ fontSize: 14, fontWeight: 800, color: "#17AD37", width: 70, textAlign: "right" }}>
+                            <Typography sx={{ fontSize: 12, fontWeight: 800, color: "#17AD37", width: 70, textAlign: "right" }}>
                               {formatNaira(totalCredit)}
                             </Typography>
                           </Box>
@@ -668,7 +690,7 @@ export default function Dashboard() {
                               <Chip
                                 label={t("dashboard.balanced")}
                                 size="small"
-                                sx={{ bgcolor: "rgba(23,173,55,0.1)", color: "#17AD37", fontWeight: 700, fontSize: 10 }}
+                                sx={{ bgcolor: "rgba(23,173,55,0.1)", color: "#17AD37", fontWeight: 700, fontSize: 11 }}
                               />
                             </Box>
                           )}
@@ -677,7 +699,7 @@ export default function Dashboard() {
                     })()}
                   </>
                 ) : (
-                  <Typography sx={{ fontSize: 13, color: tokens.muted, py: 4, textAlign: "center" }}>
+                  <Typography sx={{ fontSize: 11, color: tokens.muted, py: 4, textAlign: "center" }}>
                     {t("dashboard.noTrialData")}
                   </Typography>
                 )}
@@ -693,7 +715,10 @@ export default function Dashboard() {
       ) : (
         <Card sx={{ mb: 2.5 }}>
           <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", px: 2.25, pt: 1.75 }}>
-            <Typography sx={{ fontSize: 15, fontWeight: 700, color: tokens.heading }}>{t("dashboard.recentLedger")}</Typography>
+            <Typography
+              onClick={() => navigate("/ledger")}
+              sx={{ fontSize: 13, fontWeight: 700, color: tokens.heading, cursor: "pointer", "&:hover": { color: tokens.primary } }}
+            >{t("dashboard.recentLedger")}</Typography>
             <Box sx={{ display: "flex", gap: 0.75 }}>
               <Button
                 size="small"
@@ -713,19 +738,42 @@ export default function Dashboard() {
               </Button>
               <Button
                 size="small"
-                startIcon={<Download sx={{ fontSize: 14 }} />}
+                startIcon={<Download sx={{ fontSize: 11 }} />}
+                endIcon={<KeyboardArrowDown sx={{ fontSize: 11 }} />}
+                onClick={(e) => setExportAnchor(e.currentTarget)}
                 sx={{
                   fontSize: 11,
                   fontWeight: 700,
                   border: `1px solid ${tokens.border}`,
                   borderRadius: 2,
-                  px: 1.75,
+                  px: 1.5,
                   py: 0.5,
                   color: tokens.heading,
                 }}
               >
                 {t("dashboard.export")}
               </Button>
+              <MuiMenu
+                anchorEl={exportAnchor}
+                open={Boolean(exportAnchor)}
+                onClose={() => setExportAnchor(null)}
+                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                transformOrigin={{ vertical: "top", horizontal: "right" }}
+                slotProps={{ paper: { sx: { mt: 0.5, borderRadius: 2, minWidth: 160, boxShadow: tokens.shadowCard } } }}
+              >
+                <MenuItem onClick={() => setExportAnchor(null)} sx={{ fontSize: 11, gap: 1 }}>
+                  <ListItemIcon sx={{ minWidth: "auto" }}>
+                    <PictureAsPdf sx={{ fontSize: 16, color: tokens.danger }} />
+                  </ListItemIcon>
+                  Export PDF
+                </MenuItem>
+                <MenuItem onClick={() => setExportAnchor(null)} sx={{ fontSize: 11, gap: 1 }}>
+                  <ListItemIcon sx={{ minWidth: "auto" }}>
+                    <TableChart sx={{ fontSize: 16, color: "#17AD37" }} />
+                  </ListItemIcon>
+                  Export Excel
+                </MenuItem>
+              </MuiMenu>
             </Box>
           </Box>
 
@@ -806,19 +854,19 @@ export default function Dashboard() {
                               height: 28,
                               borderRadius: "50%",
                               background: gradient,
-                              fontSize: 9,
+                              fontSize: 10,
                               fontWeight: 700,
                             }}
                           >
                             {initials}
                           </Avatar>
                           <Box>
-                            <Typography sx={{ fontSize: 14, fontWeight: 700, color: tokens.heading }}>
+                            <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.heading }}>
                               {entry.account}
                             </Typography>
                             <Typography
                               sx={{
-                                fontSize: 9,
+                                fontSize: 10,
                                 color: isIncome ? "#17AD37" : tokens.danger,
                                 fontWeight: 600,
                               }}
@@ -858,34 +906,38 @@ export default function Dashboard() {
                       </TableCell>
                       <TableCell align="center">
                         <Box sx={{ display: "flex", gap: 0.5, justifyContent: "center" }}>
-                          <IconButton
-                            size="small"
-                            aria-label="View"
-                            sx={{
-                              width: 26,
-                              height: 26,
-                              borderRadius: 1.5,
-                              bgcolor: "rgba(52,71,103,0.08)",
-                              color: tokens.dark,
-                              "&:hover": { bgcolor: "rgba(52,71,103,0.15)" },
-                            }}
-                          >
-                            <Visibility sx={{ fontSize: 14 }} />
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            aria-label="Edit"
-                            sx={{
-                              width: 26,
-                              height: 26,
-                              borderRadius: 1.5,
-                              bgcolor: "rgba(23,193,232,0.1)",
-                              color: tokens.primary,
-                              "&:hover": { bgcolor: "rgba(23,193,232,0.2)" },
-                            }}
-                          >
-                            <Edit sx={{ fontSize: 14 }} />
-                          </IconButton>
+                          <MuiTooltip title={t("common.view")} arrow placement="top">
+                            <IconButton
+                              size="small"
+                              aria-label="View"
+                              sx={{
+                                width: 26,
+                                height: 26,
+                                borderRadius: 1.5,
+                                bgcolor: "rgba(52,71,103,0.08)",
+                                color: tokens.dark,
+                                "&:hover": { bgcolor: "rgba(52,71,103,0.15)" },
+                              }}
+                            >
+                              <Visibility sx={{ fontSize: 14 }} />
+                            </IconButton>
+                          </MuiTooltip>
+                          <MuiTooltip title={t("common.edit")} arrow placement="top">
+                            <IconButton
+                              size="small"
+                              aria-label="Edit"
+                              sx={{
+                                width: 26,
+                                height: 26,
+                                borderRadius: 1.5,
+                                bgcolor: "rgba(23,193,232,0.1)",
+                                color: tokens.primary,
+                                "&:hover": { bgcolor: "rgba(23,193,232,0.2)" },
+                              }}
+                            >
+                              <Edit sx={{ fontSize: 14 }} />
+                            </IconButton>
+                          </MuiTooltip>
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -911,17 +963,19 @@ export default function Dashboard() {
               borderTop: `1px solid ${tokens.border}`,
             }}
           >
-            <Typography sx={{ fontSize: 13, color: tokens.muted }}>
+            <Typography sx={{ fontSize: 11, color: tokens.muted }}>
               {t("common.showing")} {filteredEntries.length} {t("common.of")} {glEntries.length} {t("common.entries")}
             </Typography>
             <Box sx={{ display: "flex", gap: 0.375 }}>
-              <IconButton
-                size="small"
-                aria-label="Previous page"
-                sx={{ width: 28, height: 28, borderRadius: 1.5, border: `1px solid ${tokens.border}` }}
-              >
-                <ChevronLeft sx={{ fontSize: 15 }} />
-              </IconButton>
+              <MuiTooltip title={t("common.previousPage")} arrow>
+                <IconButton
+                  size="small"
+                  aria-label="Previous page"
+                  sx={{ width: 28, height: 28, borderRadius: 1.5, border: `1px solid ${tokens.border}` }}
+                >
+                  <ChevronLeft sx={{ fontSize: 15 }} />
+                </IconButton>
+              </MuiTooltip>
               <Button
                 size="small"
                 sx={{
@@ -938,13 +992,15 @@ export default function Dashboard() {
               >
                 1
               </Button>
-              <IconButton
-                size="small"
-                aria-label="Next page"
-                sx={{ width: 28, height: 28, borderRadius: 1.5, border: `1px solid ${tokens.border}` }}
-              >
-                <ChevronRight sx={{ fontSize: 15 }} />
-              </IconButton>
+              <MuiTooltip title={t("common.nextPage")} arrow>
+                <IconButton
+                  size="small"
+                  aria-label="Next page"
+                  sx={{ width: 28, height: 28, borderRadius: 1.5, border: `1px solid ${tokens.border}` }}
+                >
+                  <ChevronRight sx={{ fontSize: 15 }} />
+                </IconButton>
+              </MuiTooltip>
             </Box>
           </Box>
         </Card>
@@ -962,7 +1018,10 @@ export default function Dashboard() {
             {/* Budget utilisation */}
             <Card>
               <Box sx={{ px: 2.25, pt: 1.75, pb: 0.5 }}>
-                <Typography sx={{ fontSize: 15, fontWeight: 700, color: tokens.heading }}>{t("dashboard.budgetUtilisation")}</Typography>
+                <Typography
+                  onClick={() => navigate("/budget")}
+                  sx={{ fontSize: 13, fontWeight: 700, color: tokens.heading, cursor: "pointer", "&:hover": { color: tokens.primary } }}
+                >{t("dashboard.budgetUtilisation")}</Typography>
               </Box>
               <CardContent sx={{ pt: 0.5 }}>
                 {(data?.expense_budget ?? []).length > 0 ? (
@@ -970,19 +1029,19 @@ export default function Dashboard() {
                     const pct = item.budget > 0 ? Math.round((item.spent / item.budget) * 100) : 0;
                     const color = pct > 85 ? tokens.danger : pct > 60 ? "#c49c09" : "#17AD37";
                     return (
-                      <Box key={item.category} sx={{ mb: 1.75, "&:last-child": { mb: 0 } }}>
-                        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
-                          <Typography sx={{ fontSize: 13, fontWeight: 600, color: tokens.heading }}>
+                      <Box key={item.category} sx={{ mb: 1.5, "&:last-child": { mb: 0 } }}>
+                        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.375 }}>
+                          <Typography sx={{ fontSize: 12, fontWeight: 600, color: tokens.heading }}>
                             {item.category}
                           </Typography>
-                          <Typography sx={{ fontSize: 14, fontWeight: 700, color }}>
+                          <Typography sx={{ fontSize: 12, fontWeight: 700, color }}>
                             {pct}%{" "}
-                            <Typography component="span" sx={{ fontSize: 9, fontWeight: 400, color: tokens.muted }}>
+                            <Typography component="span" sx={{ fontSize: 10, fontWeight: 400, color: tokens.muted }}>
                               ({formatNaira(item.spent)} / {formatNaira(item.budget)})
                             </Typography>
                           </Typography>
                         </Box>
-                        <Box sx={{ height: 5, bgcolor: "#e9ecef", borderRadius: 4, overflow: "hidden" }}>
+                        <Box sx={{ height: 4, bgcolor: "#e9ecef", borderRadius: 4, overflow: "hidden" }}>
                           <Box
                             sx={{
                               height: "100%",
@@ -997,7 +1056,7 @@ export default function Dashboard() {
                     );
                   })
                 ) : (
-                  <Typography sx={{ fontSize: 13, color: tokens.muted, py: 4, textAlign: "center" }}>
+                  <Typography sx={{ fontSize: 11, color: tokens.muted, py: 4, textAlign: "center" }}>
                     {t("dashboard.noBudgetData")}
                   </Typography>
                 )}
@@ -1007,23 +1066,23 @@ export default function Dashboard() {
             {/* Quick Actions */}
             <Card>
               <Box sx={{ px: 2.25, pt: 1.75, pb: 0.5 }}>
-                <Typography sx={{ fontSize: 15, fontWeight: 700, color: tokens.heading }}>{t("dashboard.quickActions")}</Typography>
+                <Typography sx={{ fontSize: 13, fontWeight: 700, color: tokens.heading }}>{t("dashboard.quickActions")}</Typography>
               </Box>
               <CardContent sx={{ pt: 0.5 }}>
                 {[
-                  { icon: <AddCard sx={{ fontSize: 18 }} />, gradient: tokens.gradPrimary, title: t("dashboard.recordRevenue"), sub: t("dashboard.addIncome") },
-                  { icon: <ReceiptLong sx={{ fontSize: 18 }} />, gradient: tokens.gradPink, title: t("dashboard.logExpense"), sub: t("dashboard.addExpense") },
-                  { icon: <Summarize sx={{ fontSize: 18 }} />, gradient: tokens.gradSuccess, title: t("dashboard.pnlReport"), sub: t("dashboard.pnlStatement") },
-                  { icon: <Assessment sx={{ fontSize: 18 }} />, gradient: tokens.gradDark, title: t("dashboard.balanceSheetAction"), sub: t("dashboard.assetsLiabilitiesEquity") },
-                  { icon: <PictureAsPdf sx={{ fontSize: 18 }} />, gradient: tokens.gradInfo, title: t("dashboard.exportPdf"), sub: t("dashboard.downloadStatements") },
+                  { icon: <AddCard sx={{ fontSize: 15 }} />, gradient: tokens.gradPrimary, title: t("dashboard.recordRevenue"), sub: t("dashboard.addIncome") },
+                  { icon: <ReceiptLong sx={{ fontSize: 15 }} />, gradient: tokens.gradPink, title: t("dashboard.logExpense"), sub: t("dashboard.addExpense") },
+                  { icon: <Summarize sx={{ fontSize: 15 }} />, gradient: tokens.gradSuccess, title: t("dashboard.pnlReport"), sub: t("dashboard.pnlStatement") },
+                  { icon: <Assessment sx={{ fontSize: 15 }} />, gradient: tokens.gradDark, title: t("dashboard.balanceSheetAction"), sub: t("dashboard.assetsLiabilitiesEquity") },
+                  { icon: <PictureAsPdf sx={{ fontSize: 15 }} />, gradient: tokens.gradInfo, title: t("dashboard.exportPdf"), sub: t("dashboard.downloadStatements") },
                 ].map((action, i, arr) => (
                   <Box
                     key={action.title}
                     sx={{
                       display: "flex",
                       alignItems: "center",
-                      gap: 1.375,
-                      py: 0.875,
+                      gap: 1.25,
+                      py: 0.75,
                       borderBottom: i < arr.length - 1 ? `1px solid ${tokens.borderFaint}` : "none",
                       cursor: "pointer",
                       "&:hover": { opacity: 0.85 },
@@ -1031,9 +1090,9 @@ export default function Dashboard() {
                   >
                     <Box
                       sx={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: 2.25,
+                        width: 30,
+                        height: 30,
+                        borderRadius: 2,
                         background: action.gradient,
                         display: "flex",
                         alignItems: "center",
@@ -1045,10 +1104,10 @@ export default function Dashboard() {
                       {action.icon}
                     </Box>
                     <Box sx={{ flex: 1 }}>
-                      <Typography sx={{ fontSize: 14, fontWeight: 700, color: tokens.heading }}>{action.title}</Typography>
-                      <Typography sx={{ fontSize: 13, color: tokens.muted }}>{action.sub}</Typography>
+                      <Typography sx={{ fontSize: 12, fontWeight: 700, color: tokens.heading }}>{action.title}</Typography>
+                      <Typography sx={{ fontSize: 11, color: tokens.muted }}>{action.sub}</Typography>
                     </Box>
-                    <ChevronRight sx={{ fontSize: 16, color: tokens.muted }} />
+                    <ChevronRight sx={{ fontSize: 14, color: tokens.muted }} />
                   </Box>
                 ))}
               </CardContent>

@@ -86,7 +86,7 @@ export default function Login() {
               <Typography sx={{ fontSize: 22, fontWeight: 800, color: tokens.primary, fontStyle: "italic" }}>
                 Talents
               </Typography>
-              <Typography sx={{ fontSize: 9, color: tokens.danger, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", mt: -0.25 }}>
+              <Typography sx={{ fontSize: 10, color: tokens.danger, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", mt: -0.25 }}>
                 APARTMENTS
               </Typography>
             </Box>
