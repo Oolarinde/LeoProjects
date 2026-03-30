@@ -48,7 +48,7 @@ class UserResponse(BaseModel):
     company_id: UUID
     is_active: bool
     permissions: dict[str, str] = {}
-    group_id: UUID
+    group_id: UUID | None = None
     preferred_language: str = "en"
     created_at: datetime
 
