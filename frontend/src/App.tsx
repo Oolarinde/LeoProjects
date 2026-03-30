@@ -5,6 +5,8 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Placeholder from "./pages/Placeholder";
 import UserManagement from "./pages/UserManagement";
+import GroupManagement from "./pages/GroupManagement";
+import PayrollSetup from "./pages/payroll/PayrollSetup";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const user = useAppStore((s) => s.user);
@@ -50,6 +52,7 @@ export default function App() {
         <Route path="/revenue" element={<PermissionRoute module="revenue"><Placeholder /></PermissionRoute>} />
         <Route path="/expenses" element={<PermissionRoute module="expenses"><Placeholder /></PermissionRoute>} />
         <Route path="/payroll" element={<PermissionRoute module="payroll"><Placeholder /></PermissionRoute>} />
+        <Route path="/payroll/setup" element={<PermissionRoute module="payroll"><PayrollSetup /></PermissionRoute>} />
         <Route path="/budget" element={<PermissionRoute module="budget"><Placeholder /></PermissionRoute>} />
 
         {/* Reports */}
@@ -66,6 +69,7 @@ export default function App() {
         <Route path="/settings/locations" element={<PermissionRoute module="locations"><Placeholder /></PermissionRoute>} />
         <Route path="/settings/reference" element={<PermissionRoute module="reference"><Placeholder /></PermissionRoute>} />
         <Route path="/settings/users" element={<AdminRoute><UserManagement /></AdminRoute>} />
+        <Route path="/settings/roles" element={<AdminRoute><GroupManagement /></AdminRoute>} />
 
         {/* Profile */}
         <Route path="/profile" element={<Placeholder />} />

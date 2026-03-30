@@ -1,10 +1,46 @@
+from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.company import Company
+from app.models.group import Group
 from app.models.user import User
 from app.utils.security import hash_password, verify_password, create_access_token, create_refresh_token, decode_token
-from app.utils.permissions import SUPER_ADMIN, get_default_permissions
+from app.utils.permissions import SUPER_ADMIN, ALL_WRITE, ALL_READ
+from app.services.payroll.settings import get_or_create_settings
+from app.services.payroll.types import seed_payroll_defaults
+
+
+async def _ensure_default_roles(db: AsyncSession, company_id) -> tuple[Group, Group]:
+    """Create Administrator and Staff default roles for a company if they don't exist."""
+    admin_role = (await db.execute(
+        select(Group).where(Group.company_id == company_id, Group.name == "Administrator")
+    )).scalar_one_or_none()
+
+    if admin_role is None:
+        admin_role = Group(
+            company_id=company_id,
+            name="Administrator",
+            description="Full access to all modules",
+            permissions=dict(ALL_WRITE),
+        )
+        db.add(admin_role)
+
+    staff_role = (await db.execute(
+        select(Group).where(Group.company_id == company_id, Group.name == "Staff")
+    )).scalar_one_or_none()
+
+    if staff_role is None:
+        staff_role = Group(
+            company_id=company_id,
+            name="Staff",
+            description="Read-only access to all modules",
+            permissions=dict(ALL_READ),
+        )
+        db.add(staff_role)
+
+    await db.flush()
+    return admin_role, staff_role
 
 
 async def register_user(
@@ -14,13 +50,21 @@ async def register_user(
     db.add(company)
     await db.flush()
 
+    # Create default roles for the new company
+    admin_role, _staff_role = await _ensure_default_roles(db, company.id)
+
+    # Seed payroll defaults for the new company
+    await get_or_create_settings(db, company.id)
+    await seed_payroll_defaults(db, company.id)
+
     user = User(
         company_id=company.id,
         email=email.lower().strip(),
         hashed_password=hash_password(password),
         full_name=full_name,
         role=SUPER_ADMIN,
-        permissions=get_default_permissions(SUPER_ADMIN),
+        permissions=admin_role.permissions,
+        group_id=admin_role.id,
     )
     db.add(user)
     await db.flush()

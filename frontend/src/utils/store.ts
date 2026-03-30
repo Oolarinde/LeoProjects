@@ -12,6 +12,8 @@ interface User {
   role: string;
   company_id: string;
   permissions: Record<string, string>;
+  group_id: string;
+  preferred_language: string;
 }
 
 interface AppState {

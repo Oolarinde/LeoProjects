@@ -1,3 +1,5 @@
+from __future__ import annotations
+from typing import Optional
 import uuid
 
 from sqlalchemy import String, Boolean, ForeignKey
@@ -15,7 +17,7 @@ class Unit(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     location_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("locations.id"), nullable=False)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
-    unit_type: Mapped[str | None] = mapped_column(String(50))  # apartment, shop, salon, etc.
+    unit_type: Mapped[Optional[str]] = mapped_column(String(50))  # apartment, shop, salon, etc.
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at = mapped_column(DateTime(timezone=True), server_default=func.now())
 

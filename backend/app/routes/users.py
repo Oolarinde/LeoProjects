@@ -1,3 +1,4 @@
+from __future__ import annotations
 """User management routes — admin-only."""
 
 from uuid import UUID
@@ -36,7 +37,7 @@ async def create_user(
         full_name=data.full_name,
         password=data.password,
         role=data.role,
-        permissions=data.permissions,
+        group_id=data.group_id,
         acting_user=current_user,
     )
     return user
@@ -65,8 +66,8 @@ async def update_user(
         acting_user=current_user,
         full_name=data.full_name,
         role=data.role,
-        permissions=data.permissions,
         is_active=data.is_active,
+        group_id=data.group_id,
     )
     return user
 

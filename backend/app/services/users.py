@@ -1,3 +1,4 @@
+from __future__ import annotations
 """User management service — CRUD with role-hierarchy enforcement."""
 
 from uuid import UUID
@@ -7,11 +8,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
+from app.models.group import Group
 from app.utils.security import hash_password
-from app.utils.permissions import (
-    SUPER_ADMIN, ADMIN, STAFF,
-    get_default_permissions, validate_permissions,
-)
+from app.utils.permissions import SUPER_ADMIN, ADMIN, STAFF
 
 VALID_ROLES = {SUPER_ADMIN, ADMIN, STAFF}
 ROLE_RANK = {SUPER_ADMIN: 3, ADMIN: 2, STAFF: 1}
@@ -29,6 +28,17 @@ def _check_hierarchy(acting_user: User, target_role: str, target_id: UUID | None
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Cannot manage users with role {target_role}",
         )
+
+
+async def _resolve_group(db: AsyncSession, group_id_str: str, company_id: UUID) -> Group:
+    """Validate and fetch a group by ID within a company."""
+    result = await db.execute(
+        select(Group).where(Group.id == UUID(group_id_str), Group.company_id == company_id)
+    )
+    group = result.scalar_one_or_none()
+    if group is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
+    return group
 
 
 async def list_users(db: AsyncSession, company_id: UUID) -> list[User]:
@@ -55,7 +65,7 @@ async def create_user(
     full_name: str,
     password: str,
     role: str,
-    permissions: dict[str, str],
+    group_id: str,
     acting_user: User,
 ) -> User:
     if role not in VALID_ROLES or role == SUPER_ADMIN:
@@ -71,7 +81,8 @@ async def create_user(
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already in use")
 
-    validated_perms = validate_permissions(permissions) if permissions else get_default_permissions(role)
+    # Resolve the custom role (group) and inherit its permissions
+    group = await _resolve_group(db, group_id, company_id)
 
     user = User(
         company_id=company_id,
@@ -79,7 +90,8 @@ async def create_user(
         hashed_password=hash_password(password),
         full_name=full_name,
         role=role,
-        permissions=validated_perms,
+        group_id=group.id,
+        permissions=group.permissions,
     )
     db.add(user)
     await db.flush()
@@ -93,8 +105,8 @@ async def update_user(
     acting_user: User,
     full_name: str | None = None,
     role: str | None = None,
-    permissions: dict[str, str] | None = None,
     is_active: bool | None = None,
+    group_id: str | None = None,
 ) -> User:
     target = await get_user(db, user_id, company_id)
 
@@ -110,8 +122,11 @@ async def update_user(
     if full_name is not None:
         target.full_name = full_name
 
-    if permissions is not None:
-        target.permissions = validate_permissions(permissions)
+    if group_id is not None:
+        # Change custom role — inherit new role's permissions
+        group = await _resolve_group(db, group_id, company_id)
+        target.group_id = group.id
+        target.permissions = group.permissions
 
     if is_active is not None:
         if str(target.id) == str(acting_user.id):

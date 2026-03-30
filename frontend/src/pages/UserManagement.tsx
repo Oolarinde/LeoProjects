@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Typography,
@@ -27,9 +28,8 @@ import {
   Skeleton,
 } from "@mui/material";
 import { Edit as EditIcon } from "@mui/icons-material";
-import { usersApi } from "../services/api";
+import { usersApi, groupsApi } from "../services/api";
 import { useAppStore } from "../utils/store";
-import PermissionsGrid from "../components/PermissionsGrid";
 import { tokens } from "../theme/theme";
 
 interface UserRecord {
@@ -40,15 +40,15 @@ interface UserRecord {
   company_id: string;
   is_active: boolean;
   permissions: Record<string, string>;
+  group_id: string;
   created_at: string;
 }
 
-const ALL_WRITE: Record<string, string> = {
-  dashboard: "write", revenue: "write", expenses: "write", payroll: "write",
-  budget: "write", analysis: "write", ledger: "write", pnl: "write",
-  cashflow: "write", balance_sheet: "write", trial_balance: "write",
-  accounts: "write", employees: "write", locations: "write", reference: "write",
-};
+interface RoleOption {
+  id: string;
+  name: string;
+  description: string | null;
+}
 
 const ROLE_COLORS: Record<string, "error" | "primary" | "default"> = {
   SUPER_ADMIN: "error",
@@ -57,8 +57,10 @@ const ROLE_COLORS: Record<string, "error" | "primary" | "default"> = {
 };
 
 export default function UserManagement() {
+  const { t } = useTranslation();
   const currentUser = useAppStore((s) => s.user);
   const [users, setUsers] = useState<UserRecord[]>([]);
+  const [roles, setRoles] = useState<RoleOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -70,26 +72,30 @@ export default function UserManagement() {
     full_name: "",
     role: "STAFF",
     password: "",
-    permissions: {} as Record<string, string>,
+    group_id: "",
   });
   const [saving, setSaving] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [dialogError, setDialogError] = useState("");
 
-  const fetchUsers = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const resp = await usersApi.list();
-      setUsers(resp.data);
+      const [usersResp, rolesResp] = await Promise.all([
+        usersApi.list(),
+        groupsApi.list(),
+      ]);
+      setUsers(usersResp.data);
+      setRoles(rolesResp.data);
     } catch {
-      setError("Failed to load users");
+      setError(t("users.failedLoad"));
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUsers();
+    fetchData();
   }, []);
 
   const canManage = (target: UserRecord) => {
@@ -98,9 +104,13 @@ export default function UserManagement() {
     return false;
   };
 
+  const getRoleName = (groupId: string) => {
+    return roles.find((r) => r.id === groupId)?.name ?? "—";
+  };
+
   const openAddDialog = () => {
     setEditingUser(null);
-    setForm({ email: "", full_name: "", role: "STAFF", password: "", permissions: {} });
+    setForm({ email: "", full_name: "", role: "STAFF", password: "", group_id: roles[0]?.id ?? "" });
     setDialogError("");
     setDialogOpen(true);
   };
@@ -112,21 +122,17 @@ export default function UserManagement() {
       full_name: user.full_name,
       role: user.role,
       password: "",
-      permissions: { ...user.permissions },
+      group_id: user.group_id,
     });
     setDialogError("");
     setDialogOpen(true);
   };
 
-  const handleRoleChange = (role: string) => {
-    const permissions = role === "ADMIN" ? { ...ALL_WRITE } : {};
-    setForm((f) => ({ ...f, role, permissions }));
-  };
-
   const validateForm = (): string | null => {
-    if (!form.full_name.trim()) return "Full name is required";
-    if (!editingUser && !form.email.trim()) return "Email is required";
-    if (!editingUser && form.password.length < 8) return "Password must be at least 8 characters";
+    if (!form.full_name.trim()) return t("users.nameRequired");
+    if (!editingUser && !form.email.trim()) return t("users.emailRequired");
+    if (!editingUser && form.password.length < 8) return t("users.passwordMin");
+    if (!form.group_id) return t("users.roleRequired");
     return null;
   };
 
@@ -144,7 +150,7 @@ export default function UserManagement() {
         await usersApi.update(editingUser.id, {
           full_name: form.full_name,
           role: form.role,
-          permissions: form.permissions,
+          group_id: form.group_id,
         });
       } else {
         await usersApi.create({
@@ -152,13 +158,13 @@ export default function UserManagement() {
           full_name: form.full_name,
           role: form.role,
           password: form.password,
-          permissions: form.permissions,
+          group_id: form.group_id,
         });
       }
       setDialogOpen(false);
-      fetchUsers();
+      fetchData();
     } catch (err: any) {
-      setDialogError(err.response?.data?.detail || "Failed to save user");
+      setDialogError(err.response?.data?.detail || t("users.failedSave"));
     } finally {
       setSaving(false);
     }
@@ -169,9 +175,9 @@ export default function UserManagement() {
     setTogglingId(user.id);
     try {
       await usersApi.update(user.id, { is_active: !user.is_active });
-      await fetchUsers();
+      await fetchData();
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Failed to update user status");
+      setError(err.response?.data?.detail || t("users.failedStatus"));
     } finally {
       setTogglingId(null);
     }
@@ -180,9 +186,9 @@ export default function UserManagement() {
   return (
     <Box>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
-        <Typography variant="h1">User Management</Typography>
+        <Typography variant="h1">{t("users.title")}</Typography>
         <Button variant="contained" onClick={openAddDialog}>
-          Add User
+          {t("users.addUser")}
         </Button>
       </Box>
 
@@ -203,11 +209,12 @@ export default function UserManagement() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 600 }}>Name</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Role</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Active</TableCell>
-                <TableCell sx={{ fontWeight: 600 }} align="right">Actions</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>{t("common.name")}</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>{t("common.email")}</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>{t("users.systemRole")}</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>{t("users.customRole")}</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>{t("common.active")}</TableCell>
+                <TableCell sx={{ fontWeight: 600 }} align="right">{t("common.actions")}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -217,10 +224,18 @@ export default function UserManagement() {
                   <TableCell>{u.email}</TableCell>
                   <TableCell>
                     <Chip
-                      label={u.role.replace("_", " ")}
+                      label={t(`roles.${u.role}`)}
                       size="small"
                       color={ROLE_COLORS[u.role] || "default"}
                       variant={u.role === "SUPER_ADMIN" ? "filled" : "outlined"}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={getRoleName(u.group_id)}
+                      size="small"
+                      variant="outlined"
+                      sx={{ borderColor: tokens.primary, color: tokens.primary }}
                     />
                   </TableCell>
                   <TableCell>
@@ -233,7 +248,7 @@ export default function UserManagement() {
                   </TableCell>
                   <TableCell align="right">
                     {canManage(u) && (
-                      <Tooltip title="Edit">
+                      <Tooltip title={t("common.edit")}>
                         <IconButton size="small" onClick={() => openEditDialog(u)}>
                           <EditIcon sx={{ fontSize: 18 }} />
                         </IconButton>
@@ -244,8 +259,8 @@ export default function UserManagement() {
               ))}
               {users.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 4, color: tokens.muted }}>
-                    No users found
+                  <TableCell colSpan={6} align="center" sx={{ py: 4, color: tokens.muted }}>
+                    {t("users.noUsers")}
                   </TableCell>
                 </TableRow>
               )}
@@ -256,12 +271,12 @@ export default function UserManagement() {
 
       {/* Add / Edit Dialog */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>{editingUser ? "Edit User" : "Add New User"}</DialogTitle>
+        <DialogTitle>{editingUser ? t("users.editUser") : t("users.addNewUser")}</DialogTitle>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: "16px !important" }}>
           {dialogError && <Alert severity="error">{dialogError}</Alert>}
 
           <TextField
-            label="Full Name"
+            label={t("users.fullName")}
             value={form.full_name}
             onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))}
             size="small"
@@ -269,7 +284,7 @@ export default function UserManagement() {
           />
 
           <TextField
-            label="Email"
+            label={t("common.email")}
             type="email"
             value={form.email}
             onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
@@ -280,48 +295,60 @@ export default function UserManagement() {
 
           {!editingUser && (
             <TextField
-              label="Temporary Password"
+              label={t("users.tempPassword")}
               type="password"
               value={form.password}
               onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
               size="small"
               fullWidth
-              helperText="User should change this after first login"
+              helperText={t("users.changeAfterLogin")}
             />
           )}
 
           <FormControl size="small" fullWidth>
-            <InputLabel>Role</InputLabel>
+            <InputLabel>{t("users.systemRole")}</InputLabel>
             <Select
               value={form.role}
-              label="Role"
-              onChange={(e) => handleRoleChange(e.target.value)}
+              label={t("users.systemRole")}
+              onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
               disabled={editingUser?.role === "SUPER_ADMIN"}
             >
-              {(editingUser?.role === "SUPER_ADMIN") && (
-                <MenuItem value="SUPER_ADMIN">Super Admin</MenuItem>
+              {editingUser?.role === "SUPER_ADMIN" && (
+                <MenuItem value="SUPER_ADMIN">{t("roles.SUPER_ADMIN")}</MenuItem>
               )}
               {currentUser?.role === "SUPER_ADMIN" && (
-                <MenuItem value="ADMIN">Admin</MenuItem>
+                <MenuItem value="ADMIN">{t("roles.ADMIN")}</MenuItem>
               )}
-              <MenuItem value="STAFF">Staff</MenuItem>
+              <MenuItem value="STAFF">{t("roles.STAFF")}</MenuItem>
             </Select>
           </FormControl>
 
-          <Typography variant="h2" sx={{ mt: 1 }}>
-            Module Permissions
-          </Typography>
-          <PermissionsGrid
-            value={form.permissions}
-            onChange={(permissions) => setForm((f) => ({ ...f, permissions }))}
-          />
+          <FormControl size="small" fullWidth>
+            <InputLabel>{t("users.customRole")}</InputLabel>
+            <Select
+              value={form.group_id}
+              label={t("users.customRole")}
+              onChange={(e) => setForm((f) => ({ ...f, group_id: e.target.value }))}
+            >
+              {roles.map((r) => (
+                <MenuItem key={r.id} value={r.id}>
+                  <Box>
+                    <Typography sx={{ fontSize: 13, fontWeight: 600 }}>{r.name}</Typography>
+                    {r.description && (
+                      <Typography sx={{ fontSize: 11, color: tokens.muted }}>{r.description}</Typography>
+                    )}
+                  </Box>
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => setDialogOpen(false)} color="inherit">
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button variant="contained" onClick={handleSave} disabled={saving}>
-            {saving ? "Saving..." : editingUser ? "Update" : "Create User"}
+            {saving ? t("common.saving") : editingUser ? t("users.update") : t("users.createUser")}
           </Button>
         </DialogActions>
       </Dialog>

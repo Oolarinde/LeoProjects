@@ -1,12 +1,17 @@
+from __future__ import annotations
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi import _rate_limit_exceeded_handler
+from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
-from app.routes import auth, users
+from app.routes import auth, users, groups
+from app.routes.payroll import router as payroll_router
 from app.utils.config import settings
+
+limiter = Limiter(key_func=get_remote_address)
 
 
 @asynccontextmanager
@@ -20,7 +25,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Rate limit error handler
+# Rate limiter
+app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
@@ -33,6 +39,8 @@ app.add_middleware(
 
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(users.router, prefix="/api/users", tags=["users"])
+app.include_router(groups.router, prefix="/api/groups", tags=["groups"])
+app.include_router(payroll_router, prefix="/api/payroll", tags=["payroll"])
 
 
 @app.get("/api/health")

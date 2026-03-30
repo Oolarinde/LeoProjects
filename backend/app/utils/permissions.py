@@ -1,3 +1,4 @@
+from __future__ import annotations
 """Role-based access control: module registry, access levels, and permission helpers."""
 
 from enum import Enum

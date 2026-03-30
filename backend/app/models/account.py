@@ -1,3 +1,5 @@
+from __future__ import annotations
+from typing import Optional
 import uuid
 
 from sqlalchemy import String, Text, ForeignKey, UniqueConstraint
@@ -19,7 +21,7 @@ class Account(Base):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     type: Mapped[str] = mapped_column(String(20), nullable=False)  # Asset, Liability, Equity, Revenue, Expense
     normal_balance: Mapped[str] = mapped_column(String(2), nullable=False)  # Dr, Cr
-    description: Mapped[str | None] = mapped_column(Text)
+    description: Mapped[Optional[str]] = mapped_column(Text)
     created_at = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     company = relationship("Company", back_populates="accounts")

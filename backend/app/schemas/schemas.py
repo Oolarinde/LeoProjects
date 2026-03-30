@@ -1,3 +1,4 @@
+from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
@@ -43,6 +44,8 @@ class UserResponse(BaseModel):
     company_id: UUID
     is_active: bool
     permissions: dict[str, str] = {}
+    group_id: UUID
+    preferred_language: str = "en"
     created_at: datetime
 
     model_config = {"from_attributes": True}

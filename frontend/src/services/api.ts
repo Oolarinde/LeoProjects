@@ -67,18 +67,87 @@ export const usersApi = {
     full_name: string;
     role: string;
     password: string;
-    permissions: Record<string, string>;
+    group_id: string;
   }) => api.post("/users", data),
   update: (
     id: string,
     data: {
       full_name?: string;
       role?: string;
-      permissions?: Record<string, string>;
       is_active?: boolean;
+      group_id?: string;
     }
   ) => api.patch(`/users/${id}`, data),
   deactivate: (id: string) => api.delete(`/users/${id}`),
+};
+
+// Groups (admin)
+export const groupsApi = {
+  list: () => api.get("/groups"),
+  get: (id: string) => api.get(`/groups/${id}`),
+  create: (data: {
+    name: string;
+    description?: string;
+    permissions: Record<string, string>;
+  }) => api.post("/groups", data),
+  update: (
+    id: string,
+    data: {
+      name?: string;
+      description?: string;
+      permissions?: Record<string, string>;
+    }
+  ) => api.patch(`/groups/${id}`, data),
+  delete: (id: string) => api.delete(`/groups/${id}`),
+  addMembers: (id: string, userIds: string[]) =>
+    api.post(`/groups/${id}/members`, { user_ids: userIds }),
+  removeMembers: (id: string, userIds: string[]) =>
+    api.delete(`/groups/${id}/members`, { data: { user_ids: userIds } }),
+};
+
+// Language preference
+export const languageApi = {
+  update: (lang: string) => api.patch("/auth/me/language", { preferred_language: lang }),
+};
+
+// Payroll
+export const payrollApi = {
+  // Settings
+  getSettings: () => api.get("/payroll/settings"),
+  updateSettings: (data: Record<string, unknown>) =>
+    api.put("/payroll/settings", data),
+
+  // Allowance Types
+  listAllowanceTypes: () => api.get("/payroll/allowance-types"),
+  createAllowanceType: (data: Record<string, unknown>) =>
+    api.post("/payroll/allowance-types", data),
+  updateAllowanceType: (id: string, data: Record<string, unknown>) =>
+    api.patch(`/payroll/allowance-types/${id}`, data),
+  deleteAllowanceType: (id: string) =>
+    api.delete(`/payroll/allowance-types/${id}`),
+
+  // Deduction Types
+  listDeductionTypes: () => api.get("/payroll/deduction-types"),
+  createDeductionType: (data: Record<string, unknown>) =>
+    api.post("/payroll/deduction-types", data),
+  updateDeductionType: (id: string, data: Record<string, unknown>) =>
+    api.patch(`/payroll/deduction-types/${id}`, data),
+  deleteDeductionType: (id: string) =>
+    api.delete(`/payroll/deduction-types/${id}`),
+
+  // Tax Brackets
+  listTaxBrackets: () => api.get("/payroll/tax-brackets"),
+  replaceTaxBrackets: (brackets: Record<string, unknown>[]) =>
+    api.put("/payroll/tax-brackets", { brackets }),
+
+  // Leave Policies
+  listLeavePolicies: () => api.get("/payroll/leave-policies"),
+  createLeavePolicy: (data: Record<string, unknown>) =>
+    api.post("/payroll/leave-policies", data),
+  updateLeavePolicy: (id: string, data: Record<string, unknown>) =>
+    api.patch(`/payroll/leave-policies/${id}`, data),
+  deleteLeavePolicy: (id: string) =>
+    api.delete(`/payroll/leave-policies/${id}`),
 };
 
 export default api;

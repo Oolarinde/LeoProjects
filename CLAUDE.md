@@ -227,4 +227,28 @@ AFRICAS_TALKING_USERNAME=
 
 ## Current Status
 
-Phase 0 — not yet started. Planning complete. Excel fully analysed (`Sample/TALENTS_AIS_FIXED.xlsx`). Ready to scaffold.
+**Phase 0 — Foundation: COMPLETE.** Auth (JWT + RBAC), User Management, Group/Role Management, multi-tenancy, React shell with sidebar, i18n (en/fr).
+
+**Payroll Module — Sprint 1 COMPLETE, Sprint 2 in progress.**
+
+### Payroll Sprint Status
+
+| Sprint | Scope | Status |
+|---|---|---|
+| 1 | Config tables (payroll_settings, allowance_types, deduction_types, tax_brackets, leave_policies) + PayrollSetup.tsx tabbed UI + Nigerian PAYE/pension/NHF/NSITF defaults auto-seeded on registration | DONE |
+| 2 | Employee payroll profiles + leave management (requests, approval, balances) | NOW |
+| 3 | Payroll calculation engine (PAYE progressive tax, CRA) + PayrollProcessing.tsx stepper wizard | NEXT |
+| 4 | Payslip generation + PDF export (WeasyPrint) | |
+| 5 | Integration tests + edge cases + 13th month bonus | |
+
+### Payroll Tables (Migration 004 — exists, needs `alembic upgrade head`)
+
+`payroll_settings`, `allowance_types`, `deduction_types`, `tax_brackets`, `leave_policies`
+
+### Payroll Tables (Migration 005 — Sprint 2, not yet created)
+
+`employee_payroll_profiles`, `employee_allowances`, `employee_deductions`, `employee_leave_balances`, `leave_requests`
+
+### Payroll Tables (Sprint 3 — not yet created)
+
+`payroll_runs`, `payroll_items`, `payroll_item_lines`

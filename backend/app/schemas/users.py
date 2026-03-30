@@ -1,12 +1,13 @@
+from __future__ import annotations
 from pydantic import BaseModel, EmailStr, field_validator
 
 
 class UserCreateRequest(BaseModel):
     email: EmailStr
     full_name: str
-    role: str  # "ADMIN" or "STAFF"
+    role: str  # "ADMIN" or "STAFF" (system hierarchy)
     password: str
-    permissions: dict[str, str] = {}
+    group_id: str  # UUID — the custom role to assign (required)
 
     @field_validator("password")
     @classmethod
@@ -22,12 +23,19 @@ class UserCreateRequest(BaseModel):
             raise ValueError("Full name is required")
         return v.strip()
 
+    @field_validator("group_id")
+    @classmethod
+    def group_id_not_empty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("Role assignment is required")
+        return v.strip()
+
 
 class UserUpdateRequest(BaseModel):
     full_name: str | None = None
     role: str | None = None
-    permissions: dict[str, str] | None = None
     is_active: bool | None = None
+    group_id: str | None = None  # UUID string — change the user's custom role
 
     @field_validator("full_name")
     @classmethod

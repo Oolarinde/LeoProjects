@@ -1,10 +1,14 @@
+from __future__ import annotations
 import asyncio
+import sys
+from pathlib import Path
 from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from database import Base
 import app.models  # noqa: F401 — ensure all models are registered
 
