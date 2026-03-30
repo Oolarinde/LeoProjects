@@ -233,9 +233,11 @@ AFRICAS_TALKING_USERNAME=
 
 **Dashboard:** Accounting-focused — 5 KPIs (Revenue, Expenses, Net Profit, Margin, Salaries), P&L trend chart with 5 expense lines, 6 revenue streams donut, Expense vs Budget bar chart, Cash Position summary, Trial Balance snapshot, GL entries table with Debit/Credit.
 
-**Payroll Module — Sprint 1 COMPLETE, Sprint 2 in progress.**
+**Phase 1 — Data Entry: COMPLETE** (Revenue, Expense, Settings CRUD, Dashboard live data, Seed migration 009)
 
-### Council Audit (2026-03-30) — Critical Fixes Applied
+**Payroll Module — Sprint 1 COMPLETE, Sprint 2 COMPLETE.**
+
+### Council Audit (2026-03-30) — All Fixes Applied
 
 | Fix | Migration | Status |
 |---|---|---|
@@ -247,39 +249,31 @@ AFRICAS_TALKING_USERNAME=
 | Language endpoint `dict` → `LanguageUpdate` Pydantic schema | — | DONE |
 | React Error Boundary added | — | DONE |
 | `ApiError` type + `getErrorMessage` helper added | — | DONE |
+| `expense_transactions.location_id` NOT NULL → nullable | 010 | DONE |
+| Missing `account_id` + `category` indexes on transaction tables | 010 | DONE |
+| `update_revenue`/`update_expense` silently dropped None → fixed | — | DONE |
+| `formatNaira` + `PAYMENT_METHODS` extracted to `frontend/src/utils/format.ts` | — | DONE |
+| Revenue/Expense search promoted from client-side to server-side | — | DONE |
 
-**Run `alembic upgrade head` to apply migration 005.**
+### Known Issues (remaining)
 
-### Known Issues (from council audit, not yet fixed)
-
-- No audit logging on write operations (Phase 1 prerequisite)
-- No pagination on list endpoints (users, groups, payroll types)
-- JWT contains company_id + permissions in payload (acceptable for now, review Phase 6+)
-- Dashboard/PayrollSetup components are large — split into sub-components when building Phase 1
-- No test coverage yet — add with Phase 1 CRUD
+- No pagination on list endpoints (users, groups, payroll types) — Phase 2
+- JWT contains company_id + permissions in payload (acceptable now, review Phase 6+)
+- No test coverage yet — add with Sprint 5
 
 ### Payroll Sprint Status
 
 | Sprint | Scope | Status |
 |---|---|---|
-| 1 | Config tables (payroll_settings, allowance_types, deduction_types, tax_brackets, leave_policies) + PayrollSetup.tsx tabbed UI + Nigerian PAYE/pension/NHF/NSITF defaults auto-seeded on registration | DONE |
-| 2 | Employee payroll profiles + leave management (requests, approval, balances) | NOW |
-| 3 | Payroll calculation engine (PAYE progressive tax, CRA) + PayrollProcessing.tsx stepper wizard | NEXT |
+| 1 | Config tables + PayrollSetup.tsx UI + Nigerian PAYE/pension/NHF/NSITF defaults | DONE |
+| 2 | Employee payroll profiles + allowances/deductions + leave balances + leave requests with approval workflow | DONE |
+| 3 | Payroll calculation engine (PAYE progressive tax, CRA) + PayrollProcessing.tsx stepper | NEXT |
 | 4 | Payslip generation + PDF export (WeasyPrint) | |
 | 5 | Integration tests + edge cases + 13th month bonus | |
 
-### Payroll Tables (Migration 004 — applied)
+### Migration Chain (all applied)
 
-`payroll_settings`, `allowance_types`, `deduction_types`, `tax_brackets`, `leave_policies`
-
-### Migration 005 — Constraint & Index Fixes (needs `alembic upgrade head`)
-
-- Fix `employee_ref` compound unique constraint
-- Add indexes on `locations.company_id`, `accounts.company_id`, `employees.company_id`, `reference_data.company_id`
-
-### Payroll Tables (Migration 006 — Sprint 2, not yet created)
-
-`employee_payroll_profiles`, `employee_allowances`, `employee_deductions`, `employee_leave_balances`, `leave_requests`
+001 → 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010
 
 ### Payroll Tables (Sprint 3 — not yet created)
 

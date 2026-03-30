@@ -45,7 +45,9 @@
     "referenceData": "Reference Data",
     "userManagement": "User Management",
     "roleManagement": "Role Management",
-    "payrollSetup": "Payroll Setup"
+    "payrollSetup": "Payroll Setup",
+    "payrollEmployees": "Payroll Profiles",
+    "leaveRequests": "Leave Requests"
   },
   "auth": {
     "login": "Login",
@@ -227,6 +229,42 @@
     "loginHistory": "Login History"
   },
   "payroll": {
+    "employees": {
+      "title": "Payroll Profiles",
+      "addProfile": "Add Profile",
+      "editProfile": "Edit Profile",
+      "basicSalary": "Basic Salary",
+      "payGrade": "Pay Grade",
+      "effectiveDate": "Effective Date",
+      "bankDetails": "Bank Details",
+      "bankName": "Bank Name",
+      "bankAccountNo": "Account Number",
+      "pensionId": "PFA Member ID",
+      "allowances": "Allowances",
+      "deductions": "Deductions",
+      "addAllowance": "Add Allowance",
+      "amount": "Amount (₦)",
+      "default": "Default"
+    },
+    "leave": {
+      "title": "Leave Requests",
+      "addRequest": "Add Leave Request",
+      "leaveType": "Leave Type",
+      "period": "Period",
+      "days": "Days",
+      "reason": "Reason",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "daysRequested": "Days Requested",
+      "approve": "Approve",
+      "reject": "Reject",
+      "cancel": "Cancel",
+      "confirmApprove": "Approve this leave request?",
+      "confirmReject": "Reject this leave request?",
+      "rejectionReason": "Reason for rejection",
+      "noRequests": "No leave requests found.",
+      "requiredFields": "Employee, leave type, dates, and days are required"
+    },
     "setup": {
       "title": "Payroll Setup",
       "tabs": {

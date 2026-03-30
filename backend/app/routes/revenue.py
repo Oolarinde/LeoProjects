@@ -24,13 +24,14 @@ _write = require_permission(Module.REVENUE, AccessLevel.WRITE)
 async def list_revenue(
     year: int = Query(...),
     location_id: Optional[UUID] = Query(None),
+    search: Optional[str] = Query(None),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     current_user: User = Depends(_read),
     db: AsyncSession = Depends(get_db),
 ):
     items, total = await revenue_service.list_revenue(
-        db, current_user.company_id, year, location_id, limit, offset,
+        db, current_user.company_id, year, location_id, limit, offset, search,
     )
     return items
 

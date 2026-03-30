@@ -45,7 +45,9 @@
     "referenceData": "Données de Référence",
     "userManagement": "Gestion des Utilisateurs",
     "roleManagement": "Gestion des Rôles",
-    "payrollSetup": "Configuration Paie"
+    "payrollSetup": "Configuration Paie",
+    "payrollEmployees": "Profils Paie",
+    "leaveRequests": "Demandes de Congé"
   },
   "auth": {
     "login": "Connexion",
@@ -227,6 +229,42 @@
     "loginHistory": "Historique de Connexion"
   },
   "payroll": {
+    "employees": {
+      "title": "Profils de Paie",
+      "addProfile": "Ajouter Profil",
+      "editProfile": "Modifier Profil",
+      "basicSalary": "Salaire de base",
+      "payGrade": "Grade",
+      "effectiveDate": "Date d'effet",
+      "bankDetails": "Coordonnées bancaires",
+      "bankName": "Banque",
+      "bankAccountNo": "Numéro de compte",
+      "pensionId": "ID PFA",
+      "allowances": "Indemnités",
+      "deductions": "Déductions",
+      "addAllowance": "Ajouter indemnité",
+      "amount": "Montant (₦)",
+      "default": "Défaut"
+    },
+    "leave": {
+      "title": "Demandes de Congé",
+      "addRequest": "Nouvelle demande",
+      "leaveType": "Type de congé",
+      "period": "Période",
+      "days": "Jours",
+      "reason": "Motif",
+      "startDate": "Date de début",
+      "endDate": "Date de fin",
+      "daysRequested": "Jours demandés",
+      "approve": "Approuver",
+      "reject": "Rejeter",
+      "cancel": "Annuler",
+      "confirmApprove": "Approuver cette demande de congé ?",
+      "confirmReject": "Rejeter cette demande de congé ?",
+      "rejectionReason": "Motif du rejet",
+      "noRequests": "Aucune demande de congé trouvée.",
+      "requiredFields": "Employé, type, dates et jours sont obligatoires"
+    },
     "setup": {
       "title": "Configuration de la Paie",
       "tabs": {

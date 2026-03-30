@@ -189,6 +189,41 @@ export const payrollApi = {
     api.patch(`/payroll/leave-policies/${id}`, data),
   deleteLeavePolicy: (id: string) =>
     api.delete(`/payroll/leave-policies/${id}`),
+
+  // Sprint 2 — Payroll Profiles
+  listProfiles: () => api.get("/payroll/profiles"),
+  getProfile: (employeeId: string) => api.get(`/payroll/profiles/${employeeId}`),
+  upsertProfile: (data: Record<string, unknown>) => api.put("/payroll/profiles", data),
+
+  // Sprint 2 — Employee Allowances
+  listEmployeeAllowances: (employeeId: string) =>
+    api.get(`/payroll/employees/${employeeId}/allowances`),
+  upsertEmployeeAllowance: (employeeId: string, data: Record<string, unknown>) =>
+    api.put(`/payroll/employees/${employeeId}/allowances`, data),
+  deleteEmployeeAllowance: (employeeId: string, itemId: string) =>
+    api.delete(`/payroll/employees/${employeeId}/allowances/${itemId}`),
+
+  // Sprint 2 — Employee Deductions
+  listEmployeeDeductions: (employeeId: string) =>
+    api.get(`/payroll/employees/${employeeId}/deductions`),
+  upsertEmployeeDeduction: (employeeId: string, data: Record<string, unknown>) =>
+    api.put(`/payroll/employees/${employeeId}/deductions`, data),
+  deleteEmployeeDeduction: (employeeId: string, itemId: string) =>
+    api.delete(`/payroll/employees/${employeeId}/deductions/${itemId}`),
+
+  // Sprint 2 — Leave Balances
+  getLeaveBalances: (employeeId: string, year: number) =>
+    api.get(`/payroll/employees/${employeeId}/leave-balances`, { params: { year } }),
+
+  // Sprint 2 — Leave Requests
+  listLeaveRequests: (params?: Record<string, unknown>) =>
+    api.get("/payroll/leave-requests", { params }),
+  createLeaveRequest: (data: Record<string, unknown>) =>
+    api.post("/payroll/leave-requests", data),
+  updateLeaveRequestStatus: (requestId: string, data: Record<string, unknown>) =>
+    api.patch(`/payroll/leave-requests/${requestId}/status`, data),
+  cancelLeaveRequest: (requestId: string) =>
+    api.patch(`/payroll/leave-requests/${requestId}/cancel`),
 };
 
 // Revenue

@@ -37,6 +37,7 @@ import {
 import { revenueApi, referenceApi, getErrorMessage } from "../services/api";
 import { useAppStore } from "../utils/store";
 import { tokens } from "../theme/theme";
+import { formatNairaDecimal, PAYMENT_METHODS } from "../utils/format";
 
 interface Location {
   id: string;
@@ -67,8 +68,6 @@ interface RevenueRow {
   tenant_name: string | null;
 }
 
-const PAYMENT_METHODS = ["Cash", "Bank Transfer", "POS", "Mobile Transfer", "Cheque"];
-
 const emptyForm = {
   location_id: "",
   unit_id: "",
@@ -80,10 +79,6 @@ const emptyForm = {
   description: "",
   tenant_name: "",
 };
-
-function formatNaira(value: number): string {
-  return "\u20A6" + Number(value).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
 
 export default function Revenue() {
   const { t } = useTranslation();
@@ -150,6 +145,7 @@ export default function Revenue() {
         offset: page * rowsPerPage,
       };
       if (filterLocationId) params.location_id = filterLocationId;
+      if (search.trim()) params.search = search.trim();
       const resp = await revenueApi.list(params);
       setRows(resp.data);
     } catch (err) {
@@ -157,7 +153,7 @@ export default function Revenue() {
     } finally {
       setLoading(false);
     }
-  }, [year, filterLocationId, page, rowsPerPage]);
+  }, [year, filterLocationId, page, rowsPerPage, search]);
 
   useEffect(() => {
     fetchDropdowns();
@@ -177,10 +173,13 @@ export default function Revenue() {
 
   const filteredUnits = allUnits.filter((u) => u.location_id === form.location_id);
 
-  // Filtered by search
-  const displayed = search.trim()
-    ? rows.filter((r) => (r.tenant_name ?? "").toLowerCase().includes(search.toLowerCase()))
-    : rows;
+  // Reset page when search changes
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPage(0);
+  };
+
+  const displayed = rows;
 
   const openAdd = () => {
     setEditing(null);
@@ -292,7 +291,7 @@ export default function Revenue() {
           size="small"
           placeholder={t("revenue.searchTenant")}
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => handleSearchChange(e.target.value)}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -336,7 +335,7 @@ export default function Revenue() {
                     <TableCell>{unitName(row.unit_id)}</TableCell>
                     <TableCell>{acctName(row.account_id)}</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 600, fontFamily: "monospace", color: "#4caf50" }}>
-                      {formatNaira(row.amount)}
+                      {formatNairaDecimal(row.amount)}
                     </TableCell>
                     <TableCell>{row.payment_method || "—"}</TableCell>
                     <TableCell sx={{ color: tokens.muted }}>{row.reference_no || "—"}</TableCell>

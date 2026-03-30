@@ -25,14 +25,25 @@ async def list_revenue(
     location_id: UUID | None = None,
     limit: int = 50,
     offset: int = 0,
+    search: str | None = None,
 ) -> tuple[list[RevenueTransaction], int]:
     """Return (items, total_count) filtered by year, optional location, paginated."""
+    from sqlalchemy import or_, cast, Text
     base = select(RevenueTransaction).where(
         RevenueTransaction.company_id == company_id,
         RevenueTransaction.fiscal_year == year,
     )
     if location_id:
         base = base.where(RevenueTransaction.location_id == location_id)
+    if search:
+        term = f"%{search.lower()}%"
+        base = base.where(
+            or_(
+                RevenueTransaction.tenant_name.ilike(term),
+                RevenueTransaction.reference_no.ilike(term),
+                RevenueTransaction.description.ilike(term),
+            )
+        )
 
     # total count
     count_q = select(sqlfunc.count()).select_from(base.subquery())
@@ -111,16 +122,15 @@ async def update_revenue(
     if item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Revenue transaction not found")
 
-    filtered = {k: v for k, v in data.items() if v is not None and k in UPDATABLE_FIELDS}
-    diff = compute_diff(item, filtered)
+    safe = {k: v for k, v in data.items() if k in UPDATABLE_FIELDS}
+    diff = compute_diff(item, safe)
 
-    for key, value in data.items():
-        if value is not None and key in UPDATABLE_FIELDS:
-            setattr(item, key, value)
+    for key, value in safe.items():
+        setattr(item, key, value)
 
     # Recompute fiscal_year if date changed
-    if "date" in data and data["date"] is not None:
-        item.fiscal_year = data["date"].year
+    if "date" in safe and safe["date"] is not None:
+        item.fiscal_year = safe["date"].year
 
     item.updated_by = user_id
     await db.flush()

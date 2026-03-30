@@ -216,6 +216,8 @@ function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle:
     { label: t("nav.expenses"), path: "/expenses", icon: <CreditCard sx={{ fontSize: 18 }} />, module: "expenses" },
     { label: t("nav.payroll"), path: "/payroll", icon: <People sx={{ fontSize: 18 }} />, module: "payroll" },
     { label: t("nav.payrollSetup"), path: "/payroll/setup", icon: <Settings sx={{ fontSize: 18 }} />, module: "payroll" },
+    { label: t("nav.payrollEmployees"), path: "/payroll/employees", icon: <People sx={{ fontSize: 18 }} />, module: "payroll" },
+    { label: t("nav.leaveRequests"), path: "/payroll/leave", icon: <People sx={{ fontSize: 18 }} />, module: "payroll" },
     { label: t("nav.budget"), path: "/budget", icon: <AccountBalance sx={{ fontSize: 18 }} />, module: "budget" },
     { label: t("nav.generalLedger"), path: "/ledger", icon: <LibraryBooks sx={{ fontSize: 18 }} />, module: "ledger" },
   ];

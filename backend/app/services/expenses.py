@@ -25,14 +25,26 @@ async def list_expenses(
     location_id: UUID | None = None,
     limit: int = 50,
     offset: int = 0,
+    search: str | None = None,
 ) -> tuple[list[ExpenseTransaction], int]:
     """Return (items, total_count) filtered by year, optional location, paginated."""
+    from sqlalchemy import or_
     base = select(ExpenseTransaction).where(
         ExpenseTransaction.company_id == company_id,
         ExpenseTransaction.fiscal_year == year,
     )
     if location_id:
         base = base.where(ExpenseTransaction.location_id == location_id)
+    if search:
+        term = f"%{search.lower()}%"
+        base = base.where(
+            or_(
+                ExpenseTransaction.vendor_name.ilike(term),
+                ExpenseTransaction.reference_no.ilike(term),
+                ExpenseTransaction.description.ilike(term),
+                ExpenseTransaction.category.ilike(term),
+            )
+        )
 
     count_q = select(sqlfunc.count()).select_from(base.subquery())
     total = (await db.execute(count_q)).scalar() or 0
@@ -109,16 +121,15 @@ async def update_expense(
     if item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Expense transaction not found")
 
-    filtered = {k: v for k, v in data.items() if v is not None and k in UPDATABLE_FIELDS}
-    diff = compute_diff(item, filtered)
+    safe = {k: v for k, v in data.items() if k in UPDATABLE_FIELDS}
+    diff = compute_diff(item, safe)
 
-    for key, value in data.items():
-        if value is not None and key in UPDATABLE_FIELDS:
-            setattr(item, key, value)
+    for key, value in safe.items():
+        setattr(item, key, value)
 
     # Recompute fiscal_year if date changed
-    if "date" in data and data["date"] is not None:
-        item.fiscal_year = data["date"].year
+    if "date" in safe and safe["date"] is not None:
+        item.fiscal_year = safe["date"].year
 
     item.updated_by = user_id
     await db.flush()

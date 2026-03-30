@@ -10,6 +10,8 @@ import Profile from "./pages/Profile";
 import UserManagement from "./pages/UserManagement";
 import GroupManagement from "./pages/GroupManagement";
 import PayrollSetup from "./pages/payroll/PayrollSetup";
+import PayrollEmployees from "./pages/payroll/PayrollEmployees";
+import LeaveRequests from "./pages/payroll/LeaveRequests";
 import ChartOfAccounts from "./pages/settings/ChartOfAccounts";
 import LocationsAndUnits from "./pages/settings/Locations";
 import Employees from "./pages/settings/Employees";
@@ -60,6 +62,8 @@ export default function App() {
         <Route path="/expenses" element={<PermissionRoute module="expenses"><Expenses /></PermissionRoute>} />
         <Route path="/payroll" element={<PermissionRoute module="payroll"><Placeholder /></PermissionRoute>} />
         <Route path="/payroll/setup" element={<PermissionRoute module="payroll"><PayrollSetup /></PermissionRoute>} />
+        <Route path="/payroll/employees" element={<PermissionRoute module="payroll"><PayrollEmployees /></PermissionRoute>} />
+        <Route path="/payroll/leave" element={<PermissionRoute module="payroll"><LeaveRequests /></PermissionRoute>} />
         <Route path="/budget" element={<PermissionRoute module="budget"><Placeholder /></PermissionRoute>} />
 
         {/* Reports */}

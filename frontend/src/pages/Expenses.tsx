@@ -37,6 +37,7 @@ import {
 import { expensesApi, referenceApi, getErrorMessage } from "../services/api";
 import { useAppStore } from "../utils/store";
 import { tokens } from "../theme/theme";
+import { formatNairaDecimal, PAYMENT_METHODS, EXPENSE_CATEGORIES } from "../utils/format";
 
 interface Location {
   id: string;
@@ -62,13 +63,6 @@ interface ExpenseRow {
   vendor_name: string | null;
 }
 
-const PAYMENT_METHODS = ["Cash", "Bank Transfer", "POS", "Mobile Transfer", "Cheque"];
-const EXPENSE_CATEGORIES = [
-  "Salaries", "Construction", "Maintenance", "Utilities", "Inventory",
-  "Administrative", "Loans & Advances", "Transportation",
-  "IT & Communications", "Other",
-];
-
 const emptyForm = {
   location_id: "",
   account_id: "",
@@ -80,10 +74,6 @@ const emptyForm = {
   description: "",
   vendor_name: "",
 };
-
-function formatNaira(value: number): string {
-  return "\u20A6" + Number(value).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
 
 export default function Expenses() {
   const { t } = useTranslation();
@@ -147,6 +137,7 @@ export default function Expenses() {
         offset: page * rowsPerPage,
       };
       if (filterLocationId) params.location_id = filterLocationId;
+      if (search.trim()) params.search = search.trim();
       const resp = await expensesApi.list(params);
       setRows(resp.data);
     } catch (err) {
@@ -154,7 +145,7 @@ export default function Expenses() {
     } finally {
       setLoading(false);
     }
-  }, [year, filterLocationId, page, rowsPerPage]);
+  }, [year, filterLocationId, page, rowsPerPage, search]);
 
   useEffect(() => {
     fetchDropdowns();
@@ -171,10 +162,12 @@ export default function Expenses() {
     return a ? a.name : "—";
   };
 
-  // Filtered by search
-  const displayed = search.trim()
-    ? rows.filter((r) => (r.vendor_name ?? "").toLowerCase().includes(search.toLowerCase()))
-    : rows;
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPage(0);
+  };
+
+  const displayed = rows;
 
   const openAdd = () => {
     setEditing(null);
@@ -299,7 +292,7 @@ export default function Expenses() {
           size="small"
           placeholder={t("expenses.searchVendor")}
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => handleSearchChange(e.target.value)}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -353,7 +346,7 @@ export default function Expenses() {
                     <TableCell>{locName(row.location_id)}</TableCell>
                     <TableCell>{acctName(row.account_id)}</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 600, fontFamily: "monospace", color: "#e91e63" }}>
-                      {formatNaira(row.amount)}
+                      {formatNairaDecimal(row.amount)}
                     </TableCell>
                     <TableCell>{row.payment_method || "—"}</TableCell>
                     <TableCell sx={{ color: tokens.muted }}>{row.reference_no || "—"}</TableCell>
