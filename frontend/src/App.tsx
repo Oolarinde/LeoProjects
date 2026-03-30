@@ -4,6 +4,7 @@ import Layout from "./components/Layout";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Placeholder from "./pages/Placeholder";
+import Profile from "./pages/Profile";
 import UserManagement from "./pages/UserManagement";
 import GroupManagement from "./pages/GroupManagement";
 import PayrollSetup from "./pages/payroll/PayrollSetup";
@@ -72,7 +73,7 @@ export default function App() {
         <Route path="/settings/roles" element={<AdminRoute><GroupManagement /></AdminRoute>} />
 
         {/* Profile */}
-        <Route path="/profile" element={<Placeholder />} />
+        <Route path="/profile" element={<Profile />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

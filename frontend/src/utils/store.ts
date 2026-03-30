@@ -22,10 +22,13 @@ interface AppState {
   user: User | null;
   accessToken: string | null;
   refreshToken: string | null;
+  appVersion: string | null;
+  companyName: string | null;
   setYear: (year: number) => void;
   setLocation: (location: Location | null) => void;
   setUser: (user: User | null) => void;
   setTokens: (access: string, refresh: string) => void;
+  setAppConfig: (version: string, companyName: string) => void;
   logout: () => void;
 }
 
@@ -53,11 +56,14 @@ export const useAppStore = create<AppState>((set) => ({
   user: null,
   accessToken: null,
   refreshToken: null,
+  appVersion: null,
+  companyName: null,
   setYear: (year) => set({ year }),
   setLocation: (location) => set({ location }),
   setUser: (user) => set({ user }),
   setTokens: (access, refresh) =>
     set({ accessToken: access, refreshToken: refresh }),
+  setAppConfig: (version, companyName) => set({ appVersion: version, companyName }),
   logout: () =>
     set({
       user: null,

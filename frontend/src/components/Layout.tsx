@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -44,7 +44,7 @@ import {
 } from "@mui/icons-material";
 import { tokens } from "../theme/theme";
 import { useAppStore, hasAccess, isAdmin } from "../utils/store";
-import { languageApi } from "../services/api";
+import { languageApi, configApi } from "../services/api";
 
 const SIDEBAR_FULL = 250;
 const SIDEBAR_MINI = 64;
@@ -340,8 +340,14 @@ export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [langAnchor, setLangAnchor] = useState<null | HTMLElement>(null);
-  const { year, setYear, user, logout, setUser } = useAppStore();
+  const { year, setYear, user, logout, setUser, appVersion, companyName, setAppConfig } = useAppStore();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    configApi.get().then((resp) => {
+      setAppConfig(resp.data.version, resp.data.app_name);
+    }).catch(() => {});
+  }, []);
 
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
@@ -541,8 +547,9 @@ export default function Layout() {
             borderTop: `1px solid ${tokens.border}`,
           }}
         >
-          <Typography sx={{ fontSize: 11, color: tokens.muted }}>
-            {t("footer.copyright")} &copy; {new Date().getFullYear()}
+          <Typography sx={{ fontSize: 12, color: tokens.muted }}>
+            {companyName || t("footer.copyright")} &copy; {new Date().getFullYear()}, {t("footer.poweredBy")}{" "}
+            {appVersion && <span style={{ float: "right" }}>{t("footer.version", { version: appVersion })}</span>}
           </Typography>
         </Box>
       </Box>

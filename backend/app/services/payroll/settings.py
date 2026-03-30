@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.payroll.settings import PayrollSettings
+from app.services.audit import log_action, compute_diff
 
 
 async def get_or_create_settings(db: AsyncSession, company_id: UUID) -> PayrollSettings:
@@ -36,12 +37,35 @@ UPDATABLE_SETTINGS_FIELDS = {
 
 
 async def update_settings(
-    db: AsyncSession, company_id: UUID, data: dict
+    db: AsyncSession,
+    company_id: UUID,
+    data: dict,
+    user_id: UUID | None = None,
+    ip_address: str | None = None,
 ) -> PayrollSettings:
     """Update payroll settings for a company."""
     settings = await get_or_create_settings(db, company_id)
+
+    # Filter to only updatable fields for diff
+    filtered = {k: v for k, v in data.items() if v is not None and k in UPDATABLE_SETTINGS_FIELDS}
+    diff = compute_diff(settings, filtered)
+
     for key, value in data.items():
         if value is not None and key in UPDATABLE_SETTINGS_FIELDS:
             setattr(settings, key, value)
+
+    settings.updated_by = user_id
     await db.flush()
+
+    if diff:
+        await log_action(
+            db,
+            company_id=company_id,
+            table_name="payroll_settings",
+            record_id=settings.id,
+            action="UPDATE",
+            changed_fields=diff,
+            user_id=user_id,
+            ip_address=ip_address,
+        )
     return settings

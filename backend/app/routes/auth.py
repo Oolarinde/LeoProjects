@@ -14,7 +14,10 @@ from app.schemas.schemas import (
     UserResponse,
 )
 from app.services.auth import authenticate_user, generate_tokens, refresh_access_token, register_user
+from app.services.login_sessions import list_sessions, record_login
+from app.schemas.login_session import LoginHistoryResponse
 from app.utils.dependencies import get_current_user
+from app.utils.request_context import get_client_ip
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
@@ -39,6 +42,12 @@ async def login(request: Request, body: LoginRequest, db: AsyncSession = Depends
     user = await authenticate_user(db, body.email, body.password)
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
+    await record_login(
+        db,
+        user=user,
+        ip_address=get_client_ip(request),
+        user_agent_str=request.headers.get("user-agent", ""),
+    )
     return generate_tokens(user)
 
 
@@ -53,6 +62,17 @@ async def refresh(request: RefreshRequest, db: AsyncSession = Depends(get_db)):
 @router.get("/me", response_model=UserResponse)
 async def me(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+@router.get("/me/login-history", response_model=LoginHistoryResponse)
+async def login_history(
+    limit: int = 50,
+    offset: int = 0,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    items, total = await list_sessions(db, current_user.id, current_user.company_id, limit=limit, offset=offset)
+    return LoginHistoryResponse(items=items, total=total)
 
 
 @router.patch("/me/language", response_model=UserResponse)

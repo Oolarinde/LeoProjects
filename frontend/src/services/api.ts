@@ -66,6 +66,9 @@ export const authApi = {
 export const referenceApi = {
   getLocations: () => api.get("/reference/locations"),
   getDropdowns: () => api.get("/reference/dropdowns"),
+  getUnits: (locationId?: string) => api.get("/reference/units", { params: { location_id: locationId } }),
+  getAccounts: () => api.get("/reference/accounts"),
+  getEmployees: () => api.get("/reference/employees"),
 };
 
 // Users (admin)
@@ -113,6 +116,23 @@ export const groupsApi = {
     api.post(`/groups/${id}/members`, { user_ids: userIds }),
   removeMembers: (id: string, userIds: string[]) =>
     api.delete(`/groups/${id}/members`, { data: { user_ids: userIds } }),
+};
+
+// Config
+export const configApi = {
+  get: () => api.get("/config"),
+};
+
+// Dashboard
+export const dashboardApi = {
+  summary: (year: number, locationId?: string) =>
+    api.get("/dashboard/summary", { params: { year, location_id: locationId || undefined } }),
+};
+
+// Login history
+export const loginHistoryApi = {
+  list: (limit = 50, offset = 0) =>
+    api.get("/auth/me/login-history", { params: { limit, offset } }),
 };
 
 // Language preference

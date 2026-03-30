@@ -8,6 +8,10 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
 from app.routes import auth, users, groups
+from app.routes import config as config_routes
+from app.routes import dashboard as dashboard_routes
+from app.routes import reference as reference_routes
+from app.routes import audit as audit_routes
 from app.routes.payroll import router as payroll_router
 from app.utils.config import settings
 
@@ -41,6 +45,10 @@ app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(groups.router, prefix="/api/groups", tags=["groups"])
 app.include_router(payroll_router, prefix="/api/payroll", tags=["payroll"])
+app.include_router(config_routes.router, prefix="/api/config", tags=["config"])
+app.include_router(dashboard_routes.router, prefix="/api/dashboard", tags=["dashboard"])
+app.include_router(reference_routes.router, prefix="/api/reference", tags=["reference"])
+app.include_router(audit_routes.router, prefix="/api/audit", tags=["audit"])
 
 
 @app.get("/api/health")

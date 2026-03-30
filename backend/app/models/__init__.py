@@ -13,3 +13,5 @@ from app.models.payroll import (  # noqa: F401
     TaxBracket,
     LeavePolicy,
 )
+from app.models.audit_log import AuditLog  # noqa: F401
+from app.models.login_session import LoginSession  # noqa: F401

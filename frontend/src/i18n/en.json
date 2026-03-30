@@ -172,8 +172,29 @@
     "switchedTo": "Language changed to {{language}}"
   },
   "footer": {
-    "copyright": "Talents Apartments AIS",
+    "copyright": "Talents Apartment Management AIS",
+    "poweredBy": "Powered by Executive Talents Inc.",
+    "version": "Version {{version}}",
     "allRights": "All rights reserved."
+  },
+  "loginHistory": {
+    "title": "Login History",
+    "browser": "Browser",
+    "os": "Operating System",
+    "device": "Device",
+    "location": "Location",
+    "ipAddress": "IP Address",
+    "dateTime": "Date / Time",
+    "noSessions": "No login sessions recorded yet."
+  },
+  "profile": {
+    "title": "My Profile",
+    "info": "Profile Information",
+    "name": "Full Name",
+    "email": "Email",
+    "role": "Role",
+    "company": "Company",
+    "loginHistory": "Login History"
   },
   "payroll": {
     "setup": {

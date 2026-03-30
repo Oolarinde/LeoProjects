@@ -11,6 +11,7 @@ from app.models.user import User
 from app.models.group import Group
 from app.utils.security import hash_password
 from app.utils.permissions import SUPER_ADMIN, ADMIN, STAFF
+from app.services.audit import log_action, compute_diff
 
 VALID_ROLES = {SUPER_ADMIN, ADMIN, STAFF}
 ROLE_RANK = {SUPER_ADMIN: 3, ADMIN: 2, STAFF: 1}
@@ -67,6 +68,8 @@ async def create_user(
     role: str,
     group_id: str,
     acting_user: User,
+    user_id: UUID | None = None,
+    ip_address: str | None = None,
 ) -> User:
     if role not in VALID_ROLES or role == SUPER_ADMIN:
         raise HTTPException(
@@ -92,9 +95,19 @@ async def create_user(
         role=role,
         group_id=group.id,
         permissions=group.permissions,
+        created_by=user_id,
     )
     db.add(user)
     await db.flush()
+    await log_action(
+        db,
+        company_id=company_id,
+        table_name="users",
+        record_id=user.id,
+        action="CREATE",
+        user_id=user_id,
+        ip_address=ip_address,
+    )
     return user
 
 
@@ -107,11 +120,26 @@ async def update_user(
     role: str | None = None,
     is_active: bool | None = None,
     group_id: str | None = None,
+    audit_user_id: UUID | None = None,
+    ip_address: str | None = None,
 ) -> User:
     target = await get_user(db, user_id, company_id)
 
     # Check hierarchy against the target's current role
     _check_hierarchy(acting_user, target.role, target.id)
+
+    # Build update dict for audit diff
+    update_data: dict = {}
+    if role is not None:
+        update_data["role"] = role
+    if full_name is not None:
+        update_data["full_name"] = full_name
+    if group_id is not None:
+        update_data["group_id"] = group_id
+    if is_active is not None:
+        update_data["is_active"] = is_active
+
+    diff = compute_diff(target, update_data)
 
     if role is not None:
         if role not in VALID_ROLES or role == SUPER_ADMIN:
@@ -133,12 +161,30 @@ async def update_user(
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot deactivate yourself")
         target.is_active = is_active
 
+    target.updated_by = audit_user_id
     await db.flush()
+
+    if diff:
+        await log_action(
+            db,
+            company_id=company_id,
+            table_name="users",
+            record_id=target.id,
+            action="UPDATE",
+            changed_fields=diff,
+            user_id=audit_user_id,
+            ip_address=ip_address,
+        )
     return target
 
 
 async def deactivate_user(
-    db: AsyncSession, user_id: UUID, company_id: UUID, acting_user: User
+    db: AsyncSession,
+    user_id: UUID,
+    company_id: UUID,
+    acting_user: User,
+    audit_user_id: UUID | None = None,
+    ip_address: str | None = None,
 ) -> User:
     target = await get_user(db, user_id, company_id)
     _check_hierarchy(acting_user, target.role, target.id)
@@ -147,5 +193,15 @@ async def deactivate_user(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot deactivate yourself")
 
     target.is_active = False
+    target.updated_by = audit_user_id
     await db.flush()
+    await log_action(
+        db,
+        company_id=company_id,
+        table_name="users",
+        record_id=target.id,
+        action="DELETE",
+        user_id=audit_user_id,
+        ip_address=ip_address,
+    )
     return target

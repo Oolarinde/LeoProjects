@@ -1,4 +1,5 @@
 from __future__ import annotations
+from datetime import datetime
 from decimal import Decimal
 from typing import Optional
 import uuid
@@ -29,5 +30,8 @@ class Employee(Base):
     monthly_salary: Mapped[Optional[Decimal]] = mapped_column(Numeric(15, 2))
     status: Mapped[str] = mapped_column(String(20), default="Active")  # Active, Non Active
     created_at = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=True)
+    created_by: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    updated_by: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
 
     company = relationship("Company", back_populates="employees")
