@@ -1,4 +1,6 @@
 from __future__ import annotations
+import logging
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,6 +11,8 @@ from app.utils.security import hash_password, verify_password, create_access_tok
 from app.utils.permissions import SUPER_ADMIN, ALL_WRITE, ALL_READ
 from app.services.payroll.settings import get_or_create_settings
 from app.services.payroll.types import seed_payroll_defaults
+
+logger = logging.getLogger(__name__)
 
 
 async def _ensure_default_roles(db: AsyncSession, company_id) -> tuple[Group, Group]:
@@ -72,11 +76,17 @@ async def register_user(
 
 
 async def authenticate_user(db: AsyncSession, email: str, password: str) -> User | None:
-    result = await db.execute(select(User).where(User.email == email.lower().strip()))
+    clean_email = email.lower().strip()
+    result = await db.execute(select(User).where(User.email == clean_email))
     user = result.scalar_one_or_none()
-    if user is None or not verify_password(password, user.hashed_password):
+    if user is None:
+        logger.warning("Login failed: unknown email %s", clean_email)
+        return None
+    if not verify_password(password, user.hashed_password):
+        logger.warning("Login failed: wrong password for %s", clean_email)
         return None
     if not user.is_active:
+        logger.warning("Login failed: inactive account %s", clean_email)
         return None
     return user
 

@@ -15,7 +15,7 @@ class ReferenceData(Base):
     __table_args__ = (UniqueConstraint("company_id", "category", "value", name="uq_ref_company_cat_val"),)
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    company_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False)
+    company_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False, index=True)
     category: Mapped[str] = mapped_column(String(50), nullable=False)  # payment_method, expense_category, department, staff_status
     value: Mapped[str] = mapped_column(String(100), nullable=False)
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=True)

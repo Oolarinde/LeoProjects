@@ -57,7 +57,21 @@
     "signingIn": "Signing in...",
     "noAccount": "Don't have an account?",
     "register": "Register",
-    "invalidCredentials": "Invalid email or password"
+    "invalidCredentials": "Invalid email or password",
+    "book": "Book",
+    "ctaTitle": "Do You Have Questions?",
+    "ctaSubtitle": "You can request a call back.",
+    "callMeBack": "Call Me Back",
+    "newsletterText": "Receive updates, new listings, discounts sent straight to your inbox every month",
+    "emailPlaceholder": "Email Address",
+    "subscribe": "Subscribe",
+    "contact": "Contact",
+    "links": "Links",
+    "linkHome": "Home",
+    "linkRooms": "Rooms",
+    "linkFeatures": "Features",
+    "linkContactUs": "Contact Us",
+    "allRights": "All rights reserved."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -107,7 +121,19 @@
     "viewing": "Viewing",
     "fullYear": "Full Year",
     "home": "Home",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "noFinancialData": "No financial data for FY {{year}}. Start by recording revenue or expenses.",
+    "noRevenueData": "No revenue data",
+    "noBudgetData": "No budget data",
+    "noCashData": "No cash data",
+    "noTrialData": "No trial balance data",
+    "date": "Date",
+    "account": "Account",
+    "debit": "Debit (₦)",
+    "credit": "Credit (₦)",
+    "noEntries": "No ledger entries recorded yet.",
+    "profit": "Profit",
+    "loss": "Loss"
   },
   "users": {
     "title": "User Management",
@@ -155,7 +181,11 @@
     "availableUsers": "Available Users",
     "currentMembers": "Assigned Users",
     "noAvailableUsers": "No available users to assign",
-    "noMembers": "No users assigned to this role"
+    "noMembers": "No users assigned to this role",
+    "failedDelete": "Failed to delete role",
+    "failedAddUsers": "Failed to add users",
+    "failedRemoveUser": "Failed to remove user",
+    "failedLoadDetails": "Failed to load role details"
   },
   "permissions": {
     "module": "Module",
@@ -267,6 +297,87 @@
       "required": "Required",
       "days": "days"
     }
+  },
+  "settings": {
+    "chartOfAccounts": "Chart of Accounts",
+    "code": "Code",
+    "accountName": "Account Name",
+    "accountType": "Type",
+    "normalBalance": "Normal Balance",
+    "description": "Description",
+    "addAccount": "Add Account",
+    "editAccount": "Edit Account",
+
+    "locations": "Locations & Units",
+    "locationName": "Location Name",
+    "address": "Address",
+    "unitCount": "Units",
+    "addLocation": "Add Location",
+    "editLocation": "Edit Location",
+
+    "units": "Units",
+    "unitName": "Unit Name",
+    "unitType": "Type",
+    "active": "Active",
+    "addUnit": "Add Unit",
+    "editUnit": "Edit Unit",
+
+    "employees": "Employees",
+    "employeeRef": "Ref",
+    "employeeName": "Name",
+    "designation": "Designation",
+    "gender": "Gender",
+    "phone": "Phone",
+    "email": "Email",
+    "salary": "Monthly Salary",
+    "status": "Status",
+    "addEmployee": "Add Employee",
+    "editEmployee": "Edit Employee",
+
+    "referenceData": "Reference Data",
+    "category": "Category",
+    "value": "Value",
+    "addItem": "Add Item",
+    "editItem": "Edit Item",
+
+    "confirmDelete": "Are you sure you want to delete this item?",
+    "deleteWarning": "This action cannot be undone.",
+    "noData": "No data yet. Click the button above to add."
+  },
+  "revenue": {
+    "title": "Revenue Transactions",
+    "addTransaction": "Add Revenue",
+    "editTransaction": "Edit Revenue",
+    "date": "Date",
+    "tenant": "Tenant",
+    "location": "Location",
+    "unit": "Unit",
+    "account": "Account",
+    "amount": "Amount (₦)",
+    "method": "Payment Method",
+    "refNo": "Ref #",
+    "searchTenant": "Search by tenant...",
+    "noData": "No revenue transactions found. Click Add Revenue to create one.",
+    "requiredFields": "Location, account, date, and amount are required"
+  },
+  "expenses": {
+    "title": "Expense Transactions",
+    "addTransaction": "Add Expense",
+    "editTransaction": "Edit Expense",
+    "date": "Date",
+    "vendor": "Vendor",
+    "category": "Category",
+    "location": "Location",
+    "account": "Account",
+    "amount": "Amount (₦)",
+    "method": "Payment Method",
+    "refNo": "Ref #",
+    "searchVendor": "Search by vendor...",
+    "noData": "No expense transactions found. Click Add Expense to create one.",
+    "requiredFields": "Account, category, date, and amount are required"
+  },
+  "placeholder": {
+    "laterPhase": "This module will be implemented in a later phase."
   },
   "roles": {
     "SUPER_ADMIN": "Super Admin",

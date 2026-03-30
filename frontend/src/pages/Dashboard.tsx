@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Card,
@@ -74,12 +75,13 @@ function formatChangePct(pct: number | null): string {
 }
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const { year, location } = useAppStore();
-  const locationLabel = location?.name ?? "All Locations";
+  const locationLabel = location?.name ?? t("dashboard.allLocations");
 
   const [data, setData] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeFilter, setActiveFilter] = useState("All");
+  const [activeFilter, setActiveFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
@@ -120,7 +122,7 @@ export default function Dashboard() {
   const kpis = data
     ? [
         {
-          label: "Total Revenue",
+          label: t("dashboard.totalRevenue"),
           value: formatNaira(data.total_revenue),
           accent: tokens.primary,
           gradient: tokens.gradPrimary,
@@ -129,7 +131,7 @@ export default function Dashboard() {
           up: data.revenue_change_pct !== null ? (data.revenue_change_pct > 0 ? true : data.revenue_change_pct < 0 ? false : null) : null,
         },
         {
-          label: "Total Expenses",
+          label: t("dashboard.totalExpenses"),
           value: formatNaira(data.total_expenses),
           accent: tokens.pink,
           gradient: tokens.gradPink,
@@ -138,16 +140,16 @@ export default function Dashboard() {
           up: data.expense_change_pct !== null ? (data.expense_change_pct > 0 ? false : data.expense_change_pct < 0 ? true : null) : null,
         },
         {
-          label: "Net Profit",
+          label: t("dashboard.netProfit"),
           value: formatNaira(data.net_profit),
           accent: "#17AD37",
           gradient: tokens.gradSuccess,
           icon: <ShowChart sx={{ fontSize: 20, color: "#fff" }} />,
-          change: data.net_profit >= 0 ? "Profit" : "Loss",
+          change: data.net_profit >= 0 ? t("dashboard.profit") : t("dashboard.loss"),
           up: data.net_profit >= 0 ? true : false,
         },
         {
-          label: "Profit Margin",
+          label: t("dashboard.profitMargin"),
           value: `${data.profit_margin.toFixed(1)}%`,
           accent: tokens.dark,
           gradient: tokens.gradDark,
@@ -156,7 +158,7 @@ export default function Dashboard() {
           up: data.profit_margin > 0 ? true : data.profit_margin < 0 ? false : null,
         },
         {
-          label: "Staff Salaries",
+          label: t("dashboard.staffSalaries"),
           value: formatNaira(data.staff_salaries),
           accent: "#7928CA",
           gradient: tokens.gradInfo,
@@ -169,8 +171,8 @@ export default function Dashboard() {
 
   const glEntries = data?.recent_gl_entries ?? [];
   const filteredEntries = glEntries.filter((e) => {
-    if (activeFilter === "Income" && e.type !== "Income") return false;
-    if (activeFilter === "Expense" && e.type !== "Expense") return false;
+    if (activeFilter === "income" && e.type !== "Income") return false;
+    if (activeFilter === "expense" && e.type !== "Expense") return false;
     if (
       searchQuery &&
       !e.description.toLowerCase().includes(searchQuery.toLowerCase()) &&
@@ -216,23 +218,23 @@ export default function Dashboard() {
             "&:hover": { textDecoration: "underline" },
           }}
         >
-          Home
+          {t("dashboard.home")}
         </Typography>
         <Typography sx={{ fontSize: 11, color: tokens.secondaryText }}>/</Typography>
-        <Typography sx={{ fontSize: 13, color: tokens.muted }}>Dashboard</Typography>
+        <Typography sx={{ fontSize: 13, color: tokens.muted }}>{t("dashboard.title")}</Typography>
       </Box>
 
       <Typography sx={{ fontSize: 21, fontWeight: 700, color: tokens.heading, mb: 0.25 }}>
-        Dashboard
+        {t("dashboard.title")}
       </Typography>
       <Typography sx={{ fontSize: 13, color: tokens.muted, mb: 2.25 }}>
-        Financial overview for FY {year} — {locationLabel}
+        {t("dashboard.financialOverview", { year, location: locationLabel })}
       </Typography>
 
       {/* Empty state */}
       {!loading && isEmpty && (
         <Alert severity="info" sx={{ mb: 2.5 }}>
-          No financial data for FY {year}. Start by recording revenue or expenses.
+          {t("dashboard.noFinancialData", { year })}
         </Alert>
       )}
 
@@ -334,12 +336,12 @@ export default function Dashboard() {
               <CardContent>
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
                   <Typography sx={{ fontSize: 15, fontWeight: 700, color: tokens.heading }}>
-                    Profit & Loss Trend
+                    {t("dashboard.pnlTrend")}
                   </Typography>
                   <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
                     {[
-                      { label: "Revenue", color: "#2152FF" },
-                      { label: "Expenses", color: tokens.pink },
+                      { label: t("nav.revenue"), color: "#2152FF" },
+                      { label: t("nav.expenses"), color: tokens.pink },
                     ].map((l) => (
                       <Box key={l.label} sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                         <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: l.color }} />
@@ -390,7 +392,7 @@ export default function Dashboard() {
                         fill="url(#revGrad)"
                         dot={false}
                         activeDot={{ r: 4 }}
-                        name="Revenue"
+                        name={t("nav.revenue")}
                       />
                       <Line
                         type="monotone"
@@ -399,7 +401,7 @@ export default function Dashboard() {
                         strokeWidth={2}
                         dot={false}
                         activeDot={{ r: 3 }}
-                        name="Expenses"
+                        name={t("nav.expenses")}
                       />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -411,7 +413,7 @@ export default function Dashboard() {
             <Card>
               <CardContent sx={{ p: "14px !important" }}>
                 <Typography sx={{ fontSize: 15, fontWeight: 700, color: tokens.heading, mb: 1 }}>
-                  Revenue Streams
+                  {t("dashboard.revenueStreams")}
                 </Typography>
                 {revenueStreams.length > 0 ? (
                   <>
@@ -462,7 +464,7 @@ export default function Dashboard() {
                   </>
                 ) : (
                   <Typography sx={{ fontSize: 13, color: tokens.muted, py: 4, textAlign: "center" }}>
-                    No revenue data
+                    {t("dashboard.noRevenueData")}
                   </Typography>
                 )}
               </CardContent>
@@ -491,7 +493,7 @@ export default function Dashboard() {
             {/* Expense vs Budget */}
             <Card>
               <Box sx={{ px: 2.25, pt: 1.75, pb: 0.5 }}>
-                <Typography sx={{ fontSize: 15, fontWeight: 700, color: tokens.heading }}>Expense vs Budget</Typography>
+                <Typography sx={{ fontSize: 15, fontWeight: 700, color: tokens.heading }}>{t("dashboard.expenseVsBudget")}</Typography>
               </Box>
               <CardContent sx={{ pt: 0.5 }}>
                 {(data?.expense_budget ?? []).length > 0 ? (
@@ -525,17 +527,17 @@ export default function Dashboard() {
                     <Box sx={{ display: "flex", gap: 2, mt: 1 }}>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                         <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#2152FF" }} />
-                        <Typography sx={{ fontSize: 13, color: tokens.muted }}>Spent</Typography>
+                        <Typography sx={{ fontSize: 13, color: tokens.muted }}>{t("dashboard.spent")}</Typography>
                       </Box>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                         <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#e9ecef" }} />
-                        <Typography sx={{ fontSize: 13, color: tokens.muted }}>Budget</Typography>
+                        <Typography sx={{ fontSize: 13, color: tokens.muted }}>{t("nav.budget")}</Typography>
                       </Box>
                     </Box>
                   </>
                 ) : (
                   <Typography sx={{ fontSize: 13, color: tokens.muted, py: 4, textAlign: "center" }}>
-                    No budget data
+                    {t("dashboard.noBudgetData")}
                   </Typography>
                 )}
               </CardContent>
@@ -544,16 +546,16 @@ export default function Dashboard() {
             {/* Cash Position summary */}
             <Card>
               <Box sx={{ px: 2.25, pt: 1.75, pb: 0.5 }}>
-                <Typography sx={{ fontSize: 15, fontWeight: 700, color: tokens.heading }}>Cash Position</Typography>
+                <Typography sx={{ fontSize: 15, fontWeight: 700, color: tokens.heading }}>{t("dashboard.cashPosition")}</Typography>
               </Box>
               <CardContent sx={{ pt: 1 }}>
                 {data?.cash_position ? (
                   <>
                     {[
-                      { label: "Opening Balance", value: formatNaira(data.cash_position.opening_balance), color: tokens.heading },
-                      { label: "Cash In (Revenue)", value: `+${formatNaira(data.cash_position.cash_in)}`, color: "#17AD37" },
-                      { label: "Cash Out (Expenses)", value: `-${formatNaira(data.cash_position.cash_out)}`, color: tokens.danger },
-                      { label: "Net Cash Flow", value: `${data.cash_position.net_cash_flow >= 0 ? "+" : ""}${formatNaira(data.cash_position.net_cash_flow)}`, color: data.cash_position.net_cash_flow >= 0 ? "#17AD37" : tokens.danger },
+                      { label: t("dashboard.openingBalance"), value: formatNaira(data.cash_position.opening_balance), color: tokens.heading },
+                      { label: t("dashboard.cashIn"), value: `+${formatNaira(data.cash_position.cash_in)}`, color: "#17AD37" },
+                      { label: t("dashboard.cashOut"), value: `-${formatNaira(data.cash_position.cash_out)}`, color: tokens.danger },
+                      { label: t("dashboard.netCashFlow"), value: `${data.cash_position.net_cash_flow >= 0 ? "+" : ""}${formatNaira(data.cash_position.net_cash_flow)}`, color: data.cash_position.net_cash_flow >= 0 ? "#17AD37" : tokens.danger },
                     ].map((row) => (
                       <Box
                         key={row.label}
@@ -578,7 +580,7 @@ export default function Dashboard() {
                         justifyContent: "space-between",
                       }}
                     >
-                      <Typography sx={{ fontSize: 14, fontWeight: 700, color: tokens.heading }}>Closing Balance</Typography>
+                      <Typography sx={{ fontSize: 14, fontWeight: 700, color: tokens.heading }}>{t("dashboard.closingBalance")}</Typography>
                       <Typography sx={{ fontSize: 14, fontWeight: 800, color: tokens.heading }}>
                         {formatNaira(data.cash_position.closing_balance)}
                       </Typography>
@@ -586,7 +588,7 @@ export default function Dashboard() {
                   </>
                 ) : (
                   <Typography sx={{ fontSize: 13, color: tokens.muted, py: 4, textAlign: "center" }}>
-                    No cash data
+                    {t("dashboard.noCashData")}
                   </Typography>
                 )}
               </CardContent>
@@ -595,7 +597,7 @@ export default function Dashboard() {
             {/* Trial Balance snapshot */}
             <Card>
               <Box sx={{ px: 2.25, pt: 1.75, pb: 0.5 }}>
-                <Typography sx={{ fontSize: 15, fontWeight: 700, color: tokens.heading }}>Trial Balance</Typography>
+                <Typography sx={{ fontSize: 15, fontWeight: 700, color: tokens.heading }}>{t("dashboard.trialBalance")}</Typography>
               </Box>
               <CardContent sx={{ pt: 1 }}>
                 {(data?.trial_balance ?? []).length > 0 ? (
@@ -652,7 +654,7 @@ export default function Dashboard() {
                             }}
                           >
                             <Typography sx={{ fontSize: 14, fontWeight: 700, color: tokens.heading, flex: 1 }}>
-                              Total
+                              {t("dashboard.total")}
                             </Typography>
                             <Typography sx={{ fontSize: 14, fontWeight: 800, color: "#17AD37", width: 70, textAlign: "right" }}>
                               {formatNaira(totalDebit)}
@@ -664,7 +666,7 @@ export default function Dashboard() {
                           {balanced && (
                             <Box sx={{ mt: 1.5, textAlign: "center" }}>
                               <Chip
-                                label="Balanced"
+                                label={t("dashboard.balanced")}
                                 size="small"
                                 sx={{ bgcolor: "rgba(23,173,55,0.1)", color: "#17AD37", fontWeight: 700, fontSize: 10 }}
                               />
@@ -676,7 +678,7 @@ export default function Dashboard() {
                   </>
                 ) : (
                   <Typography sx={{ fontSize: 13, color: tokens.muted, py: 4, textAlign: "center" }}>
-                    No trial balance data
+                    {t("dashboard.noTrialData")}
                   </Typography>
                 )}
               </CardContent>
@@ -691,7 +693,7 @@ export default function Dashboard() {
       ) : (
         <Card sx={{ mb: 2.5 }}>
           <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", px: 2.25, pt: 1.75 }}>
-            <Typography sx={{ fontSize: 15, fontWeight: 700, color: tokens.heading }}>Recent Ledger Entries</Typography>
+            <Typography sx={{ fontSize: 15, fontWeight: 700, color: tokens.heading }}>{t("dashboard.recentLedger")}</Typography>
             <Box sx={{ display: "flex", gap: 0.75 }}>
               <Button
                 size="small"
@@ -707,7 +709,7 @@ export default function Dashboard() {
                   "&:hover": { bgcolor: tokens.primaryDark },
                 }}
               >
-                New Entry
+                {t("dashboard.newEntry")}
               </Button>
               <Button
                 size="small"
@@ -722,7 +724,7 @@ export default function Dashboard() {
                   color: tokens.heading,
                 }}
               >
-                Export
+                {t("dashboard.export")}
               </Button>
             </Box>
           </Box>
@@ -731,7 +733,7 @@ export default function Dashboard() {
           <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", px: 2.25, py: 1.25 }}>
             <TextField
               size="small"
-              placeholder="Search entries..."
+              placeholder={t("dashboard.searchEntries")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               aria-label="Search ledger entries"
@@ -748,23 +750,27 @@ export default function Dashboard() {
               }}
             />
             <Box sx={{ display: "flex", gap: 0.5 }}>
-              {["All", "Income", "Expense"].map((s) => (
+              {[
+                { key: "all", label: t("common.all") },
+                { key: "income", label: t("dashboard.income") },
+                { key: "expense", label: t("dashboard.expense") },
+              ].map((s) => (
                 <Chip
-                  key={s}
-                  label={s}
+                  key={s.key}
+                  label={s.label}
                   size="small"
-                  onClick={() => setActiveFilter(s)}
+                  onClick={() => setActiveFilter(s.key)}
                   sx={{
                     fontSize: 11,
                     fontWeight: 700,
                     borderRadius: 5,
-                    border: `1px solid ${activeFilter === s ? tokens.primary : tokens.border}`,
-                    bgcolor: activeFilter === s ? tokens.primary : tokens.card,
-                    color: activeFilter === s ? "#fff" : tokens.muted,
+                    border: `1px solid ${activeFilter === s.key ? tokens.primary : tokens.border}`,
+                    bgcolor: activeFilter === s.key ? tokens.primary : tokens.card,
+                    color: activeFilter === s.key ? "#fff" : tokens.muted,
                     cursor: "pointer",
                     "&:hover": {
                       borderColor: tokens.primary,
-                      color: activeFilter === s ? "#fff" : tokens.primary,
+                      color: activeFilter === s.key ? "#fff" : tokens.primary,
                     },
                   }}
                 />
@@ -775,12 +781,12 @@ export default function Dashboard() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Date</TableCell>
-                <TableCell>Account</TableCell>
-                <TableCell>Description</TableCell>
-                <TableCell align="right">Debit</TableCell>
-                <TableCell align="right">Credit</TableCell>
-                <TableCell align="center">Actions</TableCell>
+                <TableCell>{t("dashboard.date")}</TableCell>
+                <TableCell>{t("dashboard.account")}</TableCell>
+                <TableCell>{t("common.description")}</TableCell>
+                <TableCell align="right">{t("dashboard.debit")}</TableCell>
+                <TableCell align="right">{t("dashboard.credit")}</TableCell>
+                <TableCell align="center">{t("common.actions")}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -888,7 +894,7 @@ export default function Dashboard() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={6} align="center" sx={{ py: 4, color: tokens.muted }}>
-                    No ledger entries found
+                    {t("dashboard.noEntries")}
                   </TableCell>
                 </TableRow>
               )}
@@ -906,7 +912,7 @@ export default function Dashboard() {
             }}
           >
             <Typography sx={{ fontSize: 13, color: tokens.muted }}>
-              Showing {filteredEntries.length} of {glEntries.length} entries
+              {t("common.showing")} {filteredEntries.length} {t("common.of")} {glEntries.length} {t("common.entries")}
             </Typography>
             <Box sx={{ display: "flex", gap: 0.375 }}>
               <IconButton
@@ -956,7 +962,7 @@ export default function Dashboard() {
             {/* Budget utilisation */}
             <Card>
               <Box sx={{ px: 2.25, pt: 1.75, pb: 0.5 }}>
-                <Typography sx={{ fontSize: 15, fontWeight: 700, color: tokens.heading }}>Budget Utilisation</Typography>
+                <Typography sx={{ fontSize: 15, fontWeight: 700, color: tokens.heading }}>{t("dashboard.budgetUtilisation")}</Typography>
               </Box>
               <CardContent sx={{ pt: 0.5 }}>
                 {(data?.expense_budget ?? []).length > 0 ? (
@@ -992,7 +998,7 @@ export default function Dashboard() {
                   })
                 ) : (
                   <Typography sx={{ fontSize: 13, color: tokens.muted, py: 4, textAlign: "center" }}>
-                    No budget data
+                    {t("dashboard.noBudgetData")}
                   </Typography>
                 )}
               </CardContent>
@@ -1001,15 +1007,15 @@ export default function Dashboard() {
             {/* Quick Actions */}
             <Card>
               <Box sx={{ px: 2.25, pt: 1.75, pb: 0.5 }}>
-                <Typography sx={{ fontSize: 15, fontWeight: 700, color: tokens.heading }}>Quick Actions</Typography>
+                <Typography sx={{ fontSize: 15, fontWeight: 700, color: tokens.heading }}>{t("dashboard.quickActions")}</Typography>
               </Box>
               <CardContent sx={{ pt: 0.5 }}>
                 {[
-                  { icon: <AddCard sx={{ fontSize: 18 }} />, gradient: tokens.gradPrimary, title: "Record Revenue", sub: "Add income entry" },
-                  { icon: <ReceiptLong sx={{ fontSize: 18 }} />, gradient: tokens.gradPink, title: "Log Expense", sub: "Add expense entry" },
-                  { icon: <Summarize sx={{ fontSize: 18 }} />, gradient: tokens.gradSuccess, title: "P&L Report", sub: "Profit & loss statement" },
-                  { icon: <Assessment sx={{ fontSize: 18 }} />, gradient: tokens.gradDark, title: "Balance Sheet", sub: "Assets, liabilities, equity" },
-                  { icon: <PictureAsPdf sx={{ fontSize: 18 }} />, gradient: tokens.gradInfo, title: "Export PDF", sub: "Download statements" },
+                  { icon: <AddCard sx={{ fontSize: 18 }} />, gradient: tokens.gradPrimary, title: t("dashboard.recordRevenue"), sub: t("dashboard.addIncome") },
+                  { icon: <ReceiptLong sx={{ fontSize: 18 }} />, gradient: tokens.gradPink, title: t("dashboard.logExpense"), sub: t("dashboard.addExpense") },
+                  { icon: <Summarize sx={{ fontSize: 18 }} />, gradient: tokens.gradSuccess, title: t("dashboard.pnlReport"), sub: t("dashboard.pnlStatement") },
+                  { icon: <Assessment sx={{ fontSize: 18 }} />, gradient: tokens.gradDark, title: t("dashboard.balanceSheetAction"), sub: t("dashboard.assetsLiabilitiesEquity") },
+                  { icon: <PictureAsPdf sx={{ fontSize: 18 }} />, gradient: tokens.gradInfo, title: t("dashboard.exportPdf"), sub: t("dashboard.downloadStatements") },
                 ].map((action, i, arr) => (
                   <Box
                     key={action.title}

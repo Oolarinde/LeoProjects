@@ -17,7 +17,7 @@ class TaxBracket(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     company_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False
+        UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False, index=True
     )
     lower_bound: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
     upper_bound: Mapped[Optional[Decimal]] = mapped_column(Numeric(15, 2))

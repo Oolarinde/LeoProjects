@@ -10,9 +10,11 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from database import Base
+from app.utils.config import settings as app_settings
 import app.models  # noqa: F401 — ensure all models are registered
 
 config = context.config
+config.set_main_option("DATABASE_URL", app_settings.DATABASE_URL)
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 

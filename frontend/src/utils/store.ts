@@ -14,6 +14,7 @@ interface User {
   permissions: Record<string, string>;
   group_id: string;
   preferred_language: string;
+  avatar_url: string | null;
 }
 
 interface AppState {

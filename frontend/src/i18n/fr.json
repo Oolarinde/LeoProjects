@@ -57,7 +57,21 @@
     "signingIn": "Connexion en cours...",
     "noAccount": "Vous n'avez pas de compte ?",
     "register": "S'inscrire",
-    "invalidCredentials": "E-mail ou mot de passe invalide"
+    "invalidCredentials": "E-mail ou mot de passe invalide",
+    "book": "Réserver",
+    "ctaTitle": "Vous avez des questions ?",
+    "ctaSubtitle": "Vous pouvez demander un rappel.",
+    "callMeBack": "Rappelez-moi",
+    "newsletterText": "Recevez les mises à jour, nouvelles annonces et réductions directement dans votre boîte mail",
+    "emailPlaceholder": "Adresse e-mail",
+    "subscribe": "S'abonner",
+    "contact": "Contact",
+    "links": "Liens",
+    "linkHome": "Accueil",
+    "linkRooms": "Chambres",
+    "linkFeatures": "Services",
+    "linkContactUs": "Contactez-nous",
+    "allRights": "Tous droits réservés."
   },
   "dashboard": {
     "title": "Tableau de bord",
@@ -107,7 +121,19 @@
     "viewing": "Affichage",
     "fullYear": "Année Complète",
     "home": "Accueil",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "noFinancialData": "Aucune donnée financière pour l'exercice {{year}}. Commencez par enregistrer des revenus ou des dépenses.",
+    "noRevenueData": "Aucune donnée de revenus",
+    "noBudgetData": "Aucune donnée budgétaire",
+    "noCashData": "Aucune donnée de trésorerie",
+    "noTrialData": "Aucune donnée de balance",
+    "date": "Date",
+    "account": "Compte",
+    "debit": "Débit (₦)",
+    "credit": "Crédit (₦)",
+    "noEntries": "Aucune écriture enregistrée.",
+    "profit": "Bénéfice",
+    "loss": "Perte"
   },
   "users": {
     "title": "Gestion des Utilisateurs",
@@ -155,7 +181,11 @@
     "availableUsers": "Utilisateurs Disponibles",
     "currentMembers": "Utilisateurs Assignés",
     "noAvailableUsers": "Aucun utilisateur disponible à assigner",
-    "noMembers": "Aucun utilisateur assigné à ce rôle"
+    "noMembers": "Aucun utilisateur assigné à ce rôle",
+    "failedDelete": "Échec de la suppression du rôle",
+    "failedAddUsers": "Échec de l'ajout des utilisateurs",
+    "failedRemoveUser": "Échec de la suppression de l'utilisateur",
+    "failedLoadDetails": "Échec du chargement des détails du rôle"
   },
   "permissions": {
     "module": "Module",
@@ -267,6 +297,87 @@
       "required": "Requis",
       "days": "jours"
     }
+  },
+  "settings": {
+    "chartOfAccounts": "Plan Comptable",
+    "code": "Code",
+    "accountName": "Nom du Compte",
+    "accountType": "Type",
+    "normalBalance": "Solde Normal",
+    "description": "Description",
+    "addAccount": "Ajouter un Compte",
+    "editAccount": "Modifier le Compte",
+
+    "locations": "Sites & Unites",
+    "locationName": "Nom du Site",
+    "address": "Adresse",
+    "unitCount": "Unites",
+    "addLocation": "Ajouter un Site",
+    "editLocation": "Modifier le Site",
+
+    "units": "Unites",
+    "unitName": "Nom de l'Unite",
+    "unitType": "Type",
+    "active": "Actif",
+    "addUnit": "Ajouter une Unite",
+    "editUnit": "Modifier l'Unite",
+
+    "employees": "Employes",
+    "employeeRef": "Ref",
+    "employeeName": "Nom",
+    "designation": "Poste",
+    "gender": "Genre",
+    "phone": "Telephone",
+    "email": "E-mail",
+    "salary": "Salaire Mensuel",
+    "status": "Statut",
+    "addEmployee": "Ajouter un Employe",
+    "editEmployee": "Modifier l'Employe",
+
+    "referenceData": "Donnees de Reference",
+    "category": "Categorie",
+    "value": "Valeur",
+    "addItem": "Ajouter un Element",
+    "editItem": "Modifier l'Element",
+
+    "confirmDelete": "Etes-vous sur de vouloir supprimer cet element ?",
+    "deleteWarning": "Cette action est irreversible.",
+    "noData": "Aucune donnee. Cliquez sur le bouton ci-dessus pour ajouter."
+  },
+  "revenue": {
+    "title": "Transactions de Revenus",
+    "addTransaction": "Ajouter un Revenu",
+    "editTransaction": "Modifier le Revenu",
+    "date": "Date",
+    "tenant": "Locataire",
+    "location": "Site",
+    "unit": "Unite",
+    "account": "Compte",
+    "amount": "Montant (₦)",
+    "method": "Mode de Paiement",
+    "refNo": "Ref #",
+    "searchTenant": "Rechercher par locataire...",
+    "noData": "Aucune transaction de revenu. Cliquez sur Ajouter un Revenu pour en creer une.",
+    "requiredFields": "Le site, le compte, la date et le montant sont requis"
+  },
+  "expenses": {
+    "title": "Transactions de Depenses",
+    "addTransaction": "Ajouter une Depense",
+    "editTransaction": "Modifier la Depense",
+    "date": "Date",
+    "vendor": "Fournisseur",
+    "category": "Categorie",
+    "location": "Site",
+    "account": "Compte",
+    "amount": "Montant (₦)",
+    "method": "Mode de Paiement",
+    "refNo": "Ref #",
+    "searchVendor": "Rechercher par fournisseur...",
+    "noData": "Aucune transaction de depense. Cliquez sur Ajouter une Depense pour en creer une.",
+    "requiredFields": "Le compte, la categorie, la date et le montant sont requis"
+  },
+  "placeholder": {
+    "laterPhase": "Ce module sera mis en place dans une phase ultérieure."
   },
   "roles": {
     "SUPER_ADMIN": "Super Admin",

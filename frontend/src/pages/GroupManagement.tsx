@@ -172,7 +172,7 @@ export default function GroupManagement() {
       setDeletingRole(null);
       fetchRoles();
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Failed to delete role");
+      setError(err.response?.data?.detail || t("customRoles.failedDelete"));
     }
   };
 
@@ -188,7 +188,7 @@ export default function GroupManagement() {
       setAllUsers(usersResp.data);
       setSelectedUserIds([]);
     } catch {
-      setError("Failed to load role details");
+      setError(t("customRoles.failedLoadDetails"));
       setMembersDialogOpen(false);
     } finally {
       setMembersLoading(false);
@@ -204,7 +204,7 @@ export default function GroupManagement() {
       setSelectedUserIds([]);
       fetchRoles();
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Failed to add users");
+      setError(err.response?.data?.detail || t("customRoles.failedAddUsers"));
     } finally {
       setMembersLoading(false);
     }
@@ -218,7 +218,7 @@ export default function GroupManagement() {
       setSelectedRole(resp.data);
       fetchRoles();
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Failed to remove user");
+      setError(err.response?.data?.detail || t("customRoles.failedRemoveUser"));
     } finally {
       setMembersLoading(false);
     }

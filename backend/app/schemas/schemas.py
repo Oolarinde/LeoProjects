@@ -50,6 +50,7 @@ class UserResponse(BaseModel):
     permissions: dict[str, str] = {}
     group_id: UUID | None = None
     preferred_language: str = "en"
+    avatar_url: str | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}

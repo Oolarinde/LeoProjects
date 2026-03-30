@@ -46,8 +46,8 @@ import { tokens } from "../theme/theme";
 import { useAppStore, hasAccess, isAdmin } from "../utils/store";
 import { languageApi, configApi } from "../services/api";
 
-const SIDEBAR_FULL = 250;
-const SIDEBAR_MINI = 64;
+const SIDEBAR_FULL = 210;
+const SIDEBAR_MINI = 56;
 
 const LANGUAGES = [
   { code: "en", label: "English", flag: "\u{1F1EC}\u{1F1E7}" },
@@ -295,6 +295,7 @@ function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle:
       >
         <Tooltip title={collapsed ? (user?.full_name ?? "User") : ""} placement="right" arrow>
           <Avatar
+            src={user?.avatar_url || undefined}
             sx={{
               width: 32,
               height: 32,
@@ -526,7 +527,10 @@ export default function Layout() {
               <Logout sx={{ fontSize: 18, color: tokens.muted }} />
             </IconButton>
 
-            <Avatar sx={{ width: 30, height: 30, borderRadius: 2, background: tokens.gradPrimary, fontSize: 11, fontWeight: 700 }}>
+            <Avatar
+              src={user?.avatar_url || undefined}
+              sx={{ width: 30, height: 30, borderRadius: 2, background: tokens.gradPrimary, fontSize: 11, fontWeight: 700 }}
+            >
               {user?.full_name?.slice(0, 2).toUpperCase() ?? "??"}
             </Avatar>
           </Box>

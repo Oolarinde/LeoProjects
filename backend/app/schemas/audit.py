@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Dict, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -9,14 +10,14 @@ class AuditLogResponse(BaseModel):
     table_name: str
     record_id: UUID
     action: str
-    changed_fields: dict | None = None
-    user_id: UUID | None = None
-    ip_address: str | None = None
+    changed_fields: Optional[Dict] = None
+    user_id: Optional[UUID] = None
+    ip_address: Optional[str] = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
 
 
 class AuditLogListResponse(BaseModel):
-    items: list[AuditLogResponse]
+    items: List[AuditLogResponse]
     total: int

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Button,
@@ -24,6 +25,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"login" | "book">("login");
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { setTokens, setUser } = useAppStore();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -38,7 +40,7 @@ export default function Login() {
       setUser(meResp.data);
       navigate("/dashboard");
     } catch {
-      setError("Invalid email or password");
+      setError(t("auth.invalidCredentials"));
     } finally {
       setLoading(false);
     }
@@ -108,7 +110,7 @@ export default function Login() {
                   : { borderColor: tokens.border, color: tokens.muted }),
               }}
             >
-              Login
+              {t("auth.login")}
             </Button>
             <Button
               variant={activeTab === "book" ? "contained" : "outlined"}
@@ -126,7 +128,7 @@ export default function Login() {
                   : { borderColor: tokens.border, color: tokens.muted }),
               }}
             >
-              Book
+              {t("auth.book")}
             </Button>
           </Box>
 
@@ -140,7 +142,7 @@ export default function Login() {
             {/* Email */}
             <Box sx={{ textAlign: "left", mb: 1.75 }}>
               <Typography sx={{ fontSize: 12, fontWeight: 600, color: tokens.heading, mb: 0.625 }}>
-                Email
+                {t("auth.email")}
               </Typography>
               <TextField
                 fullWidth
@@ -169,7 +171,7 @@ export default function Login() {
             {/* Password */}
             <Box sx={{ textAlign: "left", mb: 1.75 }}>
               <Typography sx={{ fontSize: 12, fontWeight: 600, color: tokens.heading, mb: 0.625 }}>
-                Password
+                {t("auth.password")}
               </Typography>
               <TextField
                 fullWidth
@@ -201,13 +203,13 @@ export default function Login() {
                 control={<Checkbox size="small" sx={{ p: 0.5, "& .MuiSvgIcon-root": { fontSize: 16 } }} />}
                 label={
                   <Typography sx={{ fontSize: 12, color: tokens.muted, fontWeight: 500 }}>
-                    Remember Me
+                    {t("auth.rememberMe")}
                   </Typography>
                 }
                 sx={{ ml: -0.5 }}
               />
               <Link href="#" underline="hover" sx={{ fontSize: 11, fontWeight: 600, color: tokens.heading }}>
-                Lost Your Password?
+                {t("auth.lostPassword")}
               </Link>
             </Box>
 
@@ -226,15 +228,15 @@ export default function Login() {
                 "&:hover": { bgcolor: "#243558" },
               }}
             >
-              {loading ? "Signing in..." : "Login"}
+              {loading ? t("auth.signingIn") : t("auth.login")}
             </Button>
           </form>
 
           {/* Register link */}
           <Typography sx={{ mt: 1.75, fontSize: 13, color: tokens.muted }}>
-            Don&apos;t have an account?{" "}
+            {t("auth.noAccount")}{" "}
             <Link href="#" underline="none" sx={{ fontWeight: 700, color: tokens.heading, "&:hover": { color: tokens.primary } }}>
-              Register
+              {t("auth.register")}
             </Link>
           </Typography>
         </Card>
@@ -255,8 +257,8 @@ export default function Login() {
         }}
       >
         <Box>
-          <Typography sx={{ fontSize: 20, fontWeight: 800 }}>Do You Have Questions ?</Typography>
-          <Typography sx={{ fontSize: 13, opacity: 0.6, mt: 0.5 }}>You can request a call back.</Typography>
+          <Typography sx={{ fontSize: 20, fontWeight: 800 }}>{t("auth.ctaTitle")}</Typography>
+          <Typography sx={{ fontSize: 13, opacity: 0.6, mt: 0.5 }}>{t("auth.ctaSubtitle")}</Typography>
         </Box>
         <Button
           variant="outlined"
@@ -270,7 +272,7 @@ export default function Login() {
             "&:hover": { bgcolor: "#fff", color: tokens.navy },
           }}
         >
-          Call Me Back
+          {t("auth.callMeBack")}
         </Button>
       </Box>
 
@@ -291,12 +293,12 @@ export default function Login() {
       >
         <Box>
           <Typography sx={{ mb: 1.5, color: "rgba(255,255,255,0.5)", fontSize: 13, lineHeight: 1.6 }}>
-            Receive updates, new listings, discounts sent straight to your inbox every month
+            {t("auth.newsletterText")}
           </Typography>
           <Box sx={{ display: "flex", gap: 0.75 }}>
             <TextField
               size="small"
-              placeholder="Email Address"
+              placeholder={t("auth.emailPlaceholder")}
               sx={{
                 flex: 1,
                 "& .MuiOutlinedInput-root": {
@@ -312,13 +314,13 @@ export default function Login() {
               variant="contained"
               sx={{ bgcolor: tokens.primary, fontSize: 12, fontWeight: 700, borderRadius: 1, px: 2 }}
             >
-              Subscribe
+              {t("auth.subscribe")}
             </Button>
           </Box>
         </Box>
         <Box>
           <Typography sx={{ color: tokens.primary, fontSize: 12, fontWeight: 700, mb: 1.25, textTransform: "uppercase", letterSpacing: 0.5 }}>
-            Contact
+            {t("auth.contact")}
           </Typography>
           <Typography sx={{ color: "rgba(255,255,255,0.5)", fontSize: 13, lineHeight: 1.8 }}>
             Phone: +234 806 9078 636<br />
@@ -328,17 +330,23 @@ export default function Login() {
         </Box>
         <Box>
           <Typography sx={{ color: tokens.primary, fontSize: 12, fontWeight: 700, mb: 1.25, textTransform: "uppercase", letterSpacing: 0.5 }}>
-            Links
+            {t("auth.links")}
           </Typography>
-          {["Home", "Login", "Rooms", "Features", "Contact Us"].map((link) => (
-            <Link key={link} href="#" underline="hover" display="block" sx={{ color: "rgba(255,255,255,0.5)", fontSize: 13, mb: 0.5, "&:hover": { color: "#fff" } }}>
-              {link}
+          {[
+            { key: "linkHome", label: t("auth.linkHome") },
+            { key: "linkLogin", label: t("auth.login") },
+            { key: "linkRooms", label: t("auth.linkRooms") },
+            { key: "linkFeatures", label: t("auth.linkFeatures") },
+            { key: "linkContactUs", label: t("auth.linkContactUs") },
+          ].map((link) => (
+            <Link key={link.key} href="#" underline="hover" display="block" sx={{ color: "rgba(255,255,255,0.5)", fontSize: 13, mb: 0.5, "&:hover": { color: "#fff" } }}>
+              {link.label}
             </Link>
           ))}
         </Box>
       </Box>
       <Box sx={{ bgcolor: "#0a1220", textAlign: "center", color: "rgba(255,255,255,0.3)", fontSize: 12, py: 1.5 }}>
-        All rights reserved. &copy; {new Date().getFullYear()} Talents Apartments.
+        {t("auth.allRights")} &copy; {new Date().getFullYear()} Talents Apartments.
       </Box>
     </Box>
   );

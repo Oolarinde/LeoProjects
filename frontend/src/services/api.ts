@@ -140,6 +140,17 @@ export const languageApi = {
   update: (lang: string) => api.patch("/auth/me/language", { preferred_language: lang }),
 };
 
+// Avatar upload
+export const avatarApi = {
+  upload: (file: File) => {
+    const formData = new FormData();
+    formData.append("avatar", file);
+    return api.post("/auth/me/avatar", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+};
+
 // Payroll
 export const payrollApi = {
   // Settings
@@ -178,6 +189,55 @@ export const payrollApi = {
     api.patch(`/payroll/leave-policies/${id}`, data),
   deleteLeavePolicy: (id: string) =>
     api.delete(`/payroll/leave-policies/${id}`),
+};
+
+// Revenue
+export const revenueApi = {
+  list: (params: Record<string, unknown>) => api.get("/revenue", { params }),
+  summary: (year: number, locationId?: string) =>
+    api.get("/revenue/summary", { params: { year, location_id: locationId || undefined } }),
+  create: (data: Record<string, unknown>) => api.post("/revenue", data),
+  update: (id: string, data: Record<string, unknown>) => api.patch(`/revenue/${id}`, data),
+  delete: (id: string) => api.delete(`/revenue/${id}`),
+};
+
+// Expenses
+export const expensesApi = {
+  list: (params: Record<string, unknown>) => api.get("/expenses", { params }),
+  summary: (year: number, locationId?: string) =>
+    api.get("/expenses/summary", { params: { year, location_id: locationId || undefined } }),
+  create: (data: Record<string, unknown>) => api.post("/expenses", data),
+  update: (id: string, data: Record<string, unknown>) => api.patch(`/expenses/${id}`, data),
+  delete: (id: string) => api.delete(`/expenses/${id}`),
+};
+
+// Settings
+export const settingsApi = {
+  // Accounts
+  listAccounts: () => api.get("/settings/accounts"),
+  createAccount: (data: Record<string, unknown>) => api.post("/settings/accounts", data),
+  updateAccount: (id: string, data: Record<string, unknown>) => api.patch(`/settings/accounts/${id}`, data),
+  deleteAccount: (id: string) => api.delete(`/settings/accounts/${id}`),
+  // Locations
+  listLocations: () => api.get("/settings/locations"),
+  createLocation: (data: Record<string, unknown>) => api.post("/settings/locations", data),
+  updateLocation: (id: string, data: Record<string, unknown>) => api.patch(`/settings/locations/${id}`, data),
+  deleteLocation: (id: string) => api.delete(`/settings/locations/${id}`),
+  // Units
+  listUnits: (locationId?: string) => api.get("/settings/units", { params: { location_id: locationId } }),
+  createUnit: (data: Record<string, unknown>) => api.post("/settings/units", data),
+  updateUnit: (id: string, data: Record<string, unknown>) => api.patch(`/settings/units/${id}`, data),
+  deleteUnit: (id: string) => api.delete(`/settings/units/${id}`),
+  // Employees
+  listEmployees: () => api.get("/settings/employees"),
+  createEmployee: (data: Record<string, unknown>) => api.post("/settings/employees", data),
+  updateEmployee: (id: string, data: Record<string, unknown>) => api.patch(`/settings/employees/${id}`, data),
+  deleteEmployee: (id: string) => api.delete(`/settings/employees/${id}`),
+  // Reference Data
+  listReferenceData: (category?: string) => api.get("/settings/reference-data", { params: { category } }),
+  createReferenceData: (data: Record<string, unknown>) => api.post("/settings/reference-data", data),
+  updateReferenceData: (id: string, data: Record<string, unknown>) => api.patch(`/settings/reference-data/${id}`, data),
+  deleteReferenceData: (id: string) => api.delete(`/settings/reference-data/${id}`),
 };
 
 export default api;

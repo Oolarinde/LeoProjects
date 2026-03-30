@@ -17,7 +17,7 @@ class Account(Base):
     __table_args__ = (UniqueConstraint("company_id", "code", name="uq_account_company_code"),)
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    company_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False)
+    company_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False, index=True)
     code: Mapped[str] = mapped_column(String(10), nullable=False)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     type: Mapped[str] = mapped_column(String(20), nullable=False)  # Asset, Liability, Equity, Revenue, Expense

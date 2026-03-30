@@ -3,11 +3,17 @@ import { useAppStore, hasAccess, isAdmin } from "./utils/store";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import Revenue from "./pages/Revenue";
+import Expenses from "./pages/Expenses";
 import Placeholder from "./pages/Placeholder";
 import Profile from "./pages/Profile";
 import UserManagement from "./pages/UserManagement";
 import GroupManagement from "./pages/GroupManagement";
 import PayrollSetup from "./pages/payroll/PayrollSetup";
+import ChartOfAccounts from "./pages/settings/ChartOfAccounts";
+import LocationsAndUnits from "./pages/settings/Locations";
+import Employees from "./pages/settings/Employees";
+import ReferenceData from "./pages/settings/ReferenceData";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const user = useAppStore((s) => s.user);
@@ -50,8 +56,8 @@ export default function App() {
         <Route path="/dashboard" element={<Dashboard />} />
 
         {/* Bookkeeping */}
-        <Route path="/revenue" element={<PermissionRoute module="revenue"><Placeholder /></PermissionRoute>} />
-        <Route path="/expenses" element={<PermissionRoute module="expenses"><Placeholder /></PermissionRoute>} />
+        <Route path="/revenue" element={<PermissionRoute module="revenue"><Revenue /></PermissionRoute>} />
+        <Route path="/expenses" element={<PermissionRoute module="expenses"><Expenses /></PermissionRoute>} />
         <Route path="/payroll" element={<PermissionRoute module="payroll"><Placeholder /></PermissionRoute>} />
         <Route path="/payroll/setup" element={<PermissionRoute module="payroll"><PayrollSetup /></PermissionRoute>} />
         <Route path="/budget" element={<PermissionRoute module="budget"><Placeholder /></PermissionRoute>} />
@@ -65,10 +71,10 @@ export default function App() {
         <Route path="/reports/trial-balance" element={<PermissionRoute module="trial_balance"><Placeholder /></PermissionRoute>} />
 
         {/* Settings */}
-        <Route path="/settings/accounts" element={<PermissionRoute module="accounts"><Placeholder /></PermissionRoute>} />
-        <Route path="/settings/employees" element={<PermissionRoute module="employees"><Placeholder /></PermissionRoute>} />
-        <Route path="/settings/locations" element={<PermissionRoute module="locations"><Placeholder /></PermissionRoute>} />
-        <Route path="/settings/reference" element={<PermissionRoute module="reference"><Placeholder /></PermissionRoute>} />
+        <Route path="/settings/accounts" element={<PermissionRoute module="accounts"><ChartOfAccounts /></PermissionRoute>} />
+        <Route path="/settings/employees" element={<PermissionRoute module="employees"><Employees /></PermissionRoute>} />
+        <Route path="/settings/locations" element={<PermissionRoute module="locations"><LocationsAndUnits /></PermissionRoute>} />
+        <Route path="/settings/reference" element={<PermissionRoute module="reference"><ReferenceData /></PermissionRoute>} />
         <Route path="/settings/users" element={<AdminRoute><UserManagement /></AdminRoute>} />
         <Route path="/settings/roles" element={<AdminRoute><GroupManagement /></AdminRoute>} />
 

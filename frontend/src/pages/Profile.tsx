@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Box,
@@ -16,17 +16,24 @@ import {
   Paper,
   Skeleton,
   Alert,
+  Avatar,
+  IconButton,
+  CircularProgress,
 } from "@mui/material";
-import { Person } from "@mui/icons-material";
+import { Person, PhotoCamera } from "@mui/icons-material";
 import { tokens } from "../theme/theme";
 import { useAppStore } from "../utils/store";
-import { loginHistoryApi } from "../services/api";
+import { loginHistoryApi, avatarApi } from "../services/api";
 import type { LoginSession } from "../types/audit";
 
 export default function Profile() {
   const { t } = useTranslation();
   const user = useAppStore((s) => s.user);
+  const setUser = useAppStore((s) => s.setUser);
   const companyName = useAppStore((s) => s.companyName);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState("");
   const [tab, setTab] = useState(0);
   const [sessions, setSessions] = useState<LoginSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
@@ -57,27 +64,77 @@ export default function Profile() {
     return parts.length > 0 ? parts.join(", ") : "--";
   };
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarError("");
+    setUploadingAvatar(true);
+    try {
+      const resp = await avatarApi.upload(file);
+      if (user) {
+        setUser({ ...user, avatar_url: resp.data.avatar_url });
+      }
+    } catch (err: any) {
+      setAvatarError(err.response?.data?.detail ?? "Failed to upload avatar");
+    } finally {
+      setUploadingAvatar(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   return (
     <Box>
       <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 3 }}>
-        <Box
-          sx={{
-            width: 44,
-            height: 44,
-            borderRadius: 2.5,
-            background: tokens.gradPrimary,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Person sx={{ fontSize: 24, color: "#fff" }} />
+        <Box sx={{ position: "relative" }}>
+          <Avatar
+            src={user?.avatar_url || undefined}
+            sx={{
+              width: 56,
+              height: 56,
+              borderRadius: 2.5,
+              background: tokens.gradPrimary,
+              fontSize: 20,
+              fontWeight: 700,
+            }}
+          >
+            {user?.full_name?.slice(0, 2).toUpperCase() ?? <Person sx={{ fontSize: 28 }} />}
+          </Avatar>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            hidden
+            onChange={handleAvatarUpload}
+          />
+          <IconButton
+            size="small"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingAvatar}
+            sx={{
+              position: "absolute",
+              bottom: -4,
+              right: -4,
+              width: 24,
+              height: 24,
+              bgcolor: tokens.primary,
+              color: "#fff",
+              "&:hover": { bgcolor: tokens.primaryDark },
+              boxShadow: 1,
+            }}
+          >
+            {uploadingAvatar ? <CircularProgress size={12} color="inherit" /> : <PhotoCamera sx={{ fontSize: 13 }} />}
+          </IconButton>
         </Box>
         <Box>
           <Typography variant="h1">{t("profile.title")}</Typography>
           <Typography sx={{ fontSize: 13, color: tokens.muted }}>
             {user?.email}
           </Typography>
+          {avatarError && (
+            <Typography sx={{ fontSize: 11, color: tokens.danger, mt: 0.25 }}>
+              {avatarError}
+            </Typography>
+          )}
         </Box>
       </Box>
 

@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Optional
 import uuid
 
-from sqlalchemy import String, Boolean, ForeignKey
+from sqlalchemy import String, Boolean, ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -14,9 +14,11 @@ from database import Base
 
 class Unit(Base):
     __tablename__ = "units"
+    __table_args__ = (UniqueConstraint("company_id", "location_id", "name", name="uq_units_company_location_name"),)
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    location_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("locations.id"), nullable=False)
+    company_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("companies.id"), nullable=False, index=True)
+    location_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("locations.id"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     unit_type: Mapped[Optional[str]] = mapped_column(String(50))  # apartment, shop, salon, etc.
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
@@ -25,4 +27,5 @@ class Unit(Base):
     created_by: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     updated_by: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
 
+    company = relationship("Company")
     location = relationship("Location", back_populates="units")

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Dict, List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
@@ -24,7 +24,7 @@ router = APIRouter()
 class LocationResponse(BaseModel):
     id: UUID
     name: str
-    address: str | None = None
+    address: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
@@ -33,7 +33,7 @@ class UnitResponse(BaseModel):
     id: UUID
     location_id: UUID
     name: str
-    unit_type: str | None = None
+    unit_type: Optional[str] = None
     is_active: bool
 
     model_config = {"from_attributes": True}
@@ -45,7 +45,7 @@ class AccountResponse(BaseModel):
     name: str
     type: str
     normal_balance: str
-    description: str | None = None
+    description: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
@@ -54,17 +54,17 @@ class EmployeeResponse(BaseModel):
     id: UUID
     employee_ref: str
     name: str
-    designation: str | None = None
-    status: str | None = None
+    designation: Optional[str] = None
+    status: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
 
 class DropdownsResponse(BaseModel):
-    items: dict[str, list[str]]  # {category: [values]}
+    items: Dict[str, List[str]]  # {category: [values]}
 
 
-@router.get("/locations", response_model=list[LocationResponse])
+@router.get("/locations", response_model=List[LocationResponse])
 async def get_locations(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -73,7 +73,7 @@ async def get_locations(
     return list((await db.execute(q)).scalars().all())
 
 
-@router.get("/units", response_model=list[UnitResponse])
+@router.get("/units", response_model=List[UnitResponse])
 async def get_units(
     location_id: Optional[UUID] = Query(None),
     current_user: User = Depends(get_current_user),
@@ -86,7 +86,7 @@ async def get_units(
     return list((await db.execute(q)).scalars().all())
 
 
-@router.get("/accounts", response_model=list[AccountResponse])
+@router.get("/accounts", response_model=List[AccountResponse])
 async def get_accounts(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -95,7 +95,7 @@ async def get_accounts(
     return list((await db.execute(q)).scalars().all())
 
 
-@router.get("/employees", response_model=list[EmployeeResponse])
+@router.get("/employees", response_model=List[EmployeeResponse])
 async def get_employees(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),

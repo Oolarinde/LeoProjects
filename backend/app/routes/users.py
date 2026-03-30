@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
@@ -12,6 +12,7 @@ from app.schemas.schemas import UserResponse
 from app.schemas.users import UserCreateRequest, UserUpdateRequest
 from app.services import users as user_service
 from app.utils.dependencies import require_admin
+from app.utils.request_context import get_client_ip
 
 router = APIRouter()
 
@@ -26,6 +27,7 @@ async def list_users(
 
 @router.post("", response_model=UserResponse, status_code=201)
 async def create_user(
+    request: Request,
     data: UserCreateRequest,
     current_user: User = Depends(require_admin()),
     db: AsyncSession = Depends(get_db),
@@ -39,6 +41,8 @@ async def create_user(
         role=data.role,
         group_id=data.group_id,
         acting_user=current_user,
+        user_id=current_user.id,
+        ip_address=get_client_ip(request),
     )
     return user
 
@@ -54,6 +58,7 @@ async def get_user(
 
 @router.patch("/{user_id}", response_model=UserResponse)
 async def update_user(
+    request: Request,
     user_id: UUID,
     data: UserUpdateRequest,
     current_user: User = Depends(require_admin()),
@@ -68,12 +73,15 @@ async def update_user(
         role=data.role,
         is_active=data.is_active,
         group_id=data.group_id,
+        audit_user_id=current_user.id,
+        ip_address=get_client_ip(request),
     )
     return user
 
 
 @router.delete("/{user_id}", response_model=UserResponse)
 async def deactivate_user(
+    request: Request,
     user_id: UUID,
     current_user: User = Depends(require_admin()),
     db: AsyncSession = Depends(get_db),
@@ -83,5 +91,7 @@ async def deactivate_user(
         user_id=user_id,
         company_id=current_user.company_id,
         acting_user=current_user,
+        audit_user_id=current_user.id,
+        ip_address=get_client_ip(request),
     )
     return user
