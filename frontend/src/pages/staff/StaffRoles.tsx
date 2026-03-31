@@ -44,7 +44,6 @@ import {
   People as PeopleIcon,
   Remove as RemoveIcon,
   Security as SecurityIcon,
-  Settings as SettingsIcon,
   PersonAdd as PersonAddIcon,
 } from "@mui/icons-material";
 import { groupsApi, usersApi, getErrorMessage } from "../../services/api";

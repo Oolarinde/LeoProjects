@@ -56,6 +56,18 @@ export const tokens = {
   badgePending: { bg: "rgba(251,207,51,0.15)", color: "#9a7a08" },
   badgeOverdue: { bg: "rgba(234,6,6,0.08)", color: "#c20505" },
   badgeActive: { bg: "rgba(23,193,232,0.12)", color: "#0b8eaa" },
+
+  // Portal CSS variables (from talentsapartments.com)
+  portalPrimary: "#3a416f",
+  portalPrimaryDark: "#304bc6",
+  portalAccent: "#f6f7f9",
+  portalFont: "#444",
+  portalBodyColor: "rgb(103, 116, 142)",
+  portalBorderRadius: 12,
+  portalIndigo: "#596CFF",
+  portalGray100: "#f8f9fa",
+  portalGray200: "#e9ecef",
+  portalGray300: "#dee2e6",
 } as const;
 
 const theme = createTheme({
@@ -98,7 +110,7 @@ const theme = createTheme({
   },
 
   typography: {
-    fontFamily: '"Mulish", "Open Sans", "Helvetica", "Arial", sans-serif',
+    fontFamily: '"Open Sans", "Mulish", "Helvetica", "Arial", sans-serif',
     fontWeightLight: 300,
     fontWeightRegular: 400,
     fontWeightMedium: 600,

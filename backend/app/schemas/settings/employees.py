@@ -7,7 +7,7 @@ from pydantic import BaseModel, field_validator
 
 
 class EmployeeCreate(BaseModel):
-    employee_ref: str
+    employee_ref: str | None = None  # Auto-generated if not provided
     name: str
     designation: str | None = None
     gender: str | None = None
@@ -15,13 +15,19 @@ class EmployeeCreate(BaseModel):
     email: str | None = None
     monthly_salary: Decimal | None = None
     status: str = "Active"
+    department: str | None = None
+    hire_date: str | None = None
+    date_of_birth: str | None = None
+    address: str | None = None
+    # GROUP_ADMIN can specify target subsidiary
+    target_company_id: UUID | None = None
 
     @field_validator("employee_ref")
     @classmethod
-    def ref_not_empty(cls, v: str) -> str:
-        if not v.strip():
-            raise ValueError("Employee ref is required")
-        return v.strip()
+    def ref_not_empty(cls, v: str | None) -> str | None:
+        if v is not None and not v.strip():
+            raise ValueError("Employee ref cannot be empty")
+        return v.strip() if v else v
 
     @field_validator("name")
     @classmethod
@@ -47,6 +53,10 @@ class EmployeeUpdate(BaseModel):
     email: str | None = None
     monthly_salary: Decimal | None = None
     status: str | None = None
+    department: str | None = None
+    hire_date: str | None = None
+    date_of_birth: str | None = None
+    address: str | None = None
 
     @field_validator("employee_ref")
     @classmethod
@@ -70,12 +80,17 @@ class EmployeeResponse(BaseModel):
     company_id: UUID
     employee_ref: str
     name: str
-    designation: str | None
-    gender: str | None
-    phone: str | None
-    email: str | None
-    monthly_salary: Decimal | None
+    designation: str | None = None
+    gender: str | None = None
+    phone: str | None = None
+    email: str | None = None
+    monthly_salary: Decimal | None = None
     status: str
+    department: str | None = None
+    hire_date: str | None = None
+    date_of_birth: str | None = None
+    address: str | None = None
+    photo_url: str | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}

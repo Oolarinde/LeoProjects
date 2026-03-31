@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
@@ -41,8 +41,17 @@ async def create_employee(
     current_user: User = Depends(_write),
     db: AsyncSession = Depends(get_db),
 ):
+    # GROUP_ADMIN can create employees in any subsidiary
+    target_company_id = current_user.company_id
+    if data.target_company_id and current_user.role in ("SUPER_ADMIN", "GROUP_ADMIN"):
+        group_ids = await get_group_company_ids_for_user(db, current_user)
+        if data.target_company_id not in group_ids:
+            raise HTTPException(status_code=403, detail="No access to target company")
+        target_company_id = data.target_company_id
+
+    create_data = data.model_dump(exclude={"target_company_id"})
     return await employees_service.create_employee(
-        db, current_user.company_id, data.model_dump()
+        db, target_company_id, create_data
     )
 
 
@@ -53,6 +62,12 @@ async def update_employee(
     current_user: User = Depends(_write),
     db: AsyncSession = Depends(get_db),
 ):
+    # GROUP_ADMIN can update employees across subsidiaries
+    if current_user.role in ("SUPER_ADMIN", "GROUP_ADMIN"):
+        group_ids = await get_group_company_ids_for_user(db, current_user)
+        return await employees_service.update_employee_multi(
+            db, item_id, group_ids, data.model_dump(exclude_unset=True)
+        )
     return await employees_service.update_employee(
         db, item_id, current_user.company_id, data.model_dump(exclude_unset=True)
     )

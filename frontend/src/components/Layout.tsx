@@ -246,8 +246,11 @@ function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle:
   ];
 
   const staffItems: NavItem[] = [
-    { label: "Staff Directory", path: "/payroll/employees", icon: <People sx={{ fontSize: 15 }} /> },
-    { label: "Payroll Run", path: "/payroll", icon: <People sx={{ fontSize: 15 }} /> },
+    { label: "Staff Directory", path: "/staff/directory", icon: <People sx={{ fontSize: 15 }} /> },
+    { label: "Onboarding", path: "/staff/onboarding", icon: <People sx={{ fontSize: 15 }} /> },
+    { label: "Departments", path: "/staff/departments", icon: <AccountTree sx={{ fontSize: 15 }} /> },
+    { label: "Roles & Users", path: "/staff/roles", icon: <GroupWork sx={{ fontSize: 15 }} /> },
+    { label: "Payroll Run", path: "/payroll", icon: <AttachMoney sx={{ fontSize: 15 }} /> },
     { label: "Payroll Setup", path: "/payroll/setup", icon: <Settings sx={{ fontSize: 15 }} /> },
     { label: "Leave Requests", path: "/payroll/leave", icon: <People sx={{ fontSize: 15 }} /> },
   ];
@@ -257,10 +260,6 @@ function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle:
     ...(!isGroupAdminRole ? [{ label: t("nav.employees"), path: "/settings/employees", icon: <People sx={{ fontSize: 15 }} />, module: "employees" }] : []),
     { label: t("nav.locationsUnits"), path: "/settings/locations", icon: <LocationOn sx={{ fontSize: 15 }} />, module: "locations" },
     { label: t("nav.referenceData"), path: "/settings/reference", icon: <Settings sx={{ fontSize: 15 }} />, module: "reference" },
-    ...(isAdmin(user) ? [
-      { label: t("nav.userManagement"), path: "/settings/users", icon: <People sx={{ fontSize: 15 }} /> },
-      { label: t("nav.roleManagement"), path: "/settings/roles", icon: <GroupWork sx={{ fontSize: 15 }} /> },
-    ] : []),
   ];
 
   return (
@@ -302,7 +301,7 @@ function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle:
           {!isViewerRole && section(t("nav.bookkeeping"), <ReceiptLong sx={{ fontSize: 15 }} />, bookkeepingItems, openBookkeeping, () => setOpenBookkeeping(!openBookkeeping))}
           {section(t("nav.reports"), <Description sx={{ fontSize: 15 }} />, reportItems, openReports, () => setOpenReports(!openReports))}
           {isGroupAdminRole && section("Group", <CorporateFare sx={{ fontSize: 15 }} />, groupItems, openGroup, () => setOpenGroup(!openGroup))}
-          {isGroupAdminRole && section("Staff", <People sx={{ fontSize: 15 }} />, staffItems, openStaff, () => setOpenStaff(!openStaff))}
+          {isAdmin(user) && section("Staff", <People sx={{ fontSize: 15 }} />, staffItems, openStaff, () => setOpenStaff(!openStaff))}
           {!isViewerRole && section(t("nav.settings"), <Settings sx={{ fontSize: 15 }} />, settingsItems, openSettings, () => setOpenSettings(!openSettings))}
         </List>
       </Box>

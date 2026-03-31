@@ -1,5 +1,6 @@
-import { Routes, Route, Navigate } from "react-router-dom";
-import { Alert, Box } from "@mui/material";
+import { useEffect, useState, useCallback } from "react";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { Alert, Box, Snackbar } from "@mui/material";
 import { useAppStore, hasAccess, isAdmin } from "./utils/store";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
@@ -22,7 +23,7 @@ import BalanceSheet from "./pages/reports/BalanceSheet";
 import TrialBalance from "./pages/reports/TrialBalance";
 import GeneralLedger from "./pages/GeneralLedger";
 import Budget from "./pages/Budget";
-import PayrollProcessing from "./pages/payroll/PayrollProcessing";
+import Payroll from "./pages/payroll/Payroll";
 import Analysis from "./pages/Analysis";
 import TenantOps from "./pages/TenantOps";
 import GroupDashboard from "./pages/GroupDashboard";
@@ -32,6 +33,10 @@ import ConsolidatedPnL from "./pages/reports/ConsolidatedPnL";
 import ConsolidatedBalanceSheet from "./pages/reports/ConsolidatedBalanceSheet";
 import ConsolidatedTrialBalance from "./pages/reports/ConsolidatedTrialBalance";
 import StaffProfile from "./pages/payroll/StaffProfile";
+import StaffDirectory from "./pages/staff/StaffDirectory";
+import StaffOnboarding from "./pages/staff/StaffOnboarding";
+import Departments from "./pages/staff/Departments";
+import StaffRoles from "./pages/staff/StaffRoles";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const user = useAppStore((s) => s.user);
@@ -73,8 +78,39 @@ function GroupRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function SessionExpiredToast() {
+  const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const handleExpired = useCallback(() => {
+    setOpen(true);
+    setTimeout(() => {
+      setOpen(false);
+      navigate("/login");
+    }, 2500);
+  }, [navigate]);
+
+  useEffect(() => {
+    window.addEventListener("auth:session-expired", handleExpired);
+    return () => window.removeEventListener("auth:session-expired", handleExpired);
+  }, [handleExpired]);
+
+  return (
+    <Snackbar
+      open={open}
+      anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      message="Session expired. Redirecting to login..."
+      ContentProps={{
+        sx: { bgcolor: "#d32f2f", fontWeight: 600, fontSize: 13, justifyContent: "center" },
+      }}
+    />
+  );
+}
+
 export default function App() {
   return (
+    <>
+    <SessionExpiredToast />
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route
@@ -90,7 +126,7 @@ export default function App() {
         {/* Bookkeeping */}
         <Route path="/revenue" element={<PermissionRoute module="revenue"><Revenue /></PermissionRoute>} />
         <Route path="/expenses" element={<PermissionRoute module="expenses"><Expenses /></PermissionRoute>} />
-        <Route path="/payroll" element={<GroupRoute><PayrollProcessing /></GroupRoute>} />
+        <Route path="/payroll" element={<GroupRoute><Payroll /></GroupRoute>} />
         <Route path="/payroll/setup" element={<GroupRoute><PayrollSetup /></GroupRoute>} />
         <Route path="/payroll/employees" element={<GroupRoute><PayrollEmployees /></GroupRoute>} />
         <Route path="/payroll/employees/:employeeId" element={<GroupRoute><StaffProfile /></GroupRoute>} />
@@ -113,6 +149,12 @@ export default function App() {
         <Route path="/settings/users" element={<AdminRoute><UserManagement /></AdminRoute>} />
         <Route path="/settings/roles" element={<AdminRoute><GroupManagement /></AdminRoute>} />
 
+        {/* Staff Management */}
+        <Route path="/staff/directory" element={<AdminRoute><StaffDirectory /></AdminRoute>} />
+        <Route path="/staff/onboarding" element={<AdminRoute><StaffOnboarding /></AdminRoute>} />
+        <Route path="/staff/departments" element={<AdminRoute><Departments /></AdminRoute>} />
+        <Route path="/staff/roles" element={<AdminRoute><StaffRoles /></AdminRoute>} />
+
         {/* Tenant Ops */}
         <Route path="/tenants" element={<PermissionRoute module="revenue"><TenantOps /></PermissionRoute>} />
 
@@ -130,5 +172,6 @@ export default function App() {
 
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
+    </>
   );
 }

@@ -60,7 +60,7 @@ class StaffUpdateBody(BaseModel):
 
 
 class StaffCreateBody(BaseModel):
-    employee_ref: str
+    employee_ref: str = ""  # Auto-generated if empty
     name: str
     company_id: Optional[str] = None
     designation: Optional[str] = None
@@ -471,9 +471,15 @@ async def create_staff(
 
     from datetime import date as date_type
 
+    # Auto-generate employee_ref if not provided
+    ref = body.employee_ref.strip() if body.employee_ref else ""
+    if not ref:
+        from app.services.settings.employees import _next_employee_ref
+        ref = await _next_employee_ref(db, target_company_id)
+
     emp = Employee(
         company_id=target_company_id,
-        employee_ref=body.employee_ref,
+        employee_ref=ref,
         name=body.name,
         designation=body.designation,
         gender=body.gender,
