@@ -56,7 +56,7 @@ function TabPanel({ children, value, index }: { children: React.ReactNode; value
 
 // ── Main Component ──────────────────────────────────────────────
 
-export default function PayrollSetup() {
+export default function PayrollSetup({ embedded }: { embedded?: boolean } = {}) {
   const { t } = useTranslation();
   const [tab, setTab] = useState(0);
   const [error, setError] = useState("");
@@ -64,12 +64,14 @@ export default function PayrollSetup() {
 
   return (
     <Box>
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-          <SettingsIcon sx={{ fontSize: 28, color: tokens.primary }} />
-          <Typography variant="h1">{t("payroll.setup.title")}</Typography>
+      {!embedded && (
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+            <SettingsIcon sx={{ fontSize: 28, color: tokens.primary }} />
+            <Typography variant="h1">{t("payroll.setup.title")}</Typography>
+          </Box>
         </Box>
-      </Box>
+      )}
 
       {error && (
         <Alert severity="error" onClose={() => setError("")} sx={{ mb: 2 }}>

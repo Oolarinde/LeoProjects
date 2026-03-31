@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 interface Location {
   id: string;
@@ -100,47 +101,66 @@ export function canWrite(user: User | null): boolean {
   return user?.effective_role !== "VIEWER";
 }
 
-export const useAppStore = create<AppState>((set) => ({
-  year: new Date().getFullYear(),
-  location: null,
-  user: null,
-  accessToken: null,
-  refreshToken: null,
-  appVersion: null,
-  companyName: null,
-  companies: [],
-  companyGroupId: null,
-  companyGroupName: null,
-  setYear: (year) => set({ year }),
-  setLocation: (location) => set({ location }),
-  setUser: (user) => set({ user }),
-  setTokens: (access, refresh) =>
-    set({ accessToken: access, refreshToken: refresh }),
-  setAppConfig: (version, companyName) => set({ appVersion: version, companyName }),
-  setCompanies: (companies) => set({ companies }),
-  setCompanyGroup: (id, name) => set({ companyGroupId: id, companyGroupName: name }),
-  switchCompany: (companyId, newTokens, companyName) =>
-    set((state) => {
-      const target = state.companies.find((c) => c.id === companyId);
-      return {
-        accessToken: newTokens.access_token,
-        refreshToken: newTokens.refresh_token,
-        companyName,
-        location: null,
-        companyGroupId: target?.company_group_id ?? state.companyGroupId,
-        companies: state.companies.map((c) => ({
-          ...c,
-          is_default: c.id === companyId,
-        })),
-      };
-    }),
-  logout: () =>
-    set({
+export const useAppStore = create<AppState>()(
+  persist(
+    (set) => ({
+      year: new Date().getFullYear(),
+      location: null,
       user: null,
       accessToken: null,
       refreshToken: null,
+      appVersion: null,
+      companyName: null,
       companies: [],
       companyGroupId: null,
       companyGroupName: null,
+      setYear: (year) => set({ year }),
+      setLocation: (location) => set({ location }),
+      setUser: (user) => set({ user }),
+      setTokens: (access, refresh) =>
+        set({ accessToken: access, refreshToken: refresh }),
+      setAppConfig: (version, companyName) => set({ appVersion: version, companyName }),
+      setCompanies: (companies) => set({ companies }),
+      setCompanyGroup: (id, name) => set({ companyGroupId: id, companyGroupName: name }),
+      switchCompany: (companyId, newTokens, companyName) =>
+        set((state) => {
+          const target = state.companies.find((c) => c.id === companyId);
+          return {
+            accessToken: newTokens.access_token,
+            refreshToken: newTokens.refresh_token,
+            companyName,
+            location: null,
+            companyGroupId: target?.company_group_id ?? state.companyGroupId,
+            companies: state.companies.map((c) => ({
+              ...c,
+              is_default: c.id === companyId,
+            })),
+          };
+        }),
+      logout: () => {
+        localStorage.removeItem("tal-auth");
+        set({
+          user: null,
+          accessToken: null,
+          refreshToken: null,
+          companies: [],
+          companyGroupId: null,
+          companyGroupName: null,
+        });
+      },
     }),
-}));
+    {
+      name: "tal-auth",
+      partialize: (state) => ({
+        // Only persist auth-critical state — not UI state like year/location
+        user: state.user,
+        accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
+        companyName: state.companyName,
+        companies: state.companies,
+        companyGroupId: state.companyGroupId,
+        companyGroupName: state.companyGroupName,
+      }),
+    }
+  )
+);

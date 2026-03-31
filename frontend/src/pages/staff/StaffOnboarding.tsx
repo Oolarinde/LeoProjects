@@ -240,8 +240,50 @@ export default function StaffOnboarding() {
   };
 
   const updateAllocationPercentage = (idx: number, pct: number) => {
+    // Clamp value to 0–100
+    const clampedPct = Math.min(100, Math.max(0, Math.round(pct)));
+    const remaining = 100 - clampedPct;
+    const others = allocations.filter((_, i) => i !== idx);
+
+    if (others.length === 0) {
+      // Only one subsidiary — just set it
+      const updated = [...allocations];
+      updated[idx] = { ...updated[idx], percentage: clampedPct };
+      setAllocations(updated);
+      return;
+    }
+
+    // Distribute remaining proportionally among other subsidiaries
+    const othersTotal = others.reduce((s, a) => s + a.percentage, 0);
     const updated = [...allocations];
-    updated[idx] = { ...updated[idx], percentage: pct };
+    updated[idx] = { ...updated[idx], percentage: clampedPct };
+
+    if (othersTotal === 0) {
+      // All others are 0 — distribute equally
+      const equalShare = Math.floor(remaining / others.length);
+      let leftover = remaining - equalShare * others.length;
+      for (let i = 0; i < allocations.length; i++) {
+        if (i === idx) continue;
+        updated[i] = { ...updated[i], percentage: equalShare + (leftover > 0 ? 1 : 0) };
+        if (leftover > 0) leftover--;
+      }
+    } else {
+      // Proportional distribution — round to integers that sum correctly
+      let distributed = 0;
+      const otherIndices = allocations.map((_, i) => i).filter((i) => i !== idx);
+      for (let j = 0; j < otherIndices.length; j++) {
+        const i = otherIndices[j];
+        if (j === otherIndices.length - 1) {
+          // Last one gets the remainder to guarantee exact 100%
+          updated[i] = { ...updated[i], percentage: remaining - distributed };
+        } else {
+          const share = Math.round((allocations[i].percentage / othersTotal) * remaining);
+          updated[i] = { ...updated[i], percentage: share };
+          distributed += share;
+        }
+      }
+    }
+
     setAllocations(updated);
   };
 
@@ -483,7 +525,7 @@ export default function StaffOnboarding() {
                       onChange={(_, v) => updateAllocationPercentage(idx, v as number)}
                       min={0}
                       max={100}
-                      step={5}
+                      step={1}
                       sx={{ color: tokens.primary }}
                     />
                   </Box>

@@ -17,7 +17,19 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = useAppStore.getState().accessToken;
+  // Try store first, fall back to localStorage if store hasn't hydrated yet
+  let token = useAppStore.getState().accessToken;
+  if (!token) {
+    try {
+      const persisted = localStorage.getItem("tal-auth");
+      if (persisted) {
+        const parsed = JSON.parse(persisted);
+        token = parsed?.state?.accessToken || null;
+      }
+    } catch {
+      // localStorage parse failed — ignore
+    }
+  }
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -27,7 +39,10 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status;
+    const detail = error.response?.data?.detail;
+    // Handle both 401 and 403 "Not authenticated" (FastAPI HTTPBearer returns 403)
+    if (status === 401 || (status === 403 && detail === "Not authenticated")) {
       const { refreshToken, setTokens, logout } = useAppStore.getState();
       if (refreshToken && !error.config._retry) {
         error.config._retry = true;
@@ -39,10 +54,13 @@ api.interceptors.response.use(
           error.config.headers.Authorization = `Bearer ${resp.data.access_token}`;
           return api(error.config);
         } catch {
+          // Refresh failed — session is truly expired
           logout();
+          window.dispatchEvent(new CustomEvent("auth:session-expired"));
         }
       } else {
         logout();
+        window.dispatchEvent(new CustomEvent("auth:session-expired"));
       }
     }
     return Promise.reject(error);
@@ -240,6 +258,15 @@ export const payrollApi = {
     api.post(`/payroll/runs/${runId}/cancel`),
   deleteRun: (runId: string) =>
     api.delete(`/payroll/runs/${runId}`),
+
+  // History & Export
+  history: (year: number, month?: number) =>
+    api.get("/payroll/runs", { params: { year, ...(month ? { month } : {}) } }),
+  exportHistory: (year: number, month?: number, format?: string) =>
+    api.get("/payroll/export", {
+      params: { year, ...(month ? { month } : {}), format: format || "xlsx" },
+      responseType: format === "pdf" ? "blob" : "json",
+    }),
 };
 
 // Revenue

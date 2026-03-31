@@ -1,5 +1,5 @@
 from __future__ import annotations
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
 
@@ -87,10 +87,17 @@ class EmployeeResponse(BaseModel):
     monthly_salary: Decimal | None = None
     status: str
     department: str | None = None
-    hire_date: str | None = None
-    date_of_birth: str | None = None
+    hire_date: date | None = None
+    date_of_birth: date | None = None
     address: str | None = None
     photo_url: str | None = None
+    supervisor_id: UUID | None = None
+    user_id: UUID | None = None
+    bank_name: str | None = None
+    bank_account_no: str | None = None
+    next_of_kin_name: str | None = None
+    next_of_kin_phone: str | None = None
+    next_of_kin_relationship: str | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}

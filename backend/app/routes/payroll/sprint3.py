@@ -72,12 +72,15 @@ def _item_to_response(item: PayrollItem) -> PayrollItemResponse:
 @router.get("/runs", response_model=list[PayrollRunResponse])
 async def list_runs(
     year: int = Query(None),
+    month: int = Query(None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     q = select(PayrollRun).where(PayrollRun.company_id == current_user.company_id)
     if year:
         q = q.where(PayrollRun.year == year)
+    if month:
+        q = q.where(PayrollRun.month == month)
     q = q.order_by(PayrollRun.year.desc(), PayrollRun.month.desc())
     result = await db.execute(q)
     return list(result.scalars().all())
@@ -270,3 +273,56 @@ async def delete_run(
 
     await db.delete(run)
     await db.commit()
+
+
+# ── Export (placeholder — returns JSON summary for client-side export) ──────
+
+@router.get("/export")
+async def export_payroll(
+    year: int = Query(...),
+    month: int = Query(None),
+    format: str = Query("xlsx"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return payroll data for client-side export. Full server-side XLSX/PDF export to be added later."""
+    q = select(PayrollRun).where(PayrollRun.company_id == current_user.company_id, PayrollRun.year == year)
+    if month:
+        q = q.where(PayrollRun.month == month)
+    q = q.options(
+        selectinload(PayrollRun.items).selectinload(PayrollItem.employee),
+        selectinload(PayrollRun.items).selectinload(PayrollItem.company),
+        selectinload(PayrollRun.items).selectinload(PayrollItem.lines),
+    ).order_by(PayrollRun.month)
+    result = await db.execute(q)
+    runs = result.scalars().all()
+
+    export_data = []
+    for run in runs:
+        run_data = {
+            "month": run.month,
+            "year": run.year,
+            "status": run.status,
+            "employee_count": run.employee_count,
+            "total_gross": str(run.total_gross),
+            "total_net": str(run.total_net),
+            "total_deductions": str(run.total_deductions),
+            "items": [
+                {
+                    "employee_name": item.employee.name if item.employee else None,
+                    "employee_ref": item.employee.employee_ref if item.employee else None,
+                    "company_name": item.company.name if item.company else None,
+                    "gross_pay": str(item.gross_pay),
+                    "paye_tax": str(item.paye_tax),
+                    "pension_employee": str(item.pension_employee),
+                    "pension_employer": str(item.pension_employer),
+                    "nhf": str(item.nhf),
+                    "total_deductions": str(item.total_deductions),
+                    "net_pay": str(item.net_pay),
+                }
+                for item in (run.items or [])
+            ],
+        }
+        export_data.append(run_data)
+
+    return {"year": year, "month": month, "format": format, "runs": export_data}

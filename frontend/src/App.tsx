@@ -40,6 +40,19 @@ import StaffRoles from "./pages/staff/StaffRoles";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const user = useAppStore((s) => s.user);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    // Wait for Zustand persist to hydrate from localStorage
+    const unsub = useAppStore.persist.onFinishHydration(() => setHydrated(true));
+    // If already hydrated (fast path)
+    if (useAppStore.persist.hasHydrated()) setHydrated(true);
+    return () => { unsub(); };
+  }, []);
+
+  // Still loading from localStorage — show nothing (prevents flash redirect to /login)
+  if (!hydrated) return null;
+
   if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
@@ -149,11 +162,11 @@ export default function App() {
         <Route path="/settings/users" element={<AdminRoute><UserManagement /></AdminRoute>} />
         <Route path="/settings/roles" element={<AdminRoute><GroupManagement /></AdminRoute>} />
 
-        {/* Staff Management */}
-        <Route path="/staff/directory" element={<AdminRoute><StaffDirectory /></AdminRoute>} />
-        <Route path="/staff/onboarding" element={<AdminRoute><StaffOnboarding /></AdminRoute>} />
-        <Route path="/staff/departments" element={<AdminRoute><Departments /></AdminRoute>} />
-        <Route path="/staff/roles" element={<AdminRoute><StaffRoles /></AdminRoute>} />
+        {/* Staff Management — accessible to all authenticated users */}
+        <Route path="/staff/directory" element={<StaffDirectory />} />
+        <Route path="/staff/onboarding" element={<StaffOnboarding />} />
+        <Route path="/staff/departments" element={<Departments />} />
+        <Route path="/staff/roles" element={<StaffRoles />} />
 
         {/* Tenant Ops */}
         <Route path="/tenants" element={<PermissionRoute module="revenue"><TenantOps /></PermissionRoute>} />
