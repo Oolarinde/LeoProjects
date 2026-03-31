@@ -6,7 +6,7 @@ from datetime import date as date_type
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from sqlalchemy import select, func as sa_func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.employee import Employee
@@ -34,12 +34,21 @@ def _convert_dates(data: dict) -> dict:
 
 
 async def _next_employee_ref(db: AsyncSession, company_id: UUID) -> str:
-    """Auto-generate next employee_ref like E001, E002, etc."""
+    """Auto-generate next employee_ref like E001, E002, etc. Collision-safe."""
+    # Find highest existing numeric ref
     result = await db.execute(
-        select(sa_func.count()).where(Employee.company_id == company_id)
+        select(Employee.employee_ref)
+        .where(Employee.company_id == company_id)
+        .order_by(Employee.employee_ref.desc())
     )
-    count = result.scalar() or 0
-    return f"E{count + 1:03d}"
+    refs = [r[0] for r in result.fetchall()]
+    max_num = 0
+    for ref in refs:
+        # Extract number from refs like E001, E012, etc.
+        digits = "".join(c for c in ref if c.isdigit())
+        if digits:
+            max_num = max(max_num, int(digits))
+    return f"E{max_num + 1:03d}"
 
 
 async def list_employees(db: AsyncSession, company_id: UUID) -> list[Employee]:
