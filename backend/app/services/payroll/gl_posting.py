@@ -15,7 +15,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.models.account import Account
 from app.models.employee_cost_allocation import EmployeeCostAllocation
@@ -37,9 +37,9 @@ def _posting_date(year: int, month: int) -> DateType:
     return DateType(year, month, day)
 
 
-async def _get_salary_account(db: AsyncSession, company_id: UUID) -> Account | None:
+def _get_salary_account(db: Session, company_id: UUID) -> Account | None:
     """Find salary account (5010) in a company's chart of accounts."""
-    result = await db.execute(
+    result = db.execute(
         select(Account).where(
             Account.company_id == company_id,
             Account.code == "5010",
@@ -48,8 +48,8 @@ async def _get_salary_account(db: AsyncSession, company_id: UUID) -> Account | N
     return result.scalar_one_or_none()
 
 
-async def post_payroll_to_gl(
-    db: AsyncSession,
+def post_payroll_to_gl(
+    db: Session,
     company_id: UUID,
     run: PayrollRun,
     user_id: UUID,
@@ -67,7 +67,7 @@ async def post_payroll_to_gl(
     posting_date = _posting_date(run.year, run.month)
 
     # Check if already posted (idempotent)
-    existing = await db.execute(
+    existing = db.execute(
         select(ExpenseTransaction).where(
             ExpenseTransaction.reference_no == ref_no,
             ExpenseTransaction.category == "Salaries",
@@ -78,7 +78,7 @@ async def post_payroll_to_gl(
         return  # Already posted
 
     # Load all payroll items for this run
-    items_result = await db.execute(
+    items_result = db.execute(
         select(PayrollItem).where(PayrollItem.payroll_run_id == run.id)
     )
     items = items_result.scalars().all()
@@ -87,7 +87,7 @@ async def post_payroll_to_gl(
 
     # Load all cost allocations for employees in this run
     employee_ids = [item.employee_id for item in items]
-    allocs_result = await db.execute(
+    allocs_result = db.execute(
         select(EmployeeCostAllocation).where(
             EmployeeCostAllocation.employee_id.in_(employee_ids)
         )
@@ -132,7 +132,7 @@ async def post_payroll_to_gl(
         if total_cost <= 0:
             continue
 
-        salary_account = await _get_salary_account(db, sub_company_id)
+        salary_account = _get_salary_account(db, sub_company_id)
         if salary_account is None:
             # Try to create the account if it doesn't exist
             continue
@@ -154,4 +154,4 @@ async def post_payroll_to_gl(
         )
         db.add(txn)
 
-    await db.flush()
+    db.flush()

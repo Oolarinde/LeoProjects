@@ -4,7 +4,7 @@ from uuid import UUID
 from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 
 from database import get_db
@@ -12,9 +12,12 @@ from app.models.user import User
 from app.models.employee import Employee
 from app.models.employee_cost_allocation import EmployeeCostAllocation
 from app.models.company import Company
-from app.utils.dependencies import get_current_user
+from app.utils.dependencies import get_current_user, require_permission
+from app.utils.permissions import Module, AccessLevel
 
 router = APIRouter()
+
+_write = Depends(require_permission(Module.EMPLOYEES, AccessLevel.WRITE))
 
 
 class CostAllocationLine(BaseModel):
@@ -34,21 +37,21 @@ class CostAllocationResponse(BaseModel):
 
 
 @router.get("/employees/{employee_id}/cost-allocations")
-async def get_employee_allocations(
+def get_employee_allocations(
     employee_id: UUID,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     """Get cost allocations for an employee."""
     from app.services.company_groups import get_group_company_ids_for_user
-    company_ids = await get_group_company_ids_for_user(db, current_user)
-    employee = (await db.execute(
+    company_ids = get_group_company_ids_for_user(db, current_user)
+    employee = (db.execute(
         select(Employee).where(Employee.id == employee_id, Employee.company_id.in_(company_ids))
     )).scalar_one_or_none()
     if not employee:
         raise HTTPException(status_code=404, detail="Employee not found")
 
-    allocations = (await db.execute(
+    allocations = (db.execute(
         select(EmployeeCostAllocation, Company)
         .join(Company, EmployeeCostAllocation.company_id == Company.id)
         .where(EmployeeCostAllocation.employee_id == employee_id)
@@ -72,16 +75,16 @@ async def get_employee_allocations(
 
 
 @router.put("/employees/{employee_id}/cost-allocations")
-async def set_employee_allocations(
+def set_employee_allocations(
     employee_id: UUID,
     data: SetAllocationsRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: User = _write,
+    db: Session = Depends(get_db),
 ):
     """Replace all cost allocations for an employee. Must sum to 100%."""
     from app.services.company_groups import get_group_company_ids_for_user
-    company_ids = await get_group_company_ids_for_user(db, current_user)
-    employee = (await db.execute(
+    company_ids = get_group_company_ids_for_user(db, current_user)
+    employee = (db.execute(
         select(Employee).where(Employee.id == employee_id, Employee.company_id.in_(company_ids))
     )).scalar_one_or_none()
     if not employee:
@@ -96,12 +99,12 @@ async def set_employee_allocations(
         )
 
     # Delete existing allocations
-    existing = (await db.execute(
+    existing = (db.execute(
         select(EmployeeCostAllocation).where(EmployeeCostAllocation.employee_id == employee_id)
     )).scalars().all()
     for e in existing:
-        await db.delete(e)
-    await db.flush()
+        db.delete(e)
+    db.flush()
 
     # Create new allocations (validate target companies are in user's group)
     for alloc in data.allocations:
@@ -117,7 +120,7 @@ async def set_employee_allocations(
         )
         db.add(eca)
 
-    await db.flush()
-    await db.commit()
+    db.flush()
+    db.commit()
 
-    return await get_employee_allocations(employee_id, current_user, db)
+    return get_employee_allocations(employee_id, current_user, db)

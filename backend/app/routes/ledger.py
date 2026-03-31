@@ -6,7 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 import sqlalchemy as sa
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from database import get_db
 from app.models.user import User
@@ -39,7 +39,7 @@ class LedgerResponse(BaseModel):
 
 
 @router.get("/entries", response_model=LedgerResponse)
-async def get_ledger_entries(
+def get_ledger_entries(
     year: int = Query(...),
     location_id: Optional[UUID] = Query(None),
     account_id: Optional[UUID] = Query(None),
@@ -47,7 +47,7 @@ async def get_ledger_entries(
     page: int = Query(1, ge=1),
     size: int = Query(50, ge=1, le=MAX_PAGE_SIZE),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     cid = current_user.company_id
     params = base_params(cid, year, location_id)
@@ -98,14 +98,14 @@ async def get_ledger_entries(
         union_sql = f"({rev_sql}) UNION ALL ({exp_sql})"
 
     # Total count
-    count_result = await db.execute(
+    count_result = db.execute(
         sa.text(f"SELECT COUNT(*) FROM ({union_sql}) gl"),
         params,
     )
     total = count_result.scalar_one()
 
     # Paginated data
-    data_result = await db.execute(
+    data_result = db.execute(
         sa.text(f"""
             SELECT * FROM ({union_sql}) gl
             ORDER BY date DESC, credit DESC

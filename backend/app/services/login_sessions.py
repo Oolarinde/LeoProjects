@@ -5,19 +5,19 @@ from uuid import UUID
 import httpx
 from user_agents import parse as parse_ua
 from sqlalchemy import select, func
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.models.login_session import LoginSession
 from app.models.user import User
 
 
-async def _geoip_lookup(ip: str) -> dict:
+def _geoip_lookup(ip: str) -> dict:
     """Fire-and-forget GeoIP lookup. Returns {} on failure."""
     if ip in ("127.0.0.1", "::1", "unknown", "testclient"):
         return {}
     try:
-        async with httpx.AsyncClient(timeout=3.0) as client:
-            resp = await client.get(
+        with httpx.Client(timeout=3.0) as client:
+            resp = client.get(
                 f"http://ip-api.com/json/{ip}?fields=city,regionName,country"
             )
             if resp.status_code == 200:
@@ -32,8 +32,8 @@ async def _geoip_lookup(ip: str) -> dict:
     return {}
 
 
-async def record_login(
-    db: AsyncSession,
+def record_login(
+    db: Session,
     *,
     user: User,
     ip_address: str,
@@ -44,7 +44,7 @@ async def record_login(
     os_name = f"{ua.os.family} {ua.os.version_string}".strip()
     device_type = "mobile" if ua.is_mobile else "tablet" if ua.is_tablet else "desktop"
 
-    geo = await _geoip_lookup(ip_address)
+    geo = _geoip_lookup(ip_address)
 
     session = LoginSession(
         company_id=user.company_id,
@@ -62,8 +62,8 @@ async def record_login(
     return session
 
 
-async def list_sessions(
-    db: AsyncSession,
+def list_sessions(
+    db: Session,
     user_id: UUID,
     company_id: UUID,
     limit: int = 50,
@@ -74,7 +74,7 @@ async def list_sessions(
         .select_from(LoginSession)
         .where(LoginSession.user_id == user_id, LoginSession.company_id == company_id)
     )
-    total = (await db.execute(count_q)).scalar() or 0
+    total = (db.execute(count_q)).scalar() or 0
 
     q = (
         select(LoginSession)
@@ -83,5 +83,5 @@ async def list_sessions(
         .offset(offset)
         .limit(limit)
     )
-    rows = (await db.execute(q)).scalars().all()
+    rows = (db.execute(q)).scalars().all()
     return list(rows), total

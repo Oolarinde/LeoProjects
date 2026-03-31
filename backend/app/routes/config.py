@@ -12,7 +12,7 @@ class AppConfigResponse(BaseModel):
 
 
 @router.get("", response_model=AppConfigResponse)
-async def get_config():
+def get_config():
     return AppConfigResponse(
         version=APP_VERSION,
         app_name="Talents Apartment Management AIS",

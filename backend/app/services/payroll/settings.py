@@ -5,22 +5,22 @@ import uuid
 from uuid import UUID
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.models.payroll.settings import PayrollSettings
 from app.services.audit import log_action, compute_diff
 
 
-async def get_or_create_settings(db: AsyncSession, company_id: UUID) -> PayrollSettings:
+def get_or_create_settings(db: Session, company_id: UUID) -> PayrollSettings:
     """Get payroll settings for a company, creating defaults if none exist."""
-    result = await db.execute(
+    result = db.execute(
         select(PayrollSettings).where(PayrollSettings.company_id == company_id)
     )
     settings = result.scalar_one_or_none()
     if settings is None:
         settings = PayrollSettings(id=uuid.uuid4(), company_id=company_id)
         db.add(settings)
-        await db.flush()
+        db.flush()
     return settings
 
 
@@ -36,15 +36,15 @@ UPDATABLE_SETTINGS_FIELDS = {
 }
 
 
-async def update_settings(
-    db: AsyncSession,
+def update_settings(
+    db: Session,
     company_id: UUID,
     data: dict,
     user_id: UUID | None = None,
     ip_address: str | None = None,
 ) -> PayrollSettings:
     """Update payroll settings for a company."""
-    settings = await get_or_create_settings(db, company_id)
+    settings = get_or_create_settings(db, company_id)
 
     # Filter to only updatable fields for diff
     filtered = {k: v for k, v in data.items() if v is not None and k in UPDATABLE_SETTINGS_FIELDS}
@@ -55,10 +55,10 @@ async def update_settings(
             setattr(settings, key, value)
 
     settings.updated_by = user_id
-    await db.flush()
+    db.flush()
 
     if diff:
-        await log_action(
+        log_action(
             db,
             company_id=company_id,
             table_name="payroll_settings",

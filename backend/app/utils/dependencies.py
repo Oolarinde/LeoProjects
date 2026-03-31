@@ -5,7 +5,7 @@ from uuid import UUID
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from database import get_db
 from app.models.user import User
@@ -17,9 +17,9 @@ logger = logging.getLogger(__name__)
 security_scheme = HTTPBearer()
 
 
-async def get_current_user(
+def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security_scheme),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> User:
     token = credentials.credentials
     payload = decode_token(token)
@@ -31,7 +31,7 @@ async def get_current_user(
     if user_id is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
 
-    result = await db.execute(select(User).where(User.id == UUID(user_id)))
+    result = db.execute(select(User).where(User.id == UUID(user_id)))
     user = result.scalar_one_or_none()
 
     if user is None or not user.is_active:
@@ -45,7 +45,7 @@ async def get_current_user(
     active_company_id = payload.get("company_id")
     if active_company_id and str(active_company_id) != str(user.company_id):
         active_cid = UUID(active_company_id)
-        membership = (await db.execute(
+        membership = (db.execute(
             select(UserCompanyMembership)
             .where(UserCompanyMembership.user_id == user.id)
             .where(UserCompanyMembership.company_id == active_cid)
@@ -67,7 +67,7 @@ async def get_current_user(
 
 
 def require_role(*roles: str):
-    async def role_checker(current_user: User = Depends(get_current_user)) -> User:
+    def role_checker(current_user: User = Depends(get_current_user)) -> User:
         if current_user.role not in roles:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
         return current_user
@@ -77,7 +77,7 @@ def require_role(*roles: str):
 
 def require_permission(module: Module, level: AccessLevel):
     """FastAPI dependency that checks module-level permission."""
-    async def checker(current_user: User = Depends(get_current_user)) -> User:
+    def checker(current_user: User = Depends(get_current_user)) -> User:
         if not has_access(current_user, module, level):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -90,7 +90,7 @@ def require_permission(module: Module, level: AccessLevel):
 
 def require_admin():
     """Only SUPER_ADMIN and ADMIN can access (for user management)."""
-    async def checker(current_user: User = Depends(get_current_user)) -> User:
+    def checker(current_user: User = Depends(get_current_user)) -> User:
         if current_user.role not in (SUPER_ADMIN, ADMIN):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
         return current_user

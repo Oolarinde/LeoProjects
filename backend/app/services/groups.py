@@ -5,7 +5,7 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy import select, func as sa_func
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from sqlalchemy.orm import selectinload
 
 from app.models.group import Group
@@ -14,9 +14,9 @@ from app.utils.permissions import validate_permissions
 from app.services.audit import log_action, compute_diff
 
 
-async def list_groups(db: AsyncSession, company_id: UUID) -> list[dict]:
+def list_groups(db: Session, company_id: UUID) -> list[dict]:
     """List all roles for a company with member counts."""
-    result = await db.execute(
+    result = db.execute(
         select(
             Group,
             sa_func.count(User.id).label("member_count"),
@@ -41,8 +41,8 @@ async def list_groups(db: AsyncSession, company_id: UUID) -> list[dict]:
     return groups
 
 
-async def get_group(db: AsyncSession, group_id: UUID, company_id: UUID) -> Group:
-    result = await db.execute(
+def get_group(db: Session, group_id: UUID, company_id: UUID) -> Group:
+    result = db.execute(
         select(Group)
         .options(selectinload(Group.members))
         .where(Group.id == group_id, Group.company_id == company_id)
@@ -53,8 +53,8 @@ async def get_group(db: AsyncSession, group_id: UUID, company_id: UUID) -> Group
     return group
 
 
-async def create_group(
-    db: AsyncSession,
+def create_group(
+    db: Session,
     company_id: UUID,
     name: str,
     description: str | None,
@@ -63,7 +63,7 @@ async def create_group(
     ip_address: str | None = None,
 ) -> Group:
     # Check name uniqueness within company
-    existing = await db.execute(
+    existing = db.execute(
         select(Group).where(Group.company_id == company_id, Group.name == name)
     )
     if existing.scalar_one_or_none():
@@ -79,8 +79,8 @@ async def create_group(
         created_by=user_id,
     )
     db.add(group)
-    await db.flush()
-    await log_action(
+    db.flush()
+    log_action(
         db,
         company_id=company_id,
         table_name="groups",
@@ -92,8 +92,8 @@ async def create_group(
     return group
 
 
-async def update_group(
-    db: AsyncSession,
+def update_group(
+    db: Session,
     group_id: UUID,
     company_id: UUID,
     name: str | None = None,
@@ -102,7 +102,7 @@ async def update_group(
     user_id: UUID | None = None,
     ip_address: str | None = None,
 ) -> Group:
-    group = await get_group(db, group_id, company_id)
+    group = get_group(db, group_id, company_id)
 
     # Build update dict for audit diff
     update_data: dict = {}
@@ -116,7 +116,7 @@ async def update_group(
     diff = compute_diff(group, update_data)
 
     if name is not None and name != group.name:
-        existing = await db.execute(
+        existing = db.execute(
             select(Group).where(Group.company_id == company_id, Group.name == name, Group.id != group_id)
         )
         if existing.scalar_one_or_none():
@@ -129,15 +129,15 @@ async def update_group(
     if permissions is not None:
         group.permissions = validate_permissions(permissions)
         # Sync updated permissions to all members of this role
-        members = await db.execute(select(User).where(User.group_id == group_id))
+        members = db.execute(select(User).where(User.group_id == group_id))
         for user in members.scalars().all():
             user.permissions = group.permissions
 
     group.updated_by = user_id
-    await db.flush()
+    db.flush()
 
     if diff:
-        await log_action(
+        log_action(
             db,
             company_id=company_id,
             table_name="groups",
@@ -150,17 +150,17 @@ async def update_group(
     return group
 
 
-async def delete_group(
-    db: AsyncSession,
+def delete_group(
+    db: Session,
     group_id: UUID,
     company_id: UUID,
     user_id: UUID | None = None,
     ip_address: str | None = None,
 ) -> None:
-    group = await get_group(db, group_id, company_id)
+    group = get_group(db, group_id, company_id)
 
     # Prevent deleting a role that still has users assigned
-    member_count = await db.execute(
+    member_count = db.execute(
         select(sa_func.count(User.id)).where(User.group_id == group_id)
     )
     count = member_count.scalar() or 0
@@ -171,9 +171,9 @@ async def delete_group(
         )
 
     record_id = group.id
-    await db.delete(group)
-    await db.flush()
-    await log_action(
+    db.delete(group)
+    db.flush()
+    log_action(
         db,
         company_id=company_id,
         table_name="groups",
@@ -184,10 +184,10 @@ async def delete_group(
     )
 
 
-async def add_members(db: AsyncSession, group_id: UUID, company_id: UUID, user_ids: list[UUID]) -> Group:
-    group = await get_group(db, group_id, company_id)
+def add_members(db: Session, group_id: UUID, company_id: UUID, user_ids: list[UUID]) -> Group:
+    group = get_group(db, group_id, company_id)
 
-    result = await db.execute(
+    result = db.execute(
         select(User).where(User.id.in_(user_ids), User.company_id == company_id)
     )
     users = result.scalars().all()
@@ -199,11 +199,11 @@ async def add_members(db: AsyncSession, group_id: UUID, company_id: UUID, user_i
         user.group_id = group_id
         user.permissions = group.permissions
 
-    await db.flush()
-    return await get_group(db, group_id, company_id)
+    db.flush()
+    return get_group(db, group_id, company_id)
 
 
-async def remove_members(db: AsyncSession, group_id: UUID, company_id: UUID, user_ids: list[UUID]) -> Group:
+def remove_members(db: Session, group_id: UUID, company_id: UUID, user_ids: list[UUID]) -> Group:
     """Remove members is no longer allowed — every user must have a role.
     Use add_members to reassign users to a different role instead."""
     raise HTTPException(

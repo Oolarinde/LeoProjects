@@ -4,7 +4,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from sqlalchemy.orm import selectinload
 
 from database import get_db
@@ -22,7 +22,10 @@ from app.schemas.payroll.sprint3 import (
 from app.services.payroll.engine import calculate_payroll
 from app.services.payroll.gl_posting import post_payroll_to_gl
 from app.services.company_groups import get_group_company_ids_for_user
-from app.utils.dependencies import get_current_user
+from app.utils.dependencies import get_current_user, require_permission
+from app.utils.permissions import Module, AccessLevel
+
+_payroll_write = Depends(require_permission(Module.PAYROLL, AccessLevel.WRITE))
 
 router = APIRouter()
 
@@ -70,11 +73,11 @@ def _item_to_response(item: PayrollItem) -> PayrollItemResponse:
 # ── List Runs ────────────────────────────────────────────────────────────────
 
 @router.get("/runs", response_model=list[PayrollRunResponse])
-async def list_runs(
+def list_runs(
     year: int = Query(None),
     month: int = Query(None),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     q = select(PayrollRun).where(PayrollRun.company_id == current_user.company_id)
     if year:
@@ -82,19 +85,19 @@ async def list_runs(
     if month:
         q = q.where(PayrollRun.month == month)
     q = q.order_by(PayrollRun.year.desc(), PayrollRun.month.desc())
-    result = await db.execute(q)
+    result = db.execute(q)
     return list(result.scalars().all())
 
 
 # ── Get Run Detail ───────────────────────────────────────────────────────────
 
 @router.get("/runs/{run_id}", response_model=PayrollRunDetailResponse)
-async def get_run(
+def get_run(
     run_id: UUID,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
-    result = await db.execute(
+    result = db.execute(
         select(PayrollRun)
         .where(PayrollRun.id == run_id, PayrollRun.company_id == current_user.company_id)
         .options(
@@ -119,13 +122,13 @@ async def get_run(
 # ── Create Run (DRAFT) ──────────────────────────────────────────────────────
 
 @router.post("/runs", response_model=PayrollRunResponse, status_code=201)
-async def create_run(
+def create_run(
     body: PayrollRunCreate,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: User = _payroll_write,
+    db: Session = Depends(get_db),
 ):
     # Check for existing run for this period
-    existing = await db.execute(
+    existing = db.execute(
         select(PayrollRun).where(
             PayrollRun.company_id == current_user.company_id,
             PayrollRun.year == body.year,
@@ -147,21 +150,21 @@ async def create_run(
         created_by=current_user.id,
     )
     db.add(run)
-    await db.flush()
-    await db.commit()
-    await db.refresh(run)
+    db.flush()
+    db.commit()
+    db.refresh(run)
     return run
 
 
 # ── Calculate ────────────────────────────────────────────────────────────────
 
 @router.post("/runs/{run_id}/calculate", response_model=PayrollRunDetailResponse)
-async def calculate_run(
+def calculate_run(
     run_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: User = _payroll_write,
+    db: Session = Depends(get_db),
 ):
-    result = await db.execute(
+    result = db.execute(
         select(PayrollRun).where(
             PayrollRun.id == run_id,
             PayrollRun.company_id == current_user.company_id,
@@ -177,28 +180,28 @@ async def calculate_run(
     # Group payroll: load employees from all group companies
     employee_company_ids = None
     if current_user.role in ("SUPER_ADMIN", "GROUP_ADMIN"):
-        employee_company_ids = await get_group_company_ids_for_user(db, current_user)
+        employee_company_ids = get_group_company_ids_for_user(db, current_user)
 
     try:
-        run = await calculate_payroll(db, current_user.company_id, run, employee_company_ids)
+        run = calculate_payroll(db, current_user.company_id, run, employee_company_ids)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    await db.commit()
+    db.commit()
 
     # Re-fetch with items loaded
-    return await get_run(run_id, current_user, db)
+    return get_run(run_id, current_user, db)
 
 
 # ── Approve ──────────────────────────────────────────────────────────────────
 
 @router.post("/runs/{run_id}/approve", response_model=PayrollRunResponse)
-async def approve_run(
+def approve_run(
     run_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: User = _payroll_write,
+    db: Session = Depends(get_db),
 ):
-    result = await db.execute(
+    result = db.execute(
         select(PayrollRun).where(
             PayrollRun.id == run_id,
             PayrollRun.company_id == current_user.company_id,
@@ -216,22 +219,22 @@ async def approve_run(
     run.approved_at = datetime.utcnow()
 
     # Auto-post payroll journal to GL (LEDGER P1)
-    await post_payroll_to_gl(db, current_user.company_id, run, current_user.id)
+    post_payroll_to_gl(db, current_user.company_id, run, current_user.id)
 
-    await db.commit()
-    await db.refresh(run)
+    db.commit()
+    db.refresh(run)
     return run
 
 
 # ── Cancel ───────────────────────────────────────────────────────────────────
 
 @router.post("/runs/{run_id}/cancel", response_model=PayrollRunResponse)
-async def cancel_run(
+def cancel_run(
     run_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: User = _payroll_write,
+    db: Session = Depends(get_db),
 ):
-    result = await db.execute(
+    result = db.execute(
         select(PayrollRun).where(
             PayrollRun.id == run_id,
             PayrollRun.company_id == current_user.company_id,
@@ -245,20 +248,20 @@ async def cancel_run(
         raise HTTPException(status_code=400, detail="Cannot cancel a PAID run")
 
     run.status = "CANCELLED"
-    await db.commit()
-    await db.refresh(run)
+    db.commit()
+    db.refresh(run)
     return run
 
 
 # ── Delete (DRAFT only) ─────────────────────────────────────────────────────
 
 @router.delete("/runs/{run_id}", status_code=204)
-async def delete_run(
+def delete_run(
     run_id: UUID,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: User = _payroll_write,
+    db: Session = Depends(get_db),
 ):
-    result = await db.execute(
+    result = db.execute(
         select(PayrollRun).where(
             PayrollRun.id == run_id,
             PayrollRun.company_id == current_user.company_id,
@@ -271,19 +274,19 @@ async def delete_run(
     if run.status not in ("DRAFT", "CANCELLED"):
         raise HTTPException(status_code=400, detail="Only DRAFT or CANCELLED runs can be deleted")
 
-    await db.delete(run)
-    await db.commit()
+    db.delete(run)
+    db.commit()
 
 
 # ── Export (placeholder — returns JSON summary for client-side export) ──────
 
 @router.get("/export")
-async def export_payroll(
+def export_payroll(
     year: int = Query(...),
     month: int = Query(None),
     format: str = Query("xlsx"),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     """Return payroll data for client-side export. Full server-side XLSX/PDF export to be added later."""
     q = select(PayrollRun).where(PayrollRun.company_id == current_user.company_id, PayrollRun.year == year)
@@ -294,7 +297,7 @@ async def export_payroll(
         selectinload(PayrollRun.items).selectinload(PayrollItem.company),
         selectinload(PayrollRun.items).selectinload(PayrollItem.lines),
     ).order_by(PayrollRun.month)
-    result = await db.execute(q)
+    result = db.execute(q)
     runs = result.scalars().all()
 
     export_data = []

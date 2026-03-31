@@ -84,7 +84,7 @@ _logger = logging.getLogger("app.errors")
 
 
 @app.exception_handler(SAIntegrityError)
-async def integrity_error_handler(request: Request, exc: SAIntegrityError):
+def integrity_error_handler(request: Request, exc: SAIntegrityError):
     """Convert SQLAlchemy IntegrityError into user-friendly 409 responses."""
     detail = str(exc.orig) if exc.orig else str(exc)
     _logger.warning("IntegrityError: %s", detail)
@@ -109,7 +109,7 @@ async def integrity_error_handler(request: Request, exc: SAIntegrityError):
 
 
 @app.exception_handler(RequestValidationError)
-async def validation_error_handler(request: Request, exc: RequestValidationError):
+def validation_error_handler(request: Request, exc: RequestValidationError):
     """Convert Pydantic validation errors into readable 422 responses."""
     errors = exc.errors()
     messages = []
@@ -121,7 +121,7 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
 
 
 @app.exception_handler(500)
-async def internal_error_handler(request: Request, exc: Exception):
+def internal_error_handler(request: Request, exc: Exception):
     """Catch unhandled 500 errors and return structured JSON instead of HTML."""
     _logger.exception("Unhandled error on %s %s", request.method, request.url.path)
     return JSONResponse(status_code=500, content={"detail": "Internal server error. Please try again or contact support."})
@@ -182,5 +182,5 @@ app.include_router(staff_routes.router, prefix="/api/staff", tags=["staff"])
 
 
 @app.get("/api/health")
-async def health():
+def health():
     return {"status": "ok"}

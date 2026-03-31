@@ -6,7 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 import sqlalchemy as sa
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from database import get_db
 from app.models.user import User
@@ -34,11 +34,11 @@ class BalanceSheetResponse(BaseModel):
 
 
 @router.get("/summary", response_model=BalanceSheetResponse)
-async def get_balance_sheet(
+def get_balance_sheet(
     year: int = Query(...),
     location_id: Optional[UUID] = Query(None),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     """
     Option A: Cash & Bank = cumulative all-time revenue minus all-time expenses.
@@ -52,18 +52,18 @@ async def get_balance_sheet(
     if location_id:
         loc_params["loc_id"] = location_id
 
-    async def scalar(sql: str, params: dict) -> Decimal:
-        result = await db.execute(sa.text(sql), params)
+    def scalar(sql: str, params: dict) -> Decimal:
+        result = db.execute(sa.text(sql), params)
         return Decimal(str(result.scalar_one() or 0))
 
     # ── Assets ─────────────────────────────────────────────────────────────
     # Cash & Bank: all-time revenue minus all-time expenses (Option A)
-    all_rev = await scalar(
+    all_rev = scalar(
         f"SELECT COALESCE(SUM(r.amount), 0) FROM revenue_transactions r "
         f"WHERE r.company_id = :cid AND r.is_voided = false{lf_rev}",
         loc_params,
     )
-    all_exp = await scalar(
+    all_exp = scalar(
         f"SELECT COALESCE(SUM(e.amount), 0) FROM expense_transactions e "
         f"WHERE e.company_id = :cid AND e.is_voided = false{lf_exp}",
         loc_params,
@@ -72,7 +72,7 @@ async def get_balance_sheet(
 
     # ── Liabilities ────────────────────────────────────────────────────────
     # Caution Deposits Payable = all-time caution fee income (account code 4030)
-    caution_deposits_payable = await scalar(
+    caution_deposits_payable = scalar(
         f"SELECT COALESCE(SUM(r.amount), 0) "
         f"FROM revenue_transactions r "
         f"JOIN accounts a ON r.account_id = a.id "
@@ -88,7 +88,7 @@ async def get_balance_sheet(
     #   Equity = (all_rev - caution - all_exp) = Assets - Liabilities  ✓
 
     # Prior caution deposits
-    prior_caution = await scalar(
+    prior_caution = scalar(
         f"SELECT COALESCE(SUM(r.amount), 0) "
         f"FROM revenue_transactions r "
         f"JOIN accounts a ON r.account_id = a.id "
@@ -97,7 +97,7 @@ async def get_balance_sheet(
     )
 
     # Current year caution deposits
-    cur_caution = await scalar(
+    cur_caution = scalar(
         f"SELECT COALESCE(SUM(r.amount), 0) "
         f"FROM revenue_transactions r "
         f"JOIN accounts a ON r.account_id = a.id "
@@ -106,12 +106,12 @@ async def get_balance_sheet(
     )
 
     # Retained earnings: net operating profit for all years BEFORE selected year
-    prior_rev = await scalar(
+    prior_rev = scalar(
         f"SELECT COALESCE(SUM(r.amount), 0) FROM revenue_transactions r "
         f"WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year < :year{lf_rev}",
         {**loc_params, "year": year},
     )
-    prior_exp = await scalar(
+    prior_exp = scalar(
         f"SELECT COALESCE(SUM(e.amount), 0) FROM expense_transactions e "
         f"WHERE e.company_id = :cid AND e.is_voided = false AND e.fiscal_year < :year{lf_exp}",
         {**loc_params, "year": year},
@@ -119,12 +119,12 @@ async def get_balance_sheet(
     retained_earnings_prior = prior_rev - prior_caution - prior_exp
 
     # Current year net operating profit (excluding caution deposits)
-    cur_rev = await scalar(
+    cur_rev = scalar(
         f"SELECT COALESCE(SUM(r.amount), 0) FROM revenue_transactions r "
         f"WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year = :year{lf_rev}",
         {**loc_params, "year": year},
     )
-    cur_exp = await scalar(
+    cur_exp = scalar(
         f"SELECT COALESCE(SUM(e.amount), 0) FROM expense_transactions e "
         f"WHERE e.company_id = :cid AND e.is_voided = false AND e.fiscal_year = :year{lf_exp}",
         {**loc_params, "year": year},

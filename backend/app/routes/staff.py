@@ -11,7 +11,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select, func as sa_func
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from sqlalchemy.orm import selectinload
 
 from database import get_db
@@ -28,12 +28,15 @@ from app.models.payroll.employee_payroll_profile import EmployeePayrollProfile
 from app.models.payroll.employee_leave_balance import EmployeeLeaveBalance
 from app.models.payroll.leave_request import LeaveRequest
 from app.models.payroll.leave_policy import LeavePolicy
-from app.utils.dependencies import get_current_user
+from app.utils.dependencies import get_current_user, require_permission
+from app.utils.permissions import Module, AccessLevel
 from app.utils.config import settings as app_settings
 from app.services.company_groups import get_group_company_ids_for_user
 from app.utils.security import hash_password
 
 router = APIRouter()
+
+_write = Depends(require_permission(Module.STAFF, AccessLevel.WRITE))
 
 
 # ── Schemas ──────────────────────────────────────────────────────────────────
@@ -83,15 +86,15 @@ class CreateLoginBody(BaseModel):
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
 
-async def _get_employee_or_404(
-    db: AsyncSession, employee_id: UUID, company_ids: list[UUID]
+def _get_employee_or_404(
+    db: Session, employee_id: UUID, company_ids: list[UUID]
 ) -> Employee:
     """Fetch employee within the user's accessible companies, or raise 404."""
     stmt = select(Employee).where(
         Employee.id == employee_id,
         Employee.company_id.in_(company_ids),
     )
-    emp = (await db.execute(stmt)).scalar_one_or_none()
+    emp = (db.execute(stmt)).scalar_one_or_none()
     if not emp:
         raise HTTPException(status_code=404, detail="Employee not found")
     return emp
@@ -158,35 +161,35 @@ def _serialize_employee(emp: Employee, company: Optional[Company], supervisor: O
 
 
 @router.get("/{employee_id}")
-async def get_staff_profile(
+def get_staff_profile(
     employee_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    company_ids = await get_group_company_ids_for_user(db, current_user)
-    emp = await _get_employee_or_404(db, employee_id, company_ids)
+    company_ids = get_group_company_ids_for_user(db, current_user)
+    emp = _get_employee_or_404(db, employee_id, company_ids)
 
     # Load company
-    company = (await db.execute(
+    company = (db.execute(
         select(Company).where(Company.id == emp.company_id)
     )).scalar_one_or_none()
 
     # Load supervisor
     supervisor = None
     if emp.supervisor_id:
-        supervisor = (await db.execute(
+        supervisor = (db.execute(
             select(Employee).where(Employee.id == emp.supervisor_id)
         )).scalar_one_or_none()
 
     # Load linked user
     linked_user = None
     if emp.user_id:
-        linked_user = (await db.execute(
+        linked_user = (db.execute(
             select(User).where(User.id == emp.user_id)
         )).scalar_one_or_none()
 
     # Load cost allocations with companies in one query (no N+1)
-    alloc_rows = (await db.execute(
+    alloc_rows = (db.execute(
         select(EmployeeCostAllocation, Company)
         .join(Company, EmployeeCostAllocation.company_id == Company.id)
         .where(EmployeeCostAllocation.employee_id == emp.id)
@@ -209,14 +212,14 @@ async def get_staff_profile(
 
 
 @router.put("/{employee_id}")
-async def update_staff_profile(
+def update_staff_profile(
     employee_id: UUID,
     body: StaffUpdateBody,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    company_ids = await get_group_company_ids_for_user(db, current_user)
-    emp = await _get_employee_or_404(db, employee_id, company_ids)
+    company_ids = get_group_company_ids_for_user(db, current_user)
+    emp = _get_employee_or_404(db, employee_id, company_ids)
 
     from datetime import date as date_type
 
@@ -240,30 +243,30 @@ async def update_staff_profile(
             emp.monthly_salary = Decimal(str(value))
 
     emp.updated_by = current_user.id
-    await db.flush()
+    db.flush()
 
     # Re-fetch for response
-    return await get_staff_profile(employee_id, db, current_user)
+    return get_staff_profile(employee_id, db, current_user)
 
 
 # ── POST /staff/{employee_id}/photo — Upload photo ──────────────────────────
 
 
 @router.post("/{employee_id}/photo")
-async def upload_staff_photo(
+def upload_staff_photo(
     employee_id: UUID,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    company_ids = await get_group_company_ids_for_user(db, current_user)
-    emp = await _get_employee_or_404(db, employee_id, company_ids)
+    company_ids = get_group_company_ids_for_user(db, current_user)
+    emp = _get_employee_or_404(db, employee_id, company_ids)
 
     content_type = request.headers.get("content-type", "")
     if "multipart/form-data" not in content_type:
         raise HTTPException(status_code=400, detail="Expected multipart/form-data")
 
-    form = await request.form()
+    form = request.form()
     file = form.get("photo")
     if file is None:
         raise HTTPException(status_code=400, detail="No photo file provided")
@@ -272,7 +275,7 @@ async def upload_staff_photo(
     if file.content_type not in ALLOWED_TYPES:
         raise HTTPException(status_code=400, detail="Only JPEG, PNG, and WebP images are allowed")
 
-    data = await file.read()
+    data = file.read()
     MAX_SIZE = 2 * 1024 * 1024  # 2 MB
     if len(data) > MAX_SIZE:
         raise HTTPException(status_code=400, detail="File size must be under 2 MB")
@@ -295,7 +298,7 @@ async def upload_staff_photo(
 
     emp.photo_url = f"/uploads/staff/{filename}"
     emp.updated_by = current_user.id
-    await db.flush()
+    db.flush()
 
     return {"photo_url": emp.photo_url}
 
@@ -304,13 +307,13 @@ async def upload_staff_photo(
 
 
 @router.get("/{employee_id}/payroll-history")
-async def get_payroll_history(
+def get_payroll_history(
     employee_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    company_ids = await get_group_company_ids_for_user(db, current_user)
-    emp = await _get_employee_or_404(db, employee_id, company_ids)
+    company_ids = get_group_company_ids_for_user(db, current_user)
+    emp = _get_employee_or_404(db, employee_id, company_ids)
 
     stmt = (
         select(PayrollItem, PayrollRun)
@@ -318,7 +321,7 @@ async def get_payroll_history(
         .where(PayrollItem.employee_id == emp.id)
         .order_by(PayrollRun.year.desc(), PayrollRun.month.desc())
     )
-    rows = (await db.execute(stmt)).all()
+    rows = (db.execute(stmt)).all()
 
     items = []
     for pi, pr in rows:
@@ -349,14 +352,14 @@ async def get_payroll_history(
 
 
 @router.get("/{employee_id}/leave")
-async def get_leave_info(
+def get_leave_info(
     employee_id: UUID,
     year: int = Query(default=None),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    company_ids = await get_group_company_ids_for_user(db, current_user)
-    emp = await _get_employee_or_404(db, employee_id, company_ids)
+    company_ids = get_group_company_ids_for_user(db, current_user)
+    emp = _get_employee_or_404(db, employee_id, company_ids)
 
     # Use current year if not specified
     if year is None:
@@ -371,7 +374,7 @@ async def get_leave_info(
             EmployeeLeaveBalance.year == year,
         )
     )
-    bal_rows = (await db.execute(bal_stmt)).all()
+    bal_rows = (db.execute(bal_stmt)).all()
 
     balances = []
     for bal, policy in bal_rows:
@@ -394,7 +397,7 @@ async def get_leave_info(
         .order_by(LeaveRequest.start_date.desc())
         .limit(50)
     )
-    req_rows = (await db.execute(req_stmt)).all()
+    req_rows = (db.execute(req_stmt)).all()
 
     requests = []
     for req, policy in req_rows:
@@ -417,14 +420,14 @@ async def get_leave_info(
 
 
 @router.get("/{employee_id}/login-history")
-async def get_login_history(
+def get_login_history(
     employee_id: UUID,
     limit: int = Query(default=20, le=100),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    company_ids = await get_group_company_ids_for_user(db, current_user)
-    emp = await _get_employee_or_404(db, employee_id, company_ids)
+    company_ids = get_group_company_ids_for_user(db, current_user)
+    emp = _get_employee_or_404(db, employee_id, company_ids)
 
     if not emp.user_id:
         return {"has_login": False, "sessions": []}
@@ -435,7 +438,7 @@ async def get_login_history(
         .order_by(LoginSession.created_at.desc())
         .limit(limit)
     )
-    sessions = (await db.execute(stmt)).scalars().all()
+    sessions = (db.execute(stmt)).scalars().all()
 
     return {
         "has_login": True,
@@ -459,13 +462,13 @@ async def get_login_history(
 
 
 @router.post("", status_code=201)
-async def create_staff(
+def create_staff(
     body: StaffCreateBody,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     target_company_id = UUID(body.company_id) if body.company_id else current_user.company_id
-    company_ids = await get_group_company_ids_for_user(db, current_user)
+    company_ids = get_group_company_ids_for_user(db, current_user)
     if target_company_id not in company_ids:
         raise HTTPException(status_code=403, detail="No access to this company")
 
@@ -475,7 +478,7 @@ async def create_staff(
     ref = body.employee_ref.strip() if body.employee_ref else ""
     if not ref:
         from app.services.settings.employees import _next_employee_ref
-        ref = await _next_employee_ref(db, target_company_id)
+        ref = _next_employee_ref(db, target_company_id)
 
     emp = Employee(
         company_id=target_company_id,
@@ -492,11 +495,11 @@ async def create_staff(
         created_by=current_user.id,
     )
     db.add(emp)
-    await db.flush()
+    db.flush()
 
     temp_password = None
     if body.create_login and body.email:
-        temp_password = await _create_login_for_employee(
+        temp_password = _create_login_for_employee(
             db, emp, body.email, body.login_role, target_company_id, current_user
         )
 
@@ -514,26 +517,26 @@ async def create_staff(
 
 
 @router.post("/{employee_id}/create-login")
-async def create_login_for_employee(
+def create_login_for_employee(
     employee_id: UUID,
     body: CreateLoginBody,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    company_ids = await get_group_company_ids_for_user(db, current_user)
-    emp = await _get_employee_or_404(db, employee_id, company_ids)
+    company_ids = get_group_company_ids_for_user(db, current_user)
+    emp = _get_employee_or_404(db, employee_id, company_ids)
 
     if emp.user_id:
         raise HTTPException(status_code=409, detail="Employee already has a login account")
 
     # Check email not taken
-    existing = (await db.execute(
+    existing = (db.execute(
         select(User).where(User.email == body.email.lower().strip())
     )).scalar_one_or_none()
     if existing:
         raise HTTPException(status_code=409, detail="This email address is already registered")
 
-    temp_password = await _create_login_for_employee(
+    temp_password = _create_login_for_employee(
         db, emp, body.email, body.role, emp.company_id, current_user
     )
 
@@ -545,8 +548,8 @@ async def create_login_for_employee(
     }
 
 
-async def _create_login_for_employee(
-    db: AsyncSession,
+def _create_login_for_employee(
+    db: Session,
     emp: Employee,
     email: str,
     role: str,
@@ -557,7 +560,7 @@ async def _create_login_for_employee(
     from app.services.auth import _ensure_default_roles
 
     # Get or create the Staff role
-    _admin_role, staff_role = await _ensure_default_roles(db, company_id)
+    _admin_role, staff_role = _ensure_default_roles(db, company_id)
 
     # Use admin role if the requested role is ADMIN/COMPANY_ADMIN, else staff
     use_role = _admin_role if role in ("ADMIN", "COMPANY_ADMIN", "SUPER_ADMIN") else staff_role
@@ -575,7 +578,7 @@ async def _create_login_for_employee(
         created_by=current_user.id,
     )
     db.add(user)
-    await db.flush()
+    db.flush()
 
     # Create company membership
     membership = UserCompanyMembership(
@@ -591,6 +594,6 @@ async def _create_login_for_employee(
     # Link user to employee
     emp.user_id = user.id
     emp.updated_by = current_user.id
-    await db.flush()
+    db.flush()
 
     return temp_password

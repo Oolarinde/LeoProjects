@@ -1,5 +1,6 @@
-# Separate project — do not push to TALAccounting-software
+# Separate projects — cloned repos, do not track
 Accounting/
+TALAccounting-software/
 
 # Environment
 .env

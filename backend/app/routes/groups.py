@@ -4,7 +4,7 @@ from __future__ import annotations
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from database import get_db
 from app.models.user import User
@@ -22,20 +22,20 @@ router = APIRouter()
 
 
 @router.get("", response_model=list[GroupResponse])
-async def list_groups(
+def list_groups(
     current_user: User = Depends(require_admin()),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
-    return await group_service.list_groups(db, current_user.company_id)
+    return group_service.list_groups(db, current_user.company_id)
 
 
 @router.post("", response_model=GroupResponse, status_code=201)
-async def create_group(
+def create_group(
     data: GroupCreateRequest,
     current_user: User = Depends(require_admin()),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
-    group = await group_service.create_group(
+    group = group_service.create_group(
         db=db,
         company_id=current_user.company_id,
         name=data.name,
@@ -54,12 +54,12 @@ async def create_group(
 
 
 @router.get("/{group_id}", response_model=GroupDetailResponse)
-async def get_group(
+def get_group(
     group_id: UUID,
     current_user: User = Depends(require_admin()),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
-    group = await group_service.get_group(db, group_id, current_user.company_id)
+    group = group_service.get_group(db, group_id, current_user.company_id)
     return GroupDetailResponse(
         id=group.id,
         company_id=group.company_id,
@@ -76,13 +76,13 @@ async def get_group(
 
 
 @router.patch("/{group_id}", response_model=GroupResponse)
-async def update_group(
+def update_group(
     group_id: UUID,
     data: GroupUpdateRequest,
     current_user: User = Depends(require_admin()),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
-    group = await group_service.update_group(
+    group = group_service.update_group(
         db=db,
         group_id=group_id,
         company_id=current_user.company_id,
@@ -103,22 +103,22 @@ async def update_group(
 
 
 @router.delete("/{group_id}", status_code=204)
-async def delete_group(
+def delete_group(
     group_id: UUID,
     current_user: User = Depends(require_admin()),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
-    await group_service.delete_group(db, group_id, current_user.company_id)
+    group_service.delete_group(db, group_id, current_user.company_id)
 
 
 @router.post("/{group_id}/members", response_model=GroupDetailResponse)
-async def add_members(
+def add_members(
     group_id: UUID,
     data: GroupMemberRequest,
     current_user: User = Depends(require_admin()),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
-    group = await group_service.add_members(db, group_id, current_user.company_id, data.user_ids)
+    group = group_service.add_members(db, group_id, current_user.company_id, data.user_ids)
     return GroupDetailResponse(
         id=group.id,
         company_id=group.company_id,
@@ -135,13 +135,13 @@ async def add_members(
 
 
 @router.delete("/{group_id}/members", response_model=GroupDetailResponse)
-async def remove_members(
+def remove_members(
     group_id: UUID,
     data: GroupMemberRequest,
     current_user: User = Depends(require_admin()),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
-    group = await group_service.remove_members(db, group_id, current_user.company_id, data.user_ids)
+    group = group_service.remove_members(db, group_id, current_user.company_id, data.user_ids)
     return GroupDetailResponse(
         id=group.id,
         company_id=group.company_id,

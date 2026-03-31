@@ -21,6 +21,8 @@ class Module(str, Enum):
     LOCATIONS = "locations"
     REFERENCE = "reference"
     GROUP = "group"
+    TENANTS = "tenants"
+    STAFF = "staff"
 
 
 class AccessLevel(str, Enum):

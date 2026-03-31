@@ -6,7 +6,7 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.models.reference_data import ReferenceData
 from app.services.audit import log_action, compute_diff
@@ -15,25 +15,25 @@ from app.services.audit import log_action, compute_diff
 UPDATABLE_FIELDS = {"category", "value"}
 
 
-async def list_reference_data(
-    db: AsyncSession, company_id: UUID, category: str | None = None
+def list_reference_data(
+    db: Session, company_id: UUID, category: str | None = None
 ) -> list[ReferenceData]:
     stmt = select(ReferenceData).where(ReferenceData.company_id == company_id)
     if category is not None:
         stmt = stmt.where(ReferenceData.category == category)
     stmt = stmt.order_by(ReferenceData.category, ReferenceData.value)
-    result = await db.execute(stmt)
+    result = db.execute(stmt)
     return list(result.scalars().all())
 
 
-async def create_reference_data(
-    db: AsyncSession,
+def create_reference_data(
+    db: Session,
     company_id: UUID,
     data: dict,
     user_id: UUID | None = None,
     ip_address: str | None = None,
 ) -> ReferenceData:
-    existing = await db.execute(
+    existing = db.execute(
         select(ReferenceData).where(
             ReferenceData.company_id == company_id,
             ReferenceData.category == data["category"],
@@ -47,8 +47,8 @@ async def create_reference_data(
         )
     item = ReferenceData(id=uuid.uuid4(), company_id=company_id, created_by=user_id, **data)
     db.add(item)
-    await db.flush()
-    await log_action(
+    db.flush()
+    log_action(
         db,
         company_id=company_id,
         table_name="reference_data",
@@ -60,15 +60,15 @@ async def create_reference_data(
     return item
 
 
-async def update_reference_data(
-    db: AsyncSession,
+def update_reference_data(
+    db: Session,
     item_id: UUID,
     company_id: UUID,
     data: dict,
     user_id: UUID | None = None,
     ip_address: str | None = None,
 ) -> ReferenceData:
-    result = await db.execute(
+    result = db.execute(
         select(ReferenceData).where(
             ReferenceData.id == item_id, ReferenceData.company_id == company_id
         )
@@ -80,7 +80,7 @@ async def update_reference_data(
     check_cat = data.get("category") or item.category
     check_val = data.get("value") or item.value
     if check_cat != item.category or check_val != item.value:
-        dup = await db.execute(
+        dup = db.execute(
             select(ReferenceData).where(
                 ReferenceData.company_id == company_id,
                 ReferenceData.category == check_cat,
@@ -99,9 +99,9 @@ async def update_reference_data(
         if value is not None and key in UPDATABLE_FIELDS:
             setattr(item, key, value)
     item.updated_by = user_id
-    await db.flush()
+    db.flush()
     if diff:
-        await log_action(
+        log_action(
             db,
             company_id=company_id,
             table_name="reference_data",
@@ -114,14 +114,14 @@ async def update_reference_data(
     return item
 
 
-async def delete_reference_data(
-    db: AsyncSession,
+def delete_reference_data(
+    db: Session,
     item_id: UUID,
     company_id: UUID,
     user_id: UUID | None = None,
     ip_address: str | None = None,
 ) -> None:
-    result = await db.execute(
+    result = db.execute(
         select(ReferenceData).where(
             ReferenceData.id == item_id, ReferenceData.company_id == company_id
         )
@@ -130,9 +130,9 @@ async def delete_reference_data(
     if item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reference data not found")
     record_id = item.id
-    await db.delete(item)
-    await db.flush()
-    await log_action(
+    db.delete(item)
+    db.flush()
+    log_action(
         db,
         company_id=company_id,
         table_name="reference_data",

@@ -6,11 +6,12 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 import sqlalchemy as sa
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from database import get_db
 from app.models.user import User
-from app.utils.dependencies import get_current_user
+from app.utils.dependencies import get_current_user, require_permission
+from app.utils.permissions import Module, AccessLevel
 from app.utils.report_helpers import loc_filter, base_params
 
 router = APIRouter()
@@ -42,11 +43,11 @@ class OpeningBalanceUpdate(BaseModel):
 
 
 @router.get("/summary", response_model=CashFlowResponse)
-async def get_cashflow(
+def get_cashflow(
     year: int = Query(...),
     location_id: Optional[UUID] = Query(None),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     cid = current_user.company_id
     params = base_params(cid, year, location_id)
@@ -54,7 +55,7 @@ async def get_cashflow(
     lf_exp = loc_filter("e", location_id)
 
     # Opening balance: manual entry OR auto-computed from prior year closing
-    ob_result = await db.execute(
+    ob_result = db.execute(
         sa.text(
             "SELECT COALESCE(amount, 0) FROM opening_balances "
             "WHERE company_id = :cid AND year = :year"
@@ -66,18 +67,18 @@ async def get_cashflow(
         opening_balance = Decimal(str(manual_ob))
     else:
         # Auto-chain: prior year closing = all-time revenue - all-time expenses up to end of prior year
-        prior_rev = await db.execute(
+        prior_rev = db.execute(
             sa.text(f"SELECT COALESCE(SUM(r.amount), 0) FROM revenue_transactions r WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year < :year{lf_rev}"),
             {"cid": cid, "year": year, **({"loc_id": location_id} if location_id else {})},
         )
-        prior_exp = await db.execute(
+        prior_exp = db.execute(
             sa.text(f"SELECT COALESCE(SUM(e.amount), 0) FROM expense_transactions e WHERE e.company_id = :cid AND e.is_voided = false AND e.fiscal_year < :year{lf_exp}"),
             {"cid": cid, "year": year, **({"loc_id": location_id} if location_id else {})},
         )
         opening_balance = Decimal(str(prior_rev.scalar_one())) - Decimal(str(prior_exp.scalar_one()))
 
     # Monthly cash in (revenue)
-    rev_result = await db.execute(
+    rev_result = db.execute(
         sa.text(f"""
             SELECT EXTRACT(MONTH FROM r.date)::int AS month_num,
                    COALESCE(SUM(r.amount), 0) AS total
@@ -90,7 +91,7 @@ async def get_cashflow(
     monthly_rev = {row.month_num: Decimal(str(row.total)) for row in rev_result}
 
     # Monthly cash out (expenses)
-    exp_result = await db.execute(
+    exp_result = db.execute(
         sa.text(f"""
             SELECT EXTRACT(MONTH FROM e.date)::int AS month_num,
                    COALESCE(SUM(e.amount), 0) AS total
@@ -137,16 +138,16 @@ async def get_cashflow(
 
 
 @router.put("/opening-balance")
-async def set_opening_balance(
+def set_opening_balance(
     body: OpeningBalanceUpdate,
     year: int = Query(...),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_permission(Module.CASHFLOW, AccessLevel.WRITE)),
+    db: Session = Depends(get_db),
 ):
     """Upsert the opening cash balance for a given year."""
     cid = current_user.company_id
 
-    existing = await db.execute(
+    existing = db.execute(
         sa.text(
             "SELECT id FROM opening_balances WHERE company_id = :cid AND year = :year"
         ),
@@ -155,7 +156,7 @@ async def set_opening_balance(
     row = existing.fetchone()
 
     if row:
-        await db.execute(
+        db.execute(
             sa.text(
                 "UPDATE opening_balances SET amount = :amount, notes = :notes, "
                 "updated_at = NOW() WHERE company_id = :cid AND year = :year"
@@ -163,7 +164,7 @@ async def set_opening_balance(
             {"cid": cid, "year": year, "amount": body.amount, "notes": body.notes},
         )
     else:
-        await db.execute(
+        db.execute(
             sa.text(
                 "INSERT INTO opening_balances (company_id, year, amount, notes) "
                 "VALUES (:cid, :year, :amount, :notes)"
@@ -171,5 +172,5 @@ async def set_opening_balance(
             {"cid": cid, "year": year, "amount": body.amount, "notes": body.notes},
         )
 
-    await db.commit()
+    db.commit()
     return {"year": year, "amount": body.amount}

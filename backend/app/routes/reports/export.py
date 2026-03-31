@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import HTMLResponse
 import sqlalchemy as sa
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from database import get_db
 from app.models.user import User
@@ -58,14 +58,14 @@ def _html_wrap(title: str, body: str, year: int, company_name: str = "—") -> s
 
 
 @router.get("/pnl/print", response_class=HTMLResponse)
-async def pnl_printable(
+def pnl_printable(
     year: int = Query(...),
     location_id: Optional[UUID] = Query(None),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     cid = current_user.company_id
-    company = (await db.execute(
+    company = (db.execute(
         select(Company).where(Company.id == cid)
     )).scalar_one_or_none()
     company_name = company.name if company else "—"
@@ -74,7 +74,7 @@ async def pnl_printable(
     lf_exp = loc_filter("e", location_id)
 
     # Revenue by account
-    rev_result = await db.execute(sa.text(f"""
+    rev_result = db.execute(sa.text(f"""
         SELECT a.code, a.name, COALESCE(SUM(r.amount), 0) AS total
         FROM revenue_transactions r JOIN accounts a ON r.account_id = a.id
         WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year = :year{lf_rev}
@@ -84,7 +84,7 @@ async def pnl_printable(
     total_rev = sum(t for _, _, t in rev_lines)
 
     # Expenses by account
-    exp_result = await db.execute(sa.text(f"""
+    exp_result = db.execute(sa.text(f"""
         SELECT a.code, a.name, COALESCE(SUM(e.amount), 0) AS total
         FROM expense_transactions e JOIN accounts a ON e.account_id = a.id
         WHERE e.company_id = :cid AND e.is_voided = false AND e.fiscal_year = :year{lf_exp}
@@ -111,14 +111,14 @@ async def pnl_printable(
 
 
 @router.get("/balance-sheet/print", response_class=HTMLResponse)
-async def balance_sheet_printable(
+def balance_sheet_printable(
     year: int = Query(...),
     location_id: Optional[UUID] = Query(None),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     cid = current_user.company_id
-    company = (await db.execute(
+    company = (db.execute(
         select(Company).where(Company.id == cid)
     )).scalar_one_or_none()
     company_name = company.name if company else "—"
@@ -128,24 +128,24 @@ async def balance_sheet_printable(
     if location_id:
         loc_params["loc_id"] = location_id
 
-    async def scalar(sql: str, p: dict) -> Decimal:
-        r = await db.execute(sa.text(sql), p)
+    def scalar(sql: str, p: dict) -> Decimal:
+        r = db.execute(sa.text(sql), p)
         return Decimal(str(r.scalar_one() or 0))
 
-    all_rev = await scalar(f"SELECT COALESCE(SUM(r.amount), 0) FROM revenue_transactions r WHERE r.company_id = :cid AND r.is_voided = false{lf_rev}", loc_params)
-    all_exp = await scalar(f"SELECT COALESCE(SUM(e.amount), 0) FROM expense_transactions e WHERE e.company_id = :cid AND e.is_voided = false{lf_exp}", loc_params)
+    all_rev = scalar(f"SELECT COALESCE(SUM(r.amount), 0) FROM revenue_transactions r WHERE r.company_id = :cid AND r.is_voided = false{lf_rev}", loc_params)
+    all_exp = scalar(f"SELECT COALESCE(SUM(e.amount), 0) FROM expense_transactions e WHERE e.company_id = :cid AND e.is_voided = false{lf_exp}", loc_params)
     cash = all_rev - all_exp
 
-    caution = await scalar(f"SELECT COALESCE(SUM(r.amount), 0) FROM revenue_transactions r JOIN accounts a ON r.account_id = a.id WHERE r.company_id = :cid AND r.is_voided = false AND a.code = '4030'{lf_rev}", loc_params)
+    caution = scalar(f"SELECT COALESCE(SUM(r.amount), 0) FROM revenue_transactions r JOIN accounts a ON r.account_id = a.id WHERE r.company_id = :cid AND r.is_voided = false AND a.code = '4030'{lf_rev}", loc_params)
 
-    prior_rev = await scalar(f"SELECT COALESCE(SUM(r.amount), 0) FROM revenue_transactions r WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year < :year{lf_rev}", {**loc_params, "year": year})
-    prior_exp = await scalar(f"SELECT COALESCE(SUM(e.amount), 0) FROM expense_transactions e WHERE e.company_id = :cid AND e.is_voided = false AND e.fiscal_year < :year{lf_exp}", {**loc_params, "year": year})
-    prior_caution = await scalar(f"SELECT COALESCE(SUM(r.amount), 0) FROM revenue_transactions r JOIN accounts a ON r.account_id = a.id WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year < :year AND a.code = '4030'{lf_rev}", {**loc_params, "year": year})
+    prior_rev = scalar(f"SELECT COALESCE(SUM(r.amount), 0) FROM revenue_transactions r WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year < :year{lf_rev}", {**loc_params, "year": year})
+    prior_exp = scalar(f"SELECT COALESCE(SUM(e.amount), 0) FROM expense_transactions e WHERE e.company_id = :cid AND e.is_voided = false AND e.fiscal_year < :year{lf_exp}", {**loc_params, "year": year})
+    prior_caution = scalar(f"SELECT COALESCE(SUM(r.amount), 0) FROM revenue_transactions r JOIN accounts a ON r.account_id = a.id WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year < :year AND a.code = '4030'{lf_rev}", {**loc_params, "year": year})
     retained = prior_rev - prior_caution - prior_exp
 
-    cur_rev = await scalar(f"SELECT COALESCE(SUM(r.amount), 0) FROM revenue_transactions r WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year = :year{lf_rev}", {**loc_params, "year": year})
-    cur_exp = await scalar(f"SELECT COALESCE(SUM(e.amount), 0) FROM expense_transactions e WHERE e.company_id = :cid AND e.is_voided = false AND e.fiscal_year = :year{lf_exp}", {**loc_params, "year": year})
-    cur_caution = await scalar(f"SELECT COALESCE(SUM(r.amount), 0) FROM revenue_transactions r JOIN accounts a ON r.account_id = a.id WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year = :year AND a.code = '4030'{lf_rev}", {**loc_params, "year": year})
+    cur_rev = scalar(f"SELECT COALESCE(SUM(r.amount), 0) FROM revenue_transactions r WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year = :year{lf_rev}", {**loc_params, "year": year})
+    cur_exp = scalar(f"SELECT COALESCE(SUM(e.amount), 0) FROM expense_transactions e WHERE e.company_id = :cid AND e.is_voided = false AND e.fiscal_year = :year{lf_exp}", {**loc_params, "year": year})
+    cur_caution = scalar(f"SELECT COALESCE(SUM(r.amount), 0) FROM revenue_transactions r JOIN accounts a ON r.account_id = a.id WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year = :year AND a.code = '4030'{lf_rev}", {**loc_params, "year": year})
     cur_profit = cur_rev - cur_caution - cur_exp
 
     total_equity = retained + cur_profit

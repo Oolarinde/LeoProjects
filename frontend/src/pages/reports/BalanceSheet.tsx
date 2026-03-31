@@ -104,6 +104,7 @@ export default function BalanceSheet() {
       .balanceSheetSummary(year, location?.id)
       .then((r) => {
         const d = r.data;
+        if (!d) { setData(null); return; }
         const c = (v: unknown) => Number(v);
         setData({
           cash_and_bank: c(d.cash_and_bank),

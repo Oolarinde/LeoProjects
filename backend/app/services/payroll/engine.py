@@ -30,7 +30,7 @@ from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import select, delete
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from sqlalchemy.orm import selectinload
 
 from app.models.payroll.settings import PayrollSettings
@@ -86,8 +86,8 @@ def _calc_paye_annual(taxable_income: Decimal, brackets: list[TaxBracket]) -> De
     return tax
 
 
-async def calculate_payroll(
-    db: AsyncSession,
+def calculate_payroll(
+    db: Session,
     company_id: UUID,
     run: PayrollRun,
     employee_company_ids: list[UUID] | None = None,
@@ -103,7 +103,7 @@ async def calculate_payroll(
             instead of just company_id. Used for group payroll.
     """
     # Load settings from the parent company
-    settings_result = await db.execute(
+    settings_result = db.execute(
         select(PayrollSettings).where(PayrollSettings.company_id == company_id)
     )
     settings = settings_result.scalar_one_or_none()
@@ -116,7 +116,7 @@ async def calculate_payroll(
     nsitf_pct = Decimal(str(settings.nsitf_employee_pct))
 
     # Load tax brackets from the parent company
-    brackets_result = await db.execute(
+    brackets_result = db.execute(
         select(TaxBracket)
         .where(TaxBracket.company_id == company_id)
         .order_by(TaxBracket.sort_order)
@@ -127,7 +127,7 @@ async def calculate_payroll(
 
     # Load active employee profiles — across group companies if provided
     profile_cids = employee_company_ids if employee_company_ids else [company_id]
-    profiles_result = await db.execute(
+    profiles_result = db.execute(
         select(EmployeePayrollProfile)
         .where(
             EmployeePayrollProfile.company_id.in_(profile_cids),
@@ -144,10 +144,10 @@ async def calculate_payroll(
         raise ValueError("No active payroll profiles found — add employee profiles first")
 
     # Delete existing items for this run (recalculate)
-    await db.execute(
+    db.execute(
         delete(PayrollItem).where(PayrollItem.payroll_run_id == run.id)
     )
-    await db.flush()
+    db.flush()
 
     # Accumulators for run totals
     run_gross = ZERO
@@ -312,5 +312,5 @@ async def calculate_payroll(
     run.status = "CALCULATED"
     run.run_date = DateType.today()
 
-    await db.flush()
+    db.flush()
     return run

@@ -7,7 +7,7 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 import sqlalchemy as sa
 
 from app.models.account import Account
@@ -23,16 +23,16 @@ from app.services.audit import log_action
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-async def _get_ic_account(db: AsyncSession, company_id: UUID, code: str) -> Account:
+def _get_ic_account(db: Session, company_id: UUID, code: str) -> Account:
     """Lookup an IC account by code in a company's chart of accounts."""
-    acct = (await db.execute(
+    acct = (db.execute(
         select(Account).where(
             Account.company_id == company_id,
             Account.code == code,
         )
     )).scalar_one_or_none()
     if acct is None:
-        company = (await db.execute(
+        company = (db.execute(
             select(Company).where(Company.id == company_id)
         )).scalar_one()
         raise HTTPException(
@@ -42,8 +42,8 @@ async def _get_ic_account(db: AsyncSession, company_id: UUID, code: str) -> Acco
     return acct
 
 
-async def _validate_companies_in_group(
-    db: AsyncSession,
+def _validate_companies_in_group(
+    db: Session,
     group_id: UUID,
     source_company_id: UUID,
     target_company_id: UUID,
@@ -55,7 +55,7 @@ async def _validate_companies_in_group(
             detail="Source and target company must be different",
         )
     for cid, label in [(source_company_id, "Source"), (target_company_id, "Target")]:
-        member = (await db.execute(
+        member = (db.execute(
             select(CompanyGroupMember).where(
                 CompanyGroupMember.company_group_id == group_id,
                 CompanyGroupMember.company_id == cid,
@@ -68,8 +68,8 @@ async def _validate_companies_in_group(
             )
 
 
-async def _create_mirror_entries(
-    db: AsyncSession,
+def _create_mirror_entries(
+    db: Session,
     ic_txn: IntercompanyTransaction,
     user: User,
 ) -> None:
@@ -92,10 +92,10 @@ async def _create_mirror_entries(
     desc = f"IC: {ic_txn.description or ic_txn.transaction_type}"
 
     # Lookup all 4 IC accounts
-    source_expense_acct = await _get_ic_account(db, source_cid, "6500")  # DR
-    source_payable_acct = await _get_ic_account(db, source_cid, "2500")  # CR
-    target_receivable_acct = await _get_ic_account(db, target_cid, "1500")  # DR
-    target_revenue_acct = await _get_ic_account(db, target_cid, "4500")  # CR
+    source_expense_acct = _get_ic_account(db, source_cid, "6500")  # DR
+    source_payable_acct = _get_ic_account(db, source_cid, "2500")  # CR
+    target_receivable_acct = _get_ic_account(db, target_cid, "1500")  # DR
+    target_revenue_acct = _get_ic_account(db, target_cid, "4500")  # CR
 
     # ── SOURCE company: DR IC Expense (6500) ─────────────────────────
     source_expense = ExpenseTransaction(
@@ -117,7 +117,7 @@ async def _create_mirror_entries(
     # ── SOURCE company: CR IC Payable (2500) ─────────────────────────
     # Recorded as a revenue entry on the liability account (credit side)
     # to properly record the payable in the source company's books
-    source_location_result = await db.execute(
+    source_location_result = db.execute(
         sa.text("SELECT id FROM locations WHERE company_id = :cid LIMIT 1"),
         {"cid": source_cid},
     )
@@ -160,7 +160,7 @@ async def _create_mirror_entries(
     db.add(target_receivable)
 
     # ── TARGET company: CR IC Revenue (4500) ─────────────────────────
-    target_location_result = await db.execute(
+    target_location_result = db.execute(
         sa.text("SELECT id FROM locations WHERE company_id = :cid LIMIT 1"),
         {"cid": target_cid},
     )
@@ -182,26 +182,26 @@ async def _create_mirror_entries(
         created_by=user.id,
     )
     db.add(target_revenue)
-    await db.flush()
+    db.flush()
 
     # Link all 4 entries back to the IC transaction
     ic_txn.source_expense_id = source_expense.id      # DR 6500
     ic_txn.source_revenue_id = source_payable.id       # CR 2500
     ic_txn.target_expense_id = target_receivable.id    # DR 1500
     ic_txn.target_revenue_id = target_revenue.id       # CR 4500
-    await db.flush()
+    db.flush()
 
 
 # ── Create IC transaction ─────────────────────────────────────────────────────
 
-async def create_ic_transaction(
-    db: AsyncSession,
+def create_ic_transaction(
+    db: Session,
     group_id: UUID,
     data,  # IcTransactionCreate
     user: User,
 ) -> IntercompanyTransaction:
     """Create an IC transaction and auto-generate mirror entries in both companies."""
-    await _validate_companies_in_group(db, group_id, data.source_company_id, data.target_company_id)
+    _validate_companies_in_group(db, group_id, data.source_company_id, data.target_company_id)
 
     ic_txn = IntercompanyTransaction(
         id=uuid.uuid4(),
@@ -218,13 +218,13 @@ async def create_ic_transaction(
         created_by=user.id,
     )
     db.add(ic_txn)
-    await db.flush()
+    db.flush()
 
     # Create mirror entries in both company books
-    await _create_mirror_entries(db, ic_txn, user)
+    _create_mirror_entries(db, ic_txn, user)
 
     # Audit trail
-    await log_action(
+    log_action(
         db,
         company_id=ic_txn.source_company_id,
         table_name="intercompany_transactions",
@@ -237,8 +237,8 @@ async def create_ic_transaction(
     return ic_txn
 
 
-async def create_allocated_ic_transaction(
-    db: AsyncSession,
+def create_allocated_ic_transaction(
+    db: Session,
     group_id: UUID,
     allocation_rule_id: UUID,
     data,  # IcTransactionCreate — source is the payer, target is ignored (derived from rule)
@@ -247,7 +247,7 @@ async def create_allocated_ic_transaction(
     """Split a shared expense using an allocation rule.
     Creates one IC transaction per target company with proportional amounts.
     """
-    rule = (await db.execute(
+    rule = (db.execute(
         select(AllocationRule).where(
             AllocationRule.id == allocation_rule_id,
             AllocationRule.company_group_id == group_id,
@@ -257,7 +257,7 @@ async def create_allocated_ic_transaction(
     if rule is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Allocation rule not found or inactive")
 
-    lines = (await db.execute(
+    lines = (db.execute(
         select(AllocationRuleLine).where(AllocationRuleLine.rule_id == rule.id)
     )).scalars().all()
 
@@ -299,7 +299,7 @@ async def create_allocated_ic_transaction(
             allocated_amounts.append((line, amt))
 
     for line, allocated_amount in allocated_amounts:
-        await _validate_companies_in_group(db, group_id, data.source_company_id, line.company_id)
+        _validate_companies_in_group(db, group_id, data.source_company_id, line.company_id)
 
         ic_txn = IntercompanyTransaction(
             id=uuid.uuid4(),
@@ -316,9 +316,9 @@ async def create_allocated_ic_transaction(
             created_by=user.id,
         )
         db.add(ic_txn)
-        await db.flush()
+        db.flush()
 
-        await _create_mirror_entries(db, ic_txn, user)
+        _create_mirror_entries(db, ic_txn, user)
         transactions.append(ic_txn)
 
     return transactions
@@ -326,14 +326,14 @@ async def create_allocated_ic_transaction(
 
 # ── Confirm / Void ────────────────────────────────────────────────────────────
 
-async def confirm_ic_transaction(
-    db: AsyncSession,
+def confirm_ic_transaction(
+    db: Session,
     group_id: UUID,
     ic_id: UUID,
     user: User,
 ) -> IntercompanyTransaction:
     """Move IC transaction from PENDING to CONFIRMED."""
-    ic_txn = (await db.execute(
+    ic_txn = (db.execute(
         select(IntercompanyTransaction).where(
             IntercompanyTransaction.id == ic_id,
             IntercompanyTransaction.company_group_id == group_id,
@@ -350,9 +350,9 @@ async def confirm_ic_transaction(
     ic_txn.status = "CONFIRMED"
     ic_txn.confirmed_by = user.id
     ic_txn.confirmed_at = datetime.now(timezone.utc)
-    await db.flush()
+    db.flush()
 
-    await log_action(
+    log_action(
         db,
         company_id=ic_txn.source_company_id,
         table_name="intercompany_transactions",
@@ -364,15 +364,15 @@ async def confirm_ic_transaction(
     return ic_txn
 
 
-async def void_ic_transaction(
-    db: AsyncSession,
+def void_ic_transaction(
+    db: Session,
     group_id: UUID,
     ic_id: UUID,
     reason: str,
     user: User,
 ) -> IntercompanyTransaction:
     """Void an IC transaction and its linked mirror entries."""
-    ic_txn = (await db.execute(
+    ic_txn = (db.execute(
         select(IntercompanyTransaction).where(
             IntercompanyTransaction.id == ic_id,
             IntercompanyTransaction.company_group_id == group_id,
@@ -391,7 +391,7 @@ async def void_ic_transaction(
 
     # Void linked mirror entries
     if ic_txn.source_expense_id:
-        source_exp = (await db.execute(
+        source_exp = (db.execute(
             select(ExpenseTransaction).where(ExpenseTransaction.id == ic_txn.source_expense_id)
         )).scalar_one_or_none()
         if source_exp and not source_exp.is_voided:
@@ -401,7 +401,7 @@ async def void_ic_transaction(
             source_exp.voided_at = now
 
     if ic_txn.source_revenue_id:
-        source_rev = (await db.execute(
+        source_rev = (db.execute(
             select(RevenueTransaction).where(RevenueTransaction.id == ic_txn.source_revenue_id)
         )).scalar_one_or_none()
         if source_rev and not source_rev.is_voided:
@@ -411,7 +411,7 @@ async def void_ic_transaction(
             source_rev.voided_at = now
 
     if ic_txn.target_expense_id:
-        target_exp = (await db.execute(
+        target_exp = (db.execute(
             select(ExpenseTransaction).where(ExpenseTransaction.id == ic_txn.target_expense_id)
         )).scalar_one_or_none()
         if target_exp and not target_exp.is_voided:
@@ -421,7 +421,7 @@ async def void_ic_transaction(
             target_exp.voided_at = now
 
     if ic_txn.target_revenue_id:
-        target_rev = (await db.execute(
+        target_rev = (db.execute(
             select(RevenueTransaction).where(RevenueTransaction.id == ic_txn.target_revenue_id)
         )).scalar_one_or_none()
         if target_rev and not target_rev.is_voided:
@@ -430,9 +430,9 @@ async def void_ic_transaction(
             target_rev.voided_by = user.id
             target_rev.voided_at = now
 
-    await db.flush()
+    db.flush()
 
-    await log_action(
+    log_action(
         db,
         company_id=ic_txn.source_company_id,
         table_name="intercompany_transactions",
@@ -447,8 +447,8 @@ async def void_ic_transaction(
 
 # ── List / query ──────────────────────────────────────────────────────────────
 
-async def list_ic_transactions(
-    db: AsyncSession,
+def list_ic_transactions(
+    db: Session,
     group_id: UUID,
     year: int,
     limit: int = 50,
@@ -456,7 +456,7 @@ async def list_ic_transactions(
 ) -> tuple[list[dict], int]:
     """List IC transactions with company names, paginated."""
     # Count
-    count_result = await db.execute(
+    count_result = db.execute(
         sa.text("""
             SELECT COUNT(*) FROM intercompany_transactions
             WHERE company_group_id = :gid AND fiscal_year = :year
@@ -466,7 +466,7 @@ async def list_ic_transactions(
     total = count_result.scalar_one() or 0
 
     # Items
-    result = await db.execute(
+    result = db.execute(
         sa.text("""
             SELECT
                 ic.id, ic.company_group_id,
@@ -510,15 +510,15 @@ async def list_ic_transactions(
     return items, total
 
 
-async def get_ic_balances(
-    db: AsyncSession,
+def get_ic_balances(
+    db: Session,
     group_id: UUID,
     year: int,
 ) -> list[dict]:
     """Net balances between company pairs for a given year.
     Positive = source owes target.
     """
-    result = await db.execute(
+    result = db.execute(
         sa.text("""
             SELECT
                 ic.source_company_id, sc.name AS source_company_name,

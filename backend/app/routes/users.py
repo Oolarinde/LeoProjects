@@ -4,7 +4,7 @@ from __future__ import annotations
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from database import get_db
 from app.models.user import User
@@ -18,21 +18,21 @@ router = APIRouter()
 
 
 @router.get("", response_model=list[UserResponse])
-async def list_users(
+def list_users(
     current_user: User = Depends(require_admin()),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
-    return await user_service.list_users(db, current_user.company_id)
+    return user_service.list_users(db, current_user.company_id)
 
 
 @router.post("", response_model=UserResponse, status_code=201)
-async def create_user(
+def create_user(
     request: Request,
     data: UserCreateRequest,
     current_user: User = Depends(require_admin()),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
-    user = await user_service.create_user(
+    user = user_service.create_user(
         db=db,
         company_id=current_user.company_id,
         email=data.email,
@@ -48,23 +48,23 @@ async def create_user(
 
 
 @router.get("/{user_id}", response_model=UserResponse)
-async def get_user(
+def get_user(
     user_id: UUID,
     current_user: User = Depends(require_admin()),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
-    return await user_service.get_user(db, user_id, current_user.company_id)
+    return user_service.get_user(db, user_id, current_user.company_id)
 
 
 @router.patch("/{user_id}", response_model=UserResponse)
-async def update_user(
+def update_user(
     request: Request,
     user_id: UUID,
     data: UserUpdateRequest,
     current_user: User = Depends(require_admin()),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
-    user = await user_service.update_user(
+    user = user_service.update_user(
         db=db,
         user_id=user_id,
         company_id=current_user.company_id,
@@ -80,13 +80,13 @@ async def update_user(
 
 
 @router.delete("/{user_id}", response_model=UserResponse)
-async def deactivate_user(
+def deactivate_user(
     request: Request,
     user_id: UUID,
     current_user: User = Depends(require_admin()),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
-    user = await user_service.deactivate_user(
+    user = user_service.deactivate_user(
         db=db,
         user_id=user_id,
         company_id=current_user.company_id,

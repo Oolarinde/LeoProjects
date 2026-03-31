@@ -6,7 +6,7 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy import select, delete
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.models.payroll.allowance_type import AllowanceType
 from app.models.payroll.deduction_type import DeductionType
@@ -23,8 +23,8 @@ UPDATABLE_LEAVE_POLICY_FIELDS = {"leave_type", "days_per_year", "is_paid", "carr
 # ── Allowance Types ──────────────────────────────────────────────
 
 
-async def list_allowance_types(db: AsyncSession, company_id: UUID) -> list[AllowanceType]:
-    result = await db.execute(
+def list_allowance_types(db: Session, company_id: UUID) -> list[AllowanceType]:
+    result = db.execute(
         select(AllowanceType)
         .where(AllowanceType.company_id == company_id)
         .order_by(AllowanceType.sort_order, AllowanceType.name)
@@ -32,14 +32,14 @@ async def list_allowance_types(db: AsyncSession, company_id: UUID) -> list[Allow
     return list(result.scalars().all())
 
 
-async def create_allowance_type(
-    db: AsyncSession,
+def create_allowance_type(
+    db: Session,
     company_id: UUID,
     data: dict,
     user_id: UUID | None = None,
     ip_address: str | None = None,
 ) -> AllowanceType:
-    existing = await db.execute(
+    existing = db.execute(
         select(AllowanceType).where(
             AllowanceType.company_id == company_id,
             AllowanceType.code == data["code"],
@@ -52,8 +52,8 @@ async def create_allowance_type(
         )
     item = AllowanceType(id=uuid.uuid4(), company_id=company_id, created_by=user_id, **data)
     db.add(item)
-    await db.flush()
-    await log_action(
+    db.flush()
+    log_action(
         db,
         company_id=company_id,
         table_name="allowance_types",
@@ -65,15 +65,15 @@ async def create_allowance_type(
     return item
 
 
-async def update_allowance_type(
-    db: AsyncSession,
+def update_allowance_type(
+    db: Session,
     item_id: UUID,
     company_id: UUID,
     data: dict,
     user_id: UUID | None = None,
     ip_address: str | None = None,
 ) -> AllowanceType:
-    result = await db.execute(
+    result = db.execute(
         select(AllowanceType).where(
             AllowanceType.id == item_id, AllowanceType.company_id == company_id
         )
@@ -82,7 +82,7 @@ async def update_allowance_type(
     if item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Allowance type not found")
     if "code" in data and data["code"] is not None and data["code"] != item.code:
-        dup = await db.execute(
+        dup = db.execute(
             select(AllowanceType).where(
                 AllowanceType.company_id == company_id,
                 AllowanceType.code == data["code"],
@@ -100,9 +100,9 @@ async def update_allowance_type(
         if value is not None and key in UPDATABLE_ALLOWANCE_FIELDS:
             setattr(item, key, value)
     item.updated_by = user_id
-    await db.flush()
+    db.flush()
     if diff:
-        await log_action(
+        log_action(
             db,
             company_id=company_id,
             table_name="allowance_types",
@@ -115,14 +115,14 @@ async def update_allowance_type(
     return item
 
 
-async def delete_allowance_type(
-    db: AsyncSession,
+def delete_allowance_type(
+    db: Session,
     item_id: UUID,
     company_id: UUID,
     user_id: UUID | None = None,
     ip_address: str | None = None,
 ) -> None:
-    result = await db.execute(
+    result = db.execute(
         select(AllowanceType).where(
             AllowanceType.id == item_id, AllowanceType.company_id == company_id
         )
@@ -131,9 +131,9 @@ async def delete_allowance_type(
     if item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Allowance type not found")
     record_id = item.id
-    await db.delete(item)
-    await db.flush()
-    await log_action(
+    db.delete(item)
+    db.flush()
+    log_action(
         db,
         company_id=company_id,
         table_name="allowance_types",
@@ -147,8 +147,8 @@ async def delete_allowance_type(
 # ── Deduction Types ──────────────────────────────────────────────
 
 
-async def list_deduction_types(db: AsyncSession, company_id: UUID) -> list[DeductionType]:
-    result = await db.execute(
+def list_deduction_types(db: Session, company_id: UUID) -> list[DeductionType]:
+    result = db.execute(
         select(DeductionType)
         .where(DeductionType.company_id == company_id)
         .order_by(DeductionType.sort_order, DeductionType.name)
@@ -156,14 +156,14 @@ async def list_deduction_types(db: AsyncSession, company_id: UUID) -> list[Deduc
     return list(result.scalars().all())
 
 
-async def create_deduction_type(
-    db: AsyncSession,
+def create_deduction_type(
+    db: Session,
     company_id: UUID,
     data: dict,
     user_id: UUID | None = None,
     ip_address: str | None = None,
 ) -> DeductionType:
-    existing = await db.execute(
+    existing = db.execute(
         select(DeductionType).where(
             DeductionType.company_id == company_id,
             DeductionType.code == data["code"],
@@ -176,8 +176,8 @@ async def create_deduction_type(
         )
     item = DeductionType(id=uuid.uuid4(), company_id=company_id, created_by=user_id, **data)
     db.add(item)
-    await db.flush()
-    await log_action(
+    db.flush()
+    log_action(
         db,
         company_id=company_id,
         table_name="deduction_types",
@@ -189,15 +189,15 @@ async def create_deduction_type(
     return item
 
 
-async def update_deduction_type(
-    db: AsyncSession,
+def update_deduction_type(
+    db: Session,
     item_id: UUID,
     company_id: UUID,
     data: dict,
     user_id: UUID | None = None,
     ip_address: str | None = None,
 ) -> DeductionType:
-    result = await db.execute(
+    result = db.execute(
         select(DeductionType).where(
             DeductionType.id == item_id, DeductionType.company_id == company_id
         )
@@ -206,7 +206,7 @@ async def update_deduction_type(
     if item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Deduction type not found")
     if "code" in data and data["code"] is not None and data["code"] != item.code:
-        dup = await db.execute(
+        dup = db.execute(
             select(DeductionType).where(
                 DeductionType.company_id == company_id,
                 DeductionType.code == data["code"],
@@ -224,9 +224,9 @@ async def update_deduction_type(
         if value is not None and key in UPDATABLE_DEDUCTION_FIELDS:
             setattr(item, key, value)
     item.updated_by = user_id
-    await db.flush()
+    db.flush()
     if diff:
-        await log_action(
+        log_action(
             db,
             company_id=company_id,
             table_name="deduction_types",
@@ -239,14 +239,14 @@ async def update_deduction_type(
     return item
 
 
-async def delete_deduction_type(
-    db: AsyncSession,
+def delete_deduction_type(
+    db: Session,
     item_id: UUID,
     company_id: UUID,
     user_id: UUID | None = None,
     ip_address: str | None = None,
 ) -> None:
-    result = await db.execute(
+    result = db.execute(
         select(DeductionType).where(
             DeductionType.id == item_id, DeductionType.company_id == company_id
         )
@@ -255,9 +255,9 @@ async def delete_deduction_type(
     if item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Deduction type not found")
     record_id = item.id
-    await db.delete(item)
-    await db.flush()
-    await log_action(
+    db.delete(item)
+    db.flush()
+    log_action(
         db,
         company_id=company_id,
         table_name="deduction_types",
@@ -271,8 +271,8 @@ async def delete_deduction_type(
 # ── Tax Brackets ─────────────────────────────────────────────────
 
 
-async def list_tax_brackets(db: AsyncSession, company_id: UUID) -> list[TaxBracket]:
-    result = await db.execute(
+def list_tax_brackets(db: Session, company_id: UUID) -> list[TaxBracket]:
+    result = db.execute(
         select(TaxBracket)
         .where(TaxBracket.company_id == company_id)
         .order_by(TaxBracket.sort_order, TaxBracket.lower_bound)
@@ -280,15 +280,15 @@ async def list_tax_brackets(db: AsyncSession, company_id: UUID) -> list[TaxBrack
     return list(result.scalars().all())
 
 
-async def replace_tax_brackets(
-    db: AsyncSession,
+def replace_tax_brackets(
+    db: Session,
     company_id: UUID,
     brackets: list[dict],
     user_id: UUID | None = None,
     ip_address: str | None = None,
 ) -> list[TaxBracket]:
     """Replace all tax brackets for a company (atomic swap)."""
-    await db.execute(
+    db.execute(
         delete(TaxBracket).where(TaxBracket.company_id == company_id)
     )
     new_items = []
@@ -304,10 +304,10 @@ async def replace_tax_brackets(
         )
         db.add(item)
         new_items.append(item)
-    await db.flush()
+    db.flush()
     # Log a single audit entry for the atomic replacement
     if new_items:
-        await log_action(
+        log_action(
             db,
             company_id=company_id,
             table_name="tax_brackets",
@@ -323,8 +323,8 @@ async def replace_tax_brackets(
 # ── Leave Policies ───────────────────────────────────────────────
 
 
-async def list_leave_policies(db: AsyncSession, company_id: UUID) -> list[LeavePolicy]:
-    result = await db.execute(
+def list_leave_policies(db: Session, company_id: UUID) -> list[LeavePolicy]:
+    result = db.execute(
         select(LeavePolicy)
         .where(LeavePolicy.company_id == company_id)
         .order_by(LeavePolicy.leave_type)
@@ -332,14 +332,14 @@ async def list_leave_policies(db: AsyncSession, company_id: UUID) -> list[LeaveP
     return list(result.scalars().all())
 
 
-async def create_leave_policy(
-    db: AsyncSession,
+def create_leave_policy(
+    db: Session,
     company_id: UUID,
     data: dict,
     user_id: UUID | None = None,
     ip_address: str | None = None,
 ) -> LeavePolicy:
-    existing = await db.execute(
+    existing = db.execute(
         select(LeavePolicy).where(
             LeavePolicy.company_id == company_id,
             LeavePolicy.leave_type == data["leave_type"],
@@ -352,8 +352,8 @@ async def create_leave_policy(
         )
     item = LeavePolicy(id=uuid.uuid4(), company_id=company_id, created_by=user_id, **data)
     db.add(item)
-    await db.flush()
-    await log_action(
+    db.flush()
+    log_action(
         db,
         company_id=company_id,
         table_name="leave_policies",
@@ -365,15 +365,15 @@ async def create_leave_policy(
     return item
 
 
-async def update_leave_policy(
-    db: AsyncSession,
+def update_leave_policy(
+    db: Session,
     item_id: UUID,
     company_id: UUID,
     data: dict,
     user_id: UUID | None = None,
     ip_address: str | None = None,
 ) -> LeavePolicy:
-    result = await db.execute(
+    result = db.execute(
         select(LeavePolicy).where(
             LeavePolicy.id == item_id, LeavePolicy.company_id == company_id
         )
@@ -387,9 +387,9 @@ async def update_leave_policy(
         if value is not None and key in UPDATABLE_LEAVE_POLICY_FIELDS:
             setattr(item, key, value)
     item.updated_by = user_id
-    await db.flush()
+    db.flush()
     if diff:
-        await log_action(
+        log_action(
             db,
             company_id=company_id,
             table_name="leave_policies",
@@ -402,14 +402,14 @@ async def update_leave_policy(
     return item
 
 
-async def delete_leave_policy(
-    db: AsyncSession,
+def delete_leave_policy(
+    db: Session,
     item_id: UUID,
     company_id: UUID,
     user_id: UUID | None = None,
     ip_address: str | None = None,
 ) -> None:
-    result = await db.execute(
+    result = db.execute(
         select(LeavePolicy).where(
             LeavePolicy.id == item_id, LeavePolicy.company_id == company_id
         )
@@ -418,9 +418,9 @@ async def delete_leave_policy(
     if item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Leave policy not found")
     record_id = item.id
-    await db.delete(item)
-    await db.flush()
-    await log_action(
+    db.delete(item)
+    db.flush()
+    log_action(
         db,
         company_id=company_id,
         table_name="leave_policies",
@@ -434,7 +434,7 @@ async def delete_leave_policy(
 # ── Seed Nigerian Defaults ───────────────────────────────────────
 
 
-async def seed_payroll_defaults(db: AsyncSession, company_id: UUID) -> None:
+def seed_payroll_defaults(db: Session, company_id: UUID) -> None:
     """Seed default allowance types, deduction types, tax brackets, and leave policies
     for a newly registered company. Called during company registration."""
 
@@ -485,4 +485,4 @@ async def seed_payroll_defaults(db: AsyncSession, company_id: UUID) -> None:
     for p in policies:
         db.add(LeavePolicy(id=uuid.uuid4(), company_id=company_id, **p))
 
-    await db.flush()
+    db.flush()

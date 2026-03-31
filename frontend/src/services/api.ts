@@ -43,7 +43,12 @@ api.interceptors.response.use(
     const detail = error.response?.data?.detail;
     // Handle both 401 and 403 "Not authenticated" (FastAPI HTTPBearer returns 403)
     if (status === 401 || (status === 403 && detail === "Not authenticated")) {
-      const { refreshToken, setTokens, logout } = useAppStore.getState();
+      const { accessToken, refreshToken, setTokens, logout } = useAppStore.getState();
+      // Only attempt session recovery if user was actually logged in
+      if (!accessToken && !refreshToken) {
+        // Not logged in — don't trigger session-expired
+        return Promise.reject(error);
+      }
       if (refreshToken && !error.config._retry) {
         error.config._retry = true;
         try {

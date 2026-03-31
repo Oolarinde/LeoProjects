@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from sqlalchemy import select
 from uuid import UUID
@@ -37,36 +37,36 @@ limiter = Limiter(key_func=get_remote_address)
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 @limiter.limit("5/15minutes")
-async def register(request: Request, body: RegisterRequest, db: AsyncSession = Depends(get_db)):
-    user, _company = await register_user(
+def register(request: Request, body: RegisterRequest, db: Session = Depends(get_db)):
+    user, _company = register_user(
         db,
         email=body.email,
         password=body.password,
         full_name=body.full_name,
         company_name=body.company_name,
     )
-    return await generate_tokens_with_context(db, user)
+    return generate_tokens_with_context(db, user)
 
 
 @router.post("/login", response_model=TokenResponse)
 @limiter.limit("30/15minutes")
-async def login(request: Request, body: LoginRequest, db: AsyncSession = Depends(get_db)):
-    user = await authenticate_user(db, body.email, body.password)
+def login(request: Request, body: LoginRequest, db: Session = Depends(get_db)):
+    user = authenticate_user(db, body.email, body.password)
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
-    await record_login(
+    record_login(
         db,
         user=user,
         ip_address=get_client_ip(request),
         user_agent_str=request.headers.get("user-agent", ""),
     )
-    return await generate_tokens_with_context(db, user)
+    return generate_tokens_with_context(db, user)
 
 
 @router.post("/refresh", response_model=TokenResponse)
 @limiter.limit("30/15minutes")
-async def refresh(request: Request, body: RefreshRequest, db: AsyncSession = Depends(get_db)):
-    tokens = await refresh_access_token(db, body.refresh_token)
+def refresh(request: Request, body: RefreshRequest, db: Session = Depends(get_db)):
+    tokens = refresh_access_token(db, body.refresh_token)
     if tokens is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired refresh token")
     return tokens
@@ -74,11 +74,11 @@ async def refresh(request: Request, body: RefreshRequest, db: AsyncSession = Dep
 
 @router.post("/switch-company", response_model=TokenResponse)
 @limiter.limit("10/minute")
-async def switch_company_endpoint(
+def switch_company_endpoint(
     request: Request,
     body: SwitchCompanyRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     logger.info(
         "Company switch",
@@ -88,45 +88,41 @@ async def switch_company_endpoint(
             "to_company": str(body.company_id),
         },
     )
-    return await switch_company(db, current_user, body.company_id)
+    return switch_company(db, current_user, body.company_id)
 
 
 @router.get("/me")
-async def me(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+def me(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     from app.models.company_group import CompanyGroupMember
 
-    companies = await get_user_companies(db, current_user.id)
+    companies = get_user_companies(db, current_user.id)
     user_data = UserResponse.model_validate(current_user).model_dump()
     user_data["companies"] = companies if len(companies) > 1 else []
-    # Find the group ID from the active company
     company_group_id = None
     for c in companies:
         if c["id"] == str(current_user.company_id) and c.get("company_group_id"):
             company_group_id = c["company_group_id"]
             break
     user_data["company_group_id"] = company_group_id
-    # Also load the group name so the frontend can display it
     company_group_name = None
     if company_group_id:
-        group = (await db.execute(
+        group = db.execute(
             select(CompanyGroup).where(CompanyGroup.id == UUID(company_group_id))
-        )).scalar_one_or_none()
+        ).scalar_one_or_none()
         if group:
             company_group_name = group.name
     user_data["company_group_name"] = company_group_name
 
-    # Determine if current company is the parent in its group
     is_parent = False
     if company_group_id:
-        parent_check = (await db.execute(
+        parent_check = db.execute(
             select(CompanyGroupMember).where(
                 CompanyGroupMember.company_id == current_user.company_id,
                 CompanyGroupMember.is_parent == True,
             )
-        )).scalar_one_or_none()
+        ).scalar_one_or_none()
         is_parent = parent_check is not None
 
-    # Derive effective_role for frontend menu/routing
     if current_user.role in ("SUPER_ADMIN", "GROUP_ADMIN"):
         effective_role = "GROUP_ADMIN" if is_parent else "COMPANY_ADMIN"
     elif current_user.role in ("ADMIN", "COMPANY_ADMIN"):
@@ -140,24 +136,24 @@ async def me(current_user: User = Depends(get_current_user), db: AsyncSession = 
 
 
 @router.get("/me/login-history", response_model=LoginHistoryResponse)
-async def login_history(
+def login_history(
     limit: int = 50,
     offset: int = 0,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
-    items, total = await list_sessions(db, current_user.id, current_user.company_id, limit=limit, offset=offset)
+    items, total = list_sessions(db, current_user.id, current_user.company_id, limit=limit, offset=offset)
     return LoginHistoryResponse(items=items, total=total)
 
 
 @router.patch("/me/language", response_model=UserResponse)
-async def update_language(
+def update_language(
     body: LanguageUpdate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     current_user.preferred_language = body.preferred_language
-    await db.flush()
+    db.flush()
     return current_user
 
 
@@ -165,7 +161,7 @@ async def update_language(
 async def upload_avatar(
     request: Request,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     import os
     import uuid as _uuid
@@ -195,7 +191,6 @@ async def upload_avatar(
     os.makedirs(avatar_dir, exist_ok=True)
     filepath = os.path.join(avatar_dir, filename)
 
-    # Remove old avatar file if it exists (path traversal safe)
     if current_user.avatar_url:
         old_filename = os.path.basename(current_user.avatar_url)
         old_path = os.path.join(avatar_dir, old_filename)
@@ -206,5 +201,5 @@ async def upload_avatar(
         f.write(data)
 
     current_user.avatar_url = f"/uploads/avatars/{filename}"
-    await db.flush()
+    db.flush()
     return current_user

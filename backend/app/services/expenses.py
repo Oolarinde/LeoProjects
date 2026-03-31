@@ -7,7 +7,7 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy import select, func as sqlfunc
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.models.expense_transaction import ExpenseTransaction
 from app.services.audit import log_action, compute_diff
@@ -20,8 +20,8 @@ UPDATABLE_FIELDS = {
 }
 
 
-async def list_expenses(
-    db: AsyncSession,
+def list_expenses(
+    db: Session,
     company_id: UUID,
     year: int,
     location_id: UUID | None = None,
@@ -50,15 +50,15 @@ async def list_expenses(
         )
 
     count_q = select(sqlfunc.count()).select_from(base.subquery())
-    total = (await db.execute(count_q)).scalar() or 0
+    total = (db.execute(count_q)).scalar() or 0
 
     items_q = base.order_by(ExpenseTransaction.date.desc()).limit(limit).offset(offset)
-    result = await db.execute(items_q)
+    result = db.execute(items_q)
     return list(result.scalars().all()), total
 
 
-async def get_summary(
-    db: AsyncSession,
+def get_summary(
+    db: Session,
     company_id: UUID,
     year: int,
     location_id: UUID | None = None,
@@ -74,12 +74,12 @@ async def get_summary(
     )
     if location_id:
         base = base.where(ExpenseTransaction.location_id == location_id)
-    row = (await db.execute(base)).one()
+    row = (db.execute(base)).one()
     return {"total": row.total, "count": row.count}
 
 
-async def create_expense(
-    db: AsyncSession,
+def create_expense(
+    db: Session,
     company_id: UUID,
     data: dict,
     user_id: UUID | None = None,
@@ -94,8 +94,8 @@ async def create_expense(
         **data,
     )
     db.add(item)
-    await db.flush()
-    await log_action(
+    db.flush()
+    log_action(
         db,
         company_id=company_id,
         table_name="expense_transactions",
@@ -107,15 +107,15 @@ async def create_expense(
     return item
 
 
-async def update_expense(
-    db: AsyncSession,
+def update_expense(
+    db: Session,
     item_id: UUID,
     company_id: UUID,
     data: dict,
     user_id: UUID | None = None,
     ip_address: str | None = None,
 ) -> ExpenseTransaction:
-    result = await db.execute(
+    result = db.execute(
         select(ExpenseTransaction).where(
             ExpenseTransaction.id == item_id,
             ExpenseTransaction.company_id == company_id,
@@ -136,10 +136,10 @@ async def update_expense(
         item.fiscal_year = safe["date"].year
 
     item.updated_by = user_id
-    await db.flush()
+    db.flush()
 
     if diff:
-        await log_action(
+        log_action(
             db,
             company_id=company_id,
             table_name="expense_transactions",
@@ -152,8 +152,8 @@ async def update_expense(
     return item
 
 
-async def void_expense(
-    db: AsyncSession,
+def void_expense(
+    db: Session,
     item_id: UUID,
     company_id: UUID,
     reason: str = "",
@@ -162,7 +162,7 @@ async def void_expense(
 ) -> ExpenseTransaction:
     """Void an expense transaction (never delete financial records)."""
     from datetime import datetime, timezone
-    result = await db.execute(
+    result = db.execute(
         select(ExpenseTransaction).where(
             ExpenseTransaction.id == item_id,
             ExpenseTransaction.company_id == company_id,
@@ -178,8 +178,8 @@ async def void_expense(
     item.void_reason = reason
     item.voided_by = user_id
     item.voided_at = datetime.now(timezone.utc)
-    await db.flush()
-    await log_action(
+    db.flush()
+    log_action(
         db,
         company_id=company_id,
         table_name="expense_transactions",
@@ -189,6 +189,6 @@ async def void_expense(
         user_id=user_id,
         ip_address=ip_address,
     )
-    await db.commit()
-    await db.refresh(item)
+    db.commit()
+    db.refresh(item)
     return item

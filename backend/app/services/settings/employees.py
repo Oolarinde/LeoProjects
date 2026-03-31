@@ -7,7 +7,7 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.models.employee import Employee
 from app.services.audit import log_action, compute_diff
@@ -33,10 +33,10 @@ def _convert_dates(data: dict) -> dict:
     return data
 
 
-async def _next_employee_ref(db: AsyncSession, company_id: UUID) -> str:
+def _next_employee_ref(db: Session, company_id: UUID) -> str:
     """Auto-generate next employee_ref like E001, E002, etc. Collision-safe."""
     # Find highest existing numeric ref
-    result = await db.execute(
+    result = db.execute(
         select(Employee.employee_ref)
         .where(Employee.company_id == company_id)
         .order_by(Employee.employee_ref.desc())
@@ -51,8 +51,8 @@ async def _next_employee_ref(db: AsyncSession, company_id: UUID) -> str:
     return f"E{max_num + 1:03d}"
 
 
-async def list_employees(db: AsyncSession, company_id: UUID) -> list[Employee]:
-    result = await db.execute(
+def list_employees(db: Session, company_id: UUID) -> list[Employee]:
+    result = db.execute(
         select(Employee)
         .where(Employee.company_id == company_id)
         .order_by(Employee.employee_ref)
@@ -60,9 +60,9 @@ async def list_employees(db: AsyncSession, company_id: UUID) -> list[Employee]:
     return list(result.scalars().all())
 
 
-async def list_employees_multi(db: AsyncSession, company_ids: list[UUID]) -> list[Employee]:
+def list_employees_multi(db: Session, company_ids: list[UUID]) -> list[Employee]:
     """List employees across multiple companies (group payroll)."""
-    result = await db.execute(
+    result = db.execute(
         select(Employee)
         .where(Employee.company_id.in_(company_ids))
         .order_by(Employee.employee_ref)
@@ -70,8 +70,8 @@ async def list_employees_multi(db: AsyncSession, company_ids: list[UUID]) -> lis
     return list(result.scalars().all())
 
 
-async def create_employee(
-    db: AsyncSession,
+def create_employee(
+    db: Session,
     company_id: UUID,
     data: dict,
     user_id: UUID | None = None,
@@ -79,9 +79,9 @@ async def create_employee(
 ) -> Employee:
     # Auto-generate employee_ref if not provided
     if not data.get("employee_ref"):
-        data["employee_ref"] = await _next_employee_ref(db, company_id)
+        data["employee_ref"] = _next_employee_ref(db, company_id)
 
-    existing = await db.execute(
+    existing = db.execute(
         select(Employee).where(
             Employee.company_id == company_id,
             Employee.employee_ref == data["employee_ref"],
@@ -95,8 +95,8 @@ async def create_employee(
     data = _convert_dates(data)
     item = Employee(id=uuid.uuid4(), company_id=company_id, created_by=user_id, **data)
     db.add(item)
-    await db.flush()
-    await log_action(
+    db.flush()
+    log_action(
         db,
         company_id=company_id,
         table_name="employees",
@@ -108,15 +108,15 @@ async def create_employee(
     return item
 
 
-async def update_employee(
-    db: AsyncSession,
+def update_employee(
+    db: Session,
     item_id: UUID,
     company_id: UUID,
     data: dict,
     user_id: UUID | None = None,
     ip_address: str | None = None,
 ) -> Employee:
-    result = await db.execute(
+    result = db.execute(
         select(Employee).where(
             Employee.id == item_id, Employee.company_id == company_id
         )
@@ -125,7 +125,7 @@ async def update_employee(
     if item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found")
     if "employee_ref" in data and data["employee_ref"] is not None and data["employee_ref"] != item.employee_ref:
-        dup = await db.execute(
+        dup = db.execute(
             select(Employee).where(
                 Employee.company_id == company_id,
                 Employee.employee_ref == data["employee_ref"],
@@ -144,9 +144,9 @@ async def update_employee(
         if value is not None and key in UPDATABLE_FIELDS:
             setattr(item, key, value)
     item.updated_by = user_id
-    await db.flush()
+    db.flush()
     if diff:
-        await log_action(
+        log_action(
             db,
             company_id=company_id,
             table_name="employees",
@@ -159,8 +159,8 @@ async def update_employee(
     return item
 
 
-async def update_employee_multi(
-    db: AsyncSession,
+def update_employee_multi(
+    db: Session,
     item_id: UUID,
     company_ids: list[UUID],
     data: dict,
@@ -168,7 +168,7 @@ async def update_employee_multi(
     ip_address: str | None = None,
 ) -> Employee:
     """Update employee across any of the given group company IDs."""
-    result = await db.execute(
+    result = db.execute(
         select(Employee).where(
             Employee.id == item_id, Employee.company_id.in_(company_ids)
         )
@@ -177,7 +177,7 @@ async def update_employee_multi(
     if item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found")
     if "employee_ref" in data and data["employee_ref"] is not None and data["employee_ref"] != item.employee_ref:
-        dup = await db.execute(
+        dup = db.execute(
             select(Employee).where(
                 Employee.company_id == item.company_id,
                 Employee.employee_ref == data["employee_ref"],
@@ -196,9 +196,9 @@ async def update_employee_multi(
         if value is not None and key in UPDATABLE_FIELDS:
             setattr(item, key, value)
     item.updated_by = user_id
-    await db.flush()
+    db.flush()
     if diff:
-        await log_action(
+        log_action(
             db,
             company_id=item.company_id,
             table_name="employees",
@@ -211,14 +211,14 @@ async def update_employee_multi(
     return item
 
 
-async def delete_employee(
-    db: AsyncSession,
+def delete_employee(
+    db: Session,
     item_id: UUID,
     company_id: UUID,
     user_id: UUID | None = None,
     ip_address: str | None = None,
 ) -> None:
-    result = await db.execute(
+    result = db.execute(
         select(Employee).where(
             Employee.id == item_id, Employee.company_id == company_id
         )
@@ -227,9 +227,9 @@ async def delete_employee(
     if item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found")
     record_id = item.id
-    await db.delete(item)
-    await db.flush()
-    await log_action(
+    db.delete(item)
+    db.flush()
+    log_action(
         db,
         company_id=company_id,
         table_name="employees",

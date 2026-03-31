@@ -6,7 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 import sqlalchemy as sa
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from database import get_db
 from app.models.user import User
@@ -37,11 +37,11 @@ class PnlResponse(BaseModel):
 
 
 @router.get("/summary", response_model=PnlResponse)
-async def get_pnl(
+def get_pnl(
     year: int = Query(...),
     location_id: Optional[UUID] = Query(None),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     cid = current_user.company_id
     params = base_params(cid, year, location_id)
@@ -49,7 +49,7 @@ async def get_pnl(
     lf_exp = loc_filter("e", location_id)
 
     # Revenue by account with monthly breakdown
-    rev_result = await db.execute(
+    rev_result = db.execute(
         sa.text(f"""
             SELECT a.code, a.name,
                    EXTRACT(MONTH FROM r.date)::int AS month_num,
@@ -81,7 +81,7 @@ async def get_pnl(
     ]
 
     # Expenses by account with monthly breakdown
-    exp_result = await db.execute(
+    exp_result = db.execute(
         sa.text(f"""
             SELECT a.code, a.name,
                    EXTRACT(MONTH FROM e.date)::int AS month_num,

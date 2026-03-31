@@ -1,18 +1,18 @@
-import asyncio
 from collections.abc import AsyncGenerator
 
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
 
 from database import Base, get_db
 from main import app
 
-TEST_DATABASE_URL = "postgresql+asyncpg://postgres:talents_dev_pw@localhost:5432/talents_ais_test"
+TEST_DATABASE_URL = "postgresql+pg8000://postgres:talents_dev_pw@localhost:5432/talents_ais_test"
 
-engine_test = create_async_engine(TEST_DATABASE_URL, echo=False)
-async_session_test = async_sessionmaker(engine_test, class_=AsyncSession, expire_on_commit=False)
+engine_test = create_engine(TEST_DATABASE_URL, echo=False)
+SessionLocal_test = sessionmaker(engine_test, class_=Session, expire_on_commit=False)
 
 
 @pytest.fixture(scope="session")
@@ -23,20 +23,20 @@ def event_loop():
 
 
 @pytest_asyncio.fixture(scope="function")
-async def db_session() -> AsyncGenerator[AsyncSession, None]:
+def db_session() -> AsyncGenerator[Session, None]:
     async with engine_test.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        conn.run_sync(Base.metadata.create_all)
 
-    async with async_session_test() as session:
+    async with SessionLocal_test() as session:
         yield session
 
     async with engine_test.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+        conn.run_sync(Base.metadata.drop_all)
 
 
 @pytest_asyncio.fixture(scope="function")
-async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
-    async def override_get_db():
+def client(db_session: Session) -> AsyncGenerator[AsyncClient, None]:
+    def override_get_db():
         yield db_session
 
     app.dependency_overrides[get_db] = override_get_db

@@ -3,7 +3,7 @@
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 import sqlalchemy as sa
 
 from app.models.company_group import CompanyGroupMember
@@ -13,9 +13,9 @@ from sqlalchemy import select
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-async def get_group_company_ids(db: AsyncSession, group_id: UUID) -> list[dict]:
+def get_group_company_ids(db: Session, group_id: UUID) -> list[dict]:
     """Return list of {id, name} for all companies in the group."""
-    result = await db.execute(
+    result = db.execute(
         select(CompanyGroupMember.company_id, Company.name)
         .join(Company, CompanyGroupMember.company_id == Company.id)
         .where(CompanyGroupMember.company_group_id == group_id)
@@ -32,8 +32,8 @@ def _to_dec(val) -> Decimal:
 
 # ── Consolidated P&L ─────────────────────────────────────────────────────────
 
-async def get_consolidated_pnl(
-    db: AsyncSession,
+def get_consolidated_pnl(
+    db: Session,
     group_id: UUID,
     year: int,
 ) -> dict:
@@ -45,7 +45,7 @@ async def get_consolidated_pnl(
         expense_lines: same structure
         totals: {total_revenue, total_expenses, net_profit, per company + elimination}
     """
-    companies = await get_group_company_ids(db, group_id)
+    companies = get_group_company_ids(db, group_id)
     if not companies:
         return {"companies": [], "revenue_lines": [], "expense_lines": [],
                 "totals": {"total_revenue": Decimal(0), "total_expenses": Decimal(0), "net_profit": Decimal(0)}}
@@ -53,7 +53,7 @@ async def get_consolidated_pnl(
     cids = [c["id"] for c in companies]
 
     # Revenue by account and company
-    rev_result = await db.execute(
+    rev_result = db.execute(
         sa.text("""
             SELECT a.code, a.name, r.company_id,
                    COALESCE(SUM(r.amount), 0) AS total
@@ -78,7 +78,7 @@ async def get_consolidated_pnl(
         rev_map[key][row.company_id] = _to_dec(row.total)
 
     # Expenses by account and company
-    exp_result = await db.execute(
+    exp_result = db.execute(
         sa.text("""
             SELECT a.code, a.name, e.company_id,
                    COALESCE(SUM(e.amount), 0) AS total
@@ -103,7 +103,7 @@ async def get_consolidated_pnl(
     # IC eliminations from confirmed intercompany transactions
     # Revenue elimination: IC Revenue (4500) in target company
     # Expense elimination: IC Expense (6500) in source company
-    ic_elim_result = await db.execute(
+    ic_elim_result = db.execute(
         sa.text("""
             SELECT COALESCE(SUM(amount), 0) AS total
             FROM intercompany_transactions
@@ -116,7 +116,7 @@ async def get_consolidated_pnl(
     ic_elimination_total = _to_dec(ic_elim_result.scalar_one())
 
     # Consolidation adjustments
-    adj_result = await db.execute(
+    adj_result = db.execute(
         sa.text("""
             SELECT account_code, debit_amount, credit_amount
             FROM consolidation_adjustments
@@ -197,8 +197,8 @@ async def get_consolidated_pnl(
 
 # ── Consolidated Balance Sheet ───────────────────────────────────────────────
 
-async def get_consolidated_balance_sheet(
-    db: AsyncSession,
+def get_consolidated_balance_sheet(
+    db: Session,
     group_id: UUID,
     year: int,
 ) -> dict:
@@ -206,15 +206,15 @@ async def get_consolidated_balance_sheet(
     Assets, Liabilities, Equity sections with IC elimination.
     Cumulative balances (not just current year for BS).
     """
-    companies = await get_group_company_ids(db, group_id)
+    companies = get_group_company_ids(db, group_id)
     if not companies:
         return {"companies": [], "assets": {}, "liabilities": {}, "equity": {},
                 "is_balanced": True, "imbalance_amount": Decimal(0)}
 
     cids = [c["id"] for c in companies]
 
-    async def scalar_sum(sql: str, params: dict) -> Decimal:
-        result = await db.execute(sa.text(sql), params)
+    def scalar_sum(sql: str, params: dict) -> Decimal:
+        result = db.execute(sa.text(sql), params)
         return _to_dec(result.scalar_one())
 
     # Per-company BS figures
@@ -228,40 +228,40 @@ async def get_consolidated_balance_sheet(
         p = {"cid": cid, "year": year}
 
         # Cash & Bank: all-time revenue - all-time expenses (up to selected year)
-        all_rev = await scalar_sum(
+        all_rev = scalar_sum(
             "SELECT COALESCE(SUM(amount), 0) FROM revenue_transactions "
             "WHERE company_id = :cid AND is_voided = false AND fiscal_year <= :year", p)
-        all_exp = await scalar_sum(
+        all_exp = scalar_sum(
             "SELECT COALESCE(SUM(amount), 0) FROM expense_transactions "
             "WHERE company_id = :cid AND is_voided = false AND fiscal_year <= :year", p)
         cash = all_rev - all_exp
 
         # Caution deposits payable (liabilities)
-        caution = await scalar_sum(
+        caution = scalar_sum(
             "SELECT COALESCE(SUM(r.amount), 0) FROM revenue_transactions r "
             "JOIN accounts a ON r.account_id = a.id "
             "WHERE r.company_id = :cid AND r.is_voided = false AND a.code = '4030' AND r.fiscal_year <= :year", p)
 
         # Retained earnings (prior years) + current year profit
-        prior_rev = await scalar_sum(
+        prior_rev = scalar_sum(
             "SELECT COALESCE(SUM(amount), 0) FROM revenue_transactions "
             "WHERE company_id = :cid AND is_voided = false AND fiscal_year < :year", p)
-        prior_exp = await scalar_sum(
+        prior_exp = scalar_sum(
             "SELECT COALESCE(SUM(amount), 0) FROM expense_transactions "
             "WHERE company_id = :cid AND is_voided = false AND fiscal_year < :year", p)
-        prior_caution = await scalar_sum(
+        prior_caution = scalar_sum(
             "SELECT COALESCE(SUM(r.amount), 0) FROM revenue_transactions r "
             "JOIN accounts a ON r.account_id = a.id "
             "WHERE r.company_id = :cid AND r.is_voided = false AND a.code = '4030' AND r.fiscal_year < :year", p)
         retained = prior_rev - prior_caution - prior_exp
 
-        cur_rev = await scalar_sum(
+        cur_rev = scalar_sum(
             "SELECT COALESCE(SUM(amount), 0) FROM revenue_transactions "
             "WHERE company_id = :cid AND is_voided = false AND fiscal_year = :year", p)
-        cur_exp = await scalar_sum(
+        cur_exp = scalar_sum(
             "SELECT COALESCE(SUM(amount), 0) FROM expense_transactions "
             "WHERE company_id = :cid AND is_voided = false AND fiscal_year = :year", p)
-        cur_caution = await scalar_sum(
+        cur_caution = scalar_sum(
             "SELECT COALESCE(SUM(r.amount), 0) FROM revenue_transactions r "
             "JOIN accounts a ON r.account_id = a.id "
             "WHERE r.company_id = :cid AND r.is_voided = false AND a.code = '4030' AND r.fiscal_year = :year", p)
@@ -288,14 +288,14 @@ async def get_consolidated_balance_sheet(
         })
 
     # IC elimination on BS: remove IC Receivable / IC Payable balances
-    ic_balance = await scalar_sum(
+    ic_balance = scalar_sum(
         "SELECT COALESCE(SUM(amount), 0) FROM intercompany_transactions "
         "WHERE company_group_id = :gid AND fiscal_year <= :year AND status = 'CONFIRMED'",
         {"gid": group_id, "year": year},
     )
 
     # Consolidation adjustments for BS
-    adj_result = await db.execute(
+    adj_result = db.execute(
         sa.text("""
             SELECT SUM(debit_amount) AS total_debit, SUM(credit_amount) AS total_credit
             FROM consolidation_adjustments
@@ -339,20 +339,20 @@ async def get_consolidated_balance_sheet(
 
 # ── Consolidated Trial Balance ────────────────────────────────────────────────
 
-async def get_consolidated_trial_balance(
-    db: AsyncSession,
+def get_consolidated_trial_balance(
+    db: Session,
     group_id: UUID,
     year: int,
 ) -> dict:
     """Consolidated Trial Balance: debit/credit per account per company."""
-    companies = await get_group_company_ids(db, group_id)
+    companies = get_group_company_ids(db, group_id)
     if not companies:
         return {"companies": [], "rows": [], "total_debit": Decimal(0), "total_credit": Decimal(0)}
 
     cids = [c["id"] for c in companies]
 
     # Revenue by account and company (credits)
-    rev_result = await db.execute(
+    rev_result = db.execute(
         sa.text("""
             SELECT a.code, a.name, a.type, a.normal_balance,
                    r.company_id,
@@ -369,7 +369,7 @@ async def get_consolidated_trial_balance(
     )
 
     # Expenses by account and company (debits)
-    exp_result = await db.execute(
+    exp_result = db.execute(
         sa.text("""
             SELECT a.code, a.name, a.type, a.normal_balance,
                    e.company_id,
@@ -407,7 +407,7 @@ async def get_consolidated_trial_balance(
         acct_map[code]["company_debits"][row.company_id] = _to_dec(row.total)
 
     # Consolidation adjustments
-    adj_result = await db.execute(
+    adj_result = db.execute(
         sa.text("""
             SELECT account_code, debit_amount, credit_amount
             FROM consolidation_adjustments

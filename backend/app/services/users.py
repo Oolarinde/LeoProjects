@@ -5,7 +5,7 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.models.user import User
 from app.models.group import Group
@@ -31,9 +31,9 @@ def _check_hierarchy(acting_user: User, target_role: str, target_id: UUID | None
         )
 
 
-async def _resolve_group(db: AsyncSession, group_id_str: str, company_id: UUID) -> Group:
+def _resolve_group(db: Session, group_id_str: str, company_id: UUID) -> Group:
     """Validate and fetch a group by ID within a company."""
-    result = await db.execute(
+    result = db.execute(
         select(Group).where(Group.id == UUID(group_id_str), Group.company_id == company_id)
     )
     group = result.scalar_one_or_none()
@@ -42,15 +42,15 @@ async def _resolve_group(db: AsyncSession, group_id_str: str, company_id: UUID) 
     return group
 
 
-async def list_users(db: AsyncSession, company_id: UUID) -> list[User]:
-    result = await db.execute(
+def list_users(db: Session, company_id: UUID) -> list[User]:
+    result = db.execute(
         select(User).where(User.company_id == company_id).order_by(User.created_at)
     )
     return list(result.scalars().all())
 
 
-async def get_user(db: AsyncSession, user_id: UUID, company_id: UUID) -> User:
-    result = await db.execute(
+def get_user(db: Session, user_id: UUID, company_id: UUID) -> User:
+    result = db.execute(
         select(User).where(User.id == user_id, User.company_id == company_id)
     )
     user = result.scalar_one_or_none()
@@ -59,8 +59,8 @@ async def get_user(db: AsyncSession, user_id: UUID, company_id: UUID) -> User:
     return user
 
 
-async def create_user(
-    db: AsyncSession,
+def create_user(
+    db: Session,
     company_id: UUID,
     email: str,
     full_name: str,
@@ -80,12 +80,12 @@ async def create_user(
     _check_hierarchy(acting_user, role)
 
     # Check email uniqueness
-    existing = await db.execute(select(User).where(User.email == email.lower().strip()))
+    existing = db.execute(select(User).where(User.email == email.lower().strip()))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already in use")
 
     # Resolve the custom role (group) and inherit its permissions
-    group = await _resolve_group(db, group_id, company_id)
+    group = _resolve_group(db, group_id, company_id)
 
     user = User(
         company_id=company_id,
@@ -98,8 +98,8 @@ async def create_user(
         created_by=user_id,
     )
     db.add(user)
-    await db.flush()
-    await log_action(
+    db.flush()
+    log_action(
         db,
         company_id=company_id,
         table_name="users",
@@ -111,8 +111,8 @@ async def create_user(
     return user
 
 
-async def update_user(
-    db: AsyncSession,
+def update_user(
+    db: Session,
     user_id: UUID,
     company_id: UUID,
     acting_user: User,
@@ -123,7 +123,7 @@ async def update_user(
     audit_user_id: UUID | None = None,
     ip_address: str | None = None,
 ) -> User:
-    target = await get_user(db, user_id, company_id)
+    target = get_user(db, user_id, company_id)
 
     # Check hierarchy against the target's current role
     _check_hierarchy(acting_user, target.role, target.id)
@@ -152,7 +152,7 @@ async def update_user(
 
     if group_id is not None:
         # Change custom role — inherit new role's permissions
-        group = await _resolve_group(db, group_id, company_id)
+        group = _resolve_group(db, group_id, company_id)
         target.group_id = group.id
         target.permissions = group.permissions
 
@@ -162,10 +162,10 @@ async def update_user(
         target.is_active = is_active
 
     target.updated_by = audit_user_id
-    await db.flush()
+    db.flush()
 
     if diff:
-        await log_action(
+        log_action(
             db,
             company_id=company_id,
             table_name="users",
@@ -178,15 +178,15 @@ async def update_user(
     return target
 
 
-async def deactivate_user(
-    db: AsyncSession,
+def deactivate_user(
+    db: Session,
     user_id: UUID,
     company_id: UUID,
     acting_user: User,
     audit_user_id: UUID | None = None,
     ip_address: str | None = None,
 ) -> User:
-    target = await get_user(db, user_id, company_id)
+    target = get_user(db, user_id, company_id)
     _check_hierarchy(acting_user, target.role, target.id)
 
     if str(target.id) == str(acting_user.id):
@@ -194,8 +194,8 @@ async def deactivate_user(
 
     target.is_active = False
     target.updated_by = audit_user_id
-    await db.flush()
-    await log_action(
+    db.flush()
+    log_action(
         db,
         company_id=company_id,
         table_name="users",

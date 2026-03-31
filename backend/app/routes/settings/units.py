@@ -4,7 +4,7 @@ from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from database import get_db
 from app.models.user import User
@@ -24,41 +24,41 @@ _write = require_permission(Module.LOCATIONS, AccessLevel.WRITE)
 
 
 @router.get("/", response_model=list[UnitResponse])
-async def list_units(
+def list_units(
     location_id: Optional[UUID] = Query(None),
     current_user: User = Depends(_read),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
-    return await units_service.list_units(db, current_user.company_id, location_id)
+    return units_service.list_units(db, current_user.company_id, location_id)
 
 
 @router.post("/", response_model=UnitResponse, status_code=201)
-async def create_unit(
+def create_unit(
     data: UnitCreate,
     current_user: User = Depends(_write),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
-    return await units_service.create_unit(
+    return units_service.create_unit(
         db, current_user.company_id, data.model_dump()
     )
 
 
 @router.patch("/{item_id}", response_model=UnitResponse)
-async def update_unit(
+def update_unit(
     item_id: UUID,
     data: UnitUpdate,
     current_user: User = Depends(_write),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
-    return await units_service.update_unit(
+    return units_service.update_unit(
         db, item_id, current_user.company_id, data.model_dump(exclude_unset=True)
     )
 
 
 @router.delete("/{item_id}", status_code=204)
-async def delete_unit(
+def delete_unit(
     item_id: UUID,
     current_user: User = Depends(_write),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
-    await units_service.delete_unit(db, item_id, current_user.company_id)
+    units_service.delete_unit(db, item_id, current_user.company_id)

@@ -6,7 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 import sqlalchemy as sa
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from database import get_db
 from app.models.user import User
@@ -33,11 +33,11 @@ class TrialBalanceResponse(BaseModel):
 
 
 @router.get("/summary", response_model=TrialBalanceResponse)
-async def get_trial_balance(
+def get_trial_balance(
     year: int = Query(...),
     location_id: Optional[UUID] = Query(None),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     cid = current_user.company_id
     params = base_params(cid, year, location_id)
@@ -45,7 +45,7 @@ async def get_trial_balance(
     lf_exp = loc_filter("e", location_id)
 
     # Revenue accounts — normal balance Credit
-    rev_result = await db.execute(
+    rev_result = db.execute(
         sa.text(f"""
             SELECT a.code, a.name, a.type AS account_type,
                    0::numeric AS debit,
@@ -60,7 +60,7 @@ async def get_trial_balance(
     )
 
     # Expense accounts — normal balance Debit
-    exp_result = await db.execute(
+    exp_result = db.execute(
         sa.text(f"""
             SELECT a.code, a.name, a.type AS account_type,
                    COALESCE(SUM(e.amount), 0) AS debit,

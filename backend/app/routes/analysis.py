@@ -6,7 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 import sqlalchemy as sa
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from database import get_db
 from app.models.user import User
@@ -71,11 +71,11 @@ MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
 
 
 @router.get("/summary", response_model=AnalysisResponse)
-async def get_analysis(
+def get_analysis(
     year: int = Query(...),
     location_id: Optional[UUID] = Query(None),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     cid = current_user.company_id
     params = base_params(cid, year, location_id)
@@ -84,7 +84,7 @@ async def get_analysis(
     lf_exp = loc_filter("e", location_id)
 
     # ── Monthly revenue & expenses ───────────────────────────────────────
-    rev_monthly = await db.execute(sa.text(f"""
+    rev_monthly = db.execute(sa.text(f"""
         SELECT EXTRACT(MONTH FROM r.date)::int AS m, COALESCE(SUM(r.amount), 0) AS total
         FROM revenue_transactions r
         WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year = :year{lf_rev}
@@ -92,7 +92,7 @@ async def get_analysis(
     """), params)
     rev_map = {row.m: Decimal(str(row.total)) for row in rev_monthly}
 
-    exp_monthly = await db.execute(sa.text(f"""
+    exp_monthly = db.execute(sa.text(f"""
         SELECT EXTRACT(MONTH FROM e.date)::int AS m, COALESCE(SUM(e.amount), 0) AS total
         FROM expense_transactions e
         WHERE e.company_id = :cid AND e.is_voided = false AND e.fiscal_year = :year{lf_exp}
@@ -113,7 +113,7 @@ async def get_analysis(
     total_expenses = sum(r.expenses for r in monthly_rev_exp)
 
     # ── Expense by category (pie) ────────────────────────────────────────
-    exp_cat = await db.execute(sa.text(f"""
+    exp_cat = db.execute(sa.text(f"""
         SELECT a.name, COALESCE(SUM(e.amount), 0) AS total
         FROM expense_transactions e
         JOIN accounts a ON e.account_id = a.id
@@ -123,7 +123,7 @@ async def get_analysis(
     expense_by_category = [CategoryAmount(name=r.name, amount=Decimal(str(r.total))) for r in exp_cat]
 
     # ── Revenue by source (horizontal bar) ───────────────────────────────
-    rev_src = await db.execute(sa.text(f"""
+    rev_src = db.execute(sa.text(f"""
         SELECT a.name, COALESCE(SUM(r.amount), 0) AS total
         FROM revenue_transactions r
         JOIN accounts a ON r.account_id = a.id
@@ -133,7 +133,7 @@ async def get_analysis(
     revenue_by_source = [CategoryAmount(name=r.name, amount=Decimal(str(r.total))) for r in rev_src]
 
     # ── Year-over-year revenue comparison ────────────────────────────────
-    prev_rev = await db.execute(sa.text(f"""
+    prev_rev = db.execute(sa.text(f"""
         SELECT EXTRACT(MONTH FROM r.date)::int AS m, COALESCE(SUM(r.amount), 0) AS total
         FROM revenue_transactions r
         WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year = :year{lf_rev}
@@ -151,7 +151,7 @@ async def get_analysis(
     ]
 
     # ── Budget utilization ───────────────────────────────────────────────
-    budget_util = await db.execute(sa.text(f"""
+    budget_util = db.execute(sa.text(f"""
         SELECT
             COALESCE(s.name, b.category) AS category,
             COALESCE(s.spent, 0) AS spent,

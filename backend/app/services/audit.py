@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.models.audit_log import AuditLog
 
@@ -23,8 +23,8 @@ def compute_diff(instance, update_data: dict) -> dict:
     return changes
 
 
-async def log_action(
-    db: AsyncSession,
+def log_action(
+    db: Session,
     *,
     company_id: UUID,
     table_name: str,

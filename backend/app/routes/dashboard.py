@@ -5,7 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 import sqlalchemy as sa
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from database import get_db
 from app.models.user import User
@@ -96,11 +96,11 @@ def _base_params(company_id: UUID, year: int, location_id: Optional[UUID]) -> di
 # ---------------------------------------------------------------------------
 
 @router.get("/summary", response_model=DashboardSummaryResponse)
-async def get_dashboard_summary(
+def get_dashboard_summary(
     year: int = Query(...),
     location_id: Optional[UUID] = Query(None),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     cid = current_user.company_id
     params = _base_params(cid, year, location_id)
@@ -111,7 +111,7 @@ async def get_dashboard_summary(
     # ------------------------------------------------------------------
     # 1. KPIs — totals for current year
     # ------------------------------------------------------------------
-    rev_result = await db.execute(
+    rev_result = db.execute(
         sa.text(f"""
             SELECT COALESCE(SUM(r.amount), 0) AS total
             FROM revenue_transactions r
@@ -121,7 +121,7 @@ async def get_dashboard_summary(
     )
     total_revenue = rev_result.scalar_one()
 
-    exp_result = await db.execute(
+    exp_result = db.execute(
         sa.text(f"""
             SELECT COALESCE(SUM(e.amount), 0) AS total
             FROM expense_transactions e
@@ -137,7 +137,7 @@ async def get_dashboard_summary(
     )
 
     # Staff salaries
-    sal_result = await db.execute(
+    sal_result = db.execute(
         sa.text(f"""
             SELECT COALESCE(SUM(e.amount), 0) AS total
             FROM expense_transactions e
@@ -151,7 +151,7 @@ async def get_dashboard_summary(
     # ------------------------------------------------------------------
     # 1b. Year-over-year change %
     # ------------------------------------------------------------------
-    prev_rev_result = await db.execute(
+    prev_rev_result = db.execute(
         sa.text(f"""
             SELECT COALESCE(SUM(r.amount), 0) AS total
             FROM revenue_transactions r
@@ -161,7 +161,7 @@ async def get_dashboard_summary(
     )
     prev_revenue = prev_rev_result.scalar_one()
 
-    prev_exp_result = await db.execute(
+    prev_exp_result = db.execute(
         sa.text(f"""
             SELECT COALESCE(SUM(e.amount), 0) AS total
             FROM expense_transactions e
@@ -182,7 +182,7 @@ async def get_dashboard_summary(
     # ------------------------------------------------------------------
     # 2. Monthly P&L — revenue and expenses per month
     # ------------------------------------------------------------------
-    monthly_rev_result = await db.execute(
+    monthly_rev_result = db.execute(
         sa.text(f"""
             SELECT EXTRACT(MONTH FROM r.date)::int AS month_num,
                    COALESCE(SUM(r.amount), 0) AS total
@@ -195,7 +195,7 @@ async def get_dashboard_summary(
     )
     monthly_rev = {row.month_num: row.total for row in monthly_rev_result}
 
-    monthly_exp_result = await db.execute(
+    monthly_exp_result = db.execute(
         sa.text(f"""
             SELECT EXTRACT(MONTH FROM e.date)::int AS month_num,
                    COALESCE(SUM(e.amount), 0) AS total
@@ -220,7 +220,7 @@ async def get_dashboard_summary(
     # ------------------------------------------------------------------
     # 3. Revenue streams — by account name
     # ------------------------------------------------------------------
-    streams_result = await db.execute(
+    streams_result = db.execute(
         sa.text(f"""
             SELECT a.name, COALESCE(SUM(r.amount), 0) AS total
             FROM revenue_transactions r
@@ -244,7 +244,7 @@ async def get_dashboard_summary(
     # ------------------------------------------------------------------
     # 4. Expense budget — actual spend vs budgeted amounts
     # ------------------------------------------------------------------
-    budget_result = await db.execute(
+    budget_result = db.execute(
         sa.text(f"""
             SELECT
                 COALESCE(s.category, b.category) AS category,
@@ -274,7 +274,7 @@ async def get_dashboard_summary(
     # ------------------------------------------------------------------
     # 5. Cash position — uses opening_balances table
     # ------------------------------------------------------------------
-    ob_result = await db.execute(
+    ob_result = db.execute(
         sa.text(
             "SELECT COALESCE(amount, 0) FROM opening_balances "
             "WHERE company_id = :cid AND year = :year"
@@ -301,7 +301,7 @@ async def get_dashboard_summary(
     trial_balance: List[TrialBalanceRow] = []
 
     # Revenue accounts on the credit side
-    tb_rev_result = await db.execute(
+    tb_rev_result = db.execute(
         sa.text(f"""
             SELECT a.name, COALESCE(SUM(r.amount), 0) AS total
             FROM revenue_transactions r
@@ -318,7 +318,7 @@ async def get_dashboard_summary(
         )
 
     # Expense categories on the debit side
-    tb_exp_result = await db.execute(
+    tb_exp_result = db.execute(
         sa.text(f"""
             SELECT e.category AS name, COALESCE(SUM(e.amount), 0) AS total
             FROM expense_transactions e
@@ -346,7 +346,7 @@ async def get_dashboard_summary(
     # ------------------------------------------------------------------
     # 7. Recent GL entries — last 10, UNION of revenue + expense
     # ------------------------------------------------------------------
-    gl_result = await db.execute(
+    gl_result = db.execute(
         sa.text(f"""
             (
                 SELECT r.id::text, r.date, a.name AS account,

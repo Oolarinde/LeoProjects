@@ -6,7 +6,7 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.models.location import Location
 from app.services.audit import log_action, compute_diff
@@ -15,8 +15,8 @@ from app.services.audit import log_action, compute_diff
 UPDATABLE_FIELDS = {"name", "address"}
 
 
-async def list_locations(db: AsyncSession, company_id: UUID) -> list[Location]:
-    result = await db.execute(
+def list_locations(db: Session, company_id: UUID) -> list[Location]:
+    result = db.execute(
         select(Location)
         .where(Location.company_id == company_id)
         .order_by(Location.name)
@@ -24,14 +24,14 @@ async def list_locations(db: AsyncSession, company_id: UUID) -> list[Location]:
     return list(result.scalars().all())
 
 
-async def create_location(
-    db: AsyncSession,
+def create_location(
+    db: Session,
     company_id: UUID,
     data: dict,
     user_id: UUID | None = None,
     ip_address: str | None = None,
 ) -> Location:
-    existing = await db.execute(
+    existing = db.execute(
         select(Location).where(
             Location.company_id == company_id,
             Location.name == data["name"],
@@ -44,8 +44,8 @@ async def create_location(
         )
     item = Location(id=uuid.uuid4(), company_id=company_id, created_by=user_id, **data)
     db.add(item)
-    await db.flush()
-    await log_action(
+    db.flush()
+    log_action(
         db,
         company_id=company_id,
         table_name="locations",
@@ -57,15 +57,15 @@ async def create_location(
     return item
 
 
-async def update_location(
-    db: AsyncSession,
+def update_location(
+    db: Session,
     item_id: UUID,
     company_id: UUID,
     data: dict,
     user_id: UUID | None = None,
     ip_address: str | None = None,
 ) -> Location:
-    result = await db.execute(
+    result = db.execute(
         select(Location).where(
             Location.id == item_id, Location.company_id == company_id
         )
@@ -74,7 +74,7 @@ async def update_location(
     if item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Location not found")
     if "name" in data and data["name"] is not None and data["name"] != item.name:
-        dup = await db.execute(
+        dup = db.execute(
             select(Location).where(
                 Location.company_id == company_id,
                 Location.name == data["name"],
@@ -92,9 +92,9 @@ async def update_location(
         if value is not None and key in UPDATABLE_FIELDS:
             setattr(item, key, value)
     item.updated_by = user_id
-    await db.flush()
+    db.flush()
     if diff:
-        await log_action(
+        log_action(
             db,
             company_id=company_id,
             table_name="locations",
@@ -107,14 +107,14 @@ async def update_location(
     return item
 
 
-async def delete_location(
-    db: AsyncSession,
+def delete_location(
+    db: Session,
     item_id: UUID,
     company_id: UUID,
     user_id: UUID | None = None,
     ip_address: str | None = None,
 ) -> None:
-    result = await db.execute(
+    result = db.execute(
         select(Location).where(
             Location.id == item_id, Location.company_id == company_id
         )
@@ -123,9 +123,9 @@ async def delete_location(
     if item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Location not found")
     record_id = item.id
-    await db.delete(item)
-    await db.flush()
-    await log_action(
+    db.delete(item)
+    db.flush()
+    log_action(
         db,
         company_id=company_id,
         table_name="locations",

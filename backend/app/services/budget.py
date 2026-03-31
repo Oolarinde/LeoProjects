@@ -4,19 +4,19 @@ from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import select, delete, and_
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.models.budget_line import BudgetLine
 
 
-async def get_budget_grid(
-    db: AsyncSession,
+def get_budget_grid(
+    db: Session,
     company_id: UUID,
     year: int,
     line_type: str,
 ) -> list[BudgetLine]:
     """Return all budget lines for a company/year/line_type."""
-    result = await db.execute(
+    result = db.execute(
         select(BudgetLine)
         .where(
             BudgetLine.company_id == company_id,
@@ -28,8 +28,8 @@ async def get_budget_grid(
     return list(result.scalars().all())
 
 
-async def bulk_upsert(
-    db: AsyncSession,
+def bulk_upsert(
+    db: Session,
     company_id: UUID,
     user_id: UUID,
     year: int,
@@ -44,7 +44,7 @@ async def bulk_upsert(
         amount = Decimal(str(cell["amount"]))
         notes = cell.get("notes")
 
-        result = await db.execute(
+        result = db.execute(
             select(BudgetLine).where(
                 BudgetLine.company_id == company_id,
                 BudgetLine.year == year,
@@ -72,17 +72,17 @@ async def bulk_upsert(
             ))
         count += 1
 
-    await db.flush()
+    db.flush()
     return count
 
 
-async def delete_budget_line(
-    db: AsyncSession,
+def delete_budget_line(
+    db: Session,
     company_id: UUID,
     budget_id: UUID,
 ) -> bool:
     """Delete a single budget line. Returns True if found and deleted."""
-    result = await db.execute(
+    result = db.execute(
         select(BudgetLine).where(
             BudgetLine.id == budget_id,
             BudgetLine.company_id == company_id,
@@ -91,24 +91,24 @@ async def delete_budget_line(
     line = result.scalar_one_or_none()
     if line is None:
         return False
-    await db.delete(line)
-    await db.flush()
+    db.delete(line)
+    db.flush()
     return True
 
 
-async def clear_budget(
-    db: AsyncSession,
+def clear_budget(
+    db: Session,
     company_id: UUID,
     year: int,
     line_type: str,
 ) -> int:
     """Delete all budget lines for a year/type. Returns count deleted."""
-    result = await db.execute(
+    result = db.execute(
         delete(BudgetLine).where(
             BudgetLine.company_id == company_id,
             BudgetLine.year == year,
             BudgetLine.line_type == line_type,
         )
     )
-    await db.flush()
+    db.flush()
     return result.rowcount

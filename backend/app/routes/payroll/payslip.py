@@ -5,7 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import HTMLResponse
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from sqlalchemy.orm import selectinload
 
 from database import get_db
@@ -137,14 +137,14 @@ def _wrap_payslips(payslips_html: str, title: str) -> str:
 
 
 @router.get("/runs/{run_id}/payslip/{employee_id}", response_class=HTMLResponse)
-async def get_payslip(
+def get_payslip(
     run_id: UUID,
     employee_id: UUID,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     """Single employee payslip."""
-    result = await db.execute(
+    result = db.execute(
         select(PayrollItem)
         .where(
             PayrollItem.payroll_run_id == run_id,
@@ -161,7 +161,7 @@ async def get_payslip(
     if item is None:
         raise HTTPException(status_code=404, detail="Payslip not found")
 
-    company = (await db.execute(
+    company = (db.execute(
         select(Company).where(Company.id == current_user.company_id)
     )).scalar_one_or_none()
     company_name = company.name if company else "—"
@@ -170,13 +170,13 @@ async def get_payslip(
 
 
 @router.get("/runs/{run_id}/payslips", response_class=HTMLResponse)
-async def get_all_payslips(
+def get_all_payslips(
     run_id: UUID,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     """Bulk payslips — all employees in a payroll run, one per page."""
-    run_result = await db.execute(
+    run_result = db.execute(
         select(PayrollRun).where(
             PayrollRun.id == run_id,
             PayrollRun.company_id == current_user.company_id,
@@ -186,7 +186,7 @@ async def get_all_payslips(
     if run is None:
         raise HTTPException(status_code=404, detail="Payroll run not found")
 
-    items_result = await db.execute(
+    items_result = db.execute(
         select(PayrollItem)
         .where(PayrollItem.payroll_run_id == run_id)
         .options(
@@ -198,7 +198,7 @@ async def get_all_payslips(
     if not items:
         raise HTTPException(status_code=404, detail="No payroll items found for this run")
 
-    company = (await db.execute(
+    company = (db.execute(
         select(Company).where(Company.id == current_user.company_id)
     )).scalar_one_or_none()
     company_name = company.name if company else "—"

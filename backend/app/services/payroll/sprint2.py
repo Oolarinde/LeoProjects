@@ -9,7 +9,7 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.models.payroll.employee_payroll_profile import EmployeePayrollProfile
 from app.models.payroll.employee_allowance import EmployeeAllowance
@@ -22,8 +22,8 @@ from app.services.audit import log_action, compute_diff
 
 # ── Employee Payroll Profile ────────────────────────────────────────────────
 
-async def get_profile(db: AsyncSession, company_id: UUID, employee_id: UUID) -> EmployeePayrollProfile | None:
-    result = await db.execute(
+def get_profile(db: Session, company_id: UUID, employee_id: UUID) -> EmployeePayrollProfile | None:
+    result = db.execute(
         select(EmployeePayrollProfile).where(
             EmployeePayrollProfile.company_id == company_id,
             EmployeePayrollProfile.employee_id == employee_id,
@@ -32,8 +32,8 @@ async def get_profile(db: AsyncSession, company_id: UUID, employee_id: UUID) -> 
     return result.scalar_one_or_none()
 
 
-async def list_profiles(db: AsyncSession, company_id: UUID) -> list[EmployeePayrollProfile]:
-    result = await db.execute(
+def list_profiles(db: Session, company_id: UUID) -> list[EmployeePayrollProfile]:
+    result = db.execute(
         select(EmployeePayrollProfile)
         .where(EmployeePayrollProfile.company_id == company_id)
         .order_by(EmployeePayrollProfile.created_at)
@@ -41,9 +41,9 @@ async def list_profiles(db: AsyncSession, company_id: UUID) -> list[EmployeePayr
     return list(result.scalars().all())
 
 
-async def list_profiles_multi(db: AsyncSession, company_ids: list[UUID]) -> list[EmployeePayrollProfile]:
+def list_profiles_multi(db: Session, company_ids: list[UUID]) -> list[EmployeePayrollProfile]:
     """List payroll profiles across multiple companies (group payroll)."""
-    result = await db.execute(
+    result = db.execute(
         select(EmployeePayrollProfile)
         .where(EmployeePayrollProfile.company_id.in_(company_ids))
         .order_by(EmployeePayrollProfile.created_at)
@@ -51,15 +51,15 @@ async def list_profiles_multi(db: AsyncSession, company_ids: list[UUID]) -> list
     return list(result.scalars().all())
 
 
-async def upsert_profile(
-    db: AsyncSession,
+def upsert_profile(
+    db: Session,
     company_id: UUID,
     data: dict,
     user_id: UUID | None = None,
     ip_address: str | None = None,
 ) -> EmployeePayrollProfile:
     employee_id = data["employee_id"]
-    existing = await get_profile(db, company_id, employee_id)
+    existing = get_profile(db, company_id, employee_id)
 
     if existing:
         diff = compute_diff(existing, {k: v for k, v in data.items() if k != "employee_id"})
@@ -67,9 +67,9 @@ async def upsert_profile(
             if k != "employee_id" and hasattr(existing, k):
                 setattr(existing, k, v)
         existing.updated_by = user_id
-        await db.flush()
+        db.flush()
         if diff:
-            await log_action(db, company_id=company_id, table_name="employee_payroll_profiles",
+            log_action(db, company_id=company_id, table_name="employee_payroll_profiles",
                              record_id=existing.id, action="UPDATE", changed_fields=diff,
                              user_id=user_id, ip_address=ip_address)
         return existing
@@ -78,18 +78,18 @@ async def upsert_profile(
         id=uuid.uuid4(), company_id=company_id, created_by=user_id, **data,
     )
     db.add(profile)
-    await db.flush()
-    await log_action(db, company_id=company_id, table_name="employee_payroll_profiles",
+    db.flush()
+    log_action(db, company_id=company_id, table_name="employee_payroll_profiles",
                      record_id=profile.id, action="CREATE", user_id=user_id, ip_address=ip_address)
     return profile
 
 
 # ── Employee Allowances ─────────────────────────────────────────────────────
 
-async def list_employee_allowances(
-    db: AsyncSession, company_id: UUID, employee_id: UUID
+def list_employee_allowances(
+    db: Session, company_id: UUID, employee_id: UUID
 ) -> list[EmployeeAllowance]:
-    result = await db.execute(
+    result = db.execute(
         select(EmployeeAllowance).where(
             EmployeeAllowance.company_id == company_id,
             EmployeeAllowance.employee_id == employee_id,
@@ -98,14 +98,14 @@ async def list_employee_allowances(
     return list(result.scalars().all())
 
 
-async def upsert_employee_allowance(
-    db: AsyncSession,
+def upsert_employee_allowance(
+    db: Session,
     company_id: UUID,
     data: dict,
     user_id: UUID | None = None,
     ip_address: str | None = None,
 ) -> EmployeeAllowance:
-    existing = (await db.execute(
+    existing = (db.execute(
         select(EmployeeAllowance).where(
             EmployeeAllowance.employee_id == data["employee_id"],
             EmployeeAllowance.allowance_type_id == data["allowance_type_id"],
@@ -117,19 +117,19 @@ async def upsert_employee_allowance(
             if k not in ("employee_id", "allowance_type_id"):
                 setattr(existing, k, v)
         existing.updated_by = user_id
-        await db.flush()
+        db.flush()
         return existing
 
     item = EmployeeAllowance(id=uuid.uuid4(), company_id=company_id, created_by=user_id, **data)
     db.add(item)
-    await db.flush()
+    db.flush()
     return item
 
 
-async def delete_employee_allowance(
-    db: AsyncSession, item_id: UUID, company_id: UUID
+def delete_employee_allowance(
+    db: Session, item_id: UUID, company_id: UUID
 ) -> None:
-    item = (await db.execute(
+    item = (db.execute(
         select(EmployeeAllowance).where(
             EmployeeAllowance.id == item_id,
             EmployeeAllowance.company_id == company_id,
@@ -137,16 +137,16 @@ async def delete_employee_allowance(
     )).scalar_one_or_none()
     if not item:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Allowance not found")
-    await db.delete(item)
-    await db.flush()
+    db.delete(item)
+    db.flush()
 
 
 # ── Employee Deductions ─────────────────────────────────────────────────────
 
-async def list_employee_deductions(
-    db: AsyncSession, company_id: UUID, employee_id: UUID
+def list_employee_deductions(
+    db: Session, company_id: UUID, employee_id: UUID
 ) -> list[EmployeeDeduction]:
-    result = await db.execute(
+    result = db.execute(
         select(EmployeeDeduction).where(
             EmployeeDeduction.company_id == company_id,
             EmployeeDeduction.employee_id == employee_id,
@@ -155,14 +155,14 @@ async def list_employee_deductions(
     return list(result.scalars().all())
 
 
-async def upsert_employee_deduction(
-    db: AsyncSession,
+def upsert_employee_deduction(
+    db: Session,
     company_id: UUID,
     data: dict,
     user_id: UUID | None = None,
     ip_address: str | None = None,
 ) -> EmployeeDeduction:
-    existing = (await db.execute(
+    existing = (db.execute(
         select(EmployeeDeduction).where(
             EmployeeDeduction.employee_id == data["employee_id"],
             EmployeeDeduction.deduction_type_id == data["deduction_type_id"],
@@ -174,19 +174,19 @@ async def upsert_employee_deduction(
             if k not in ("employee_id", "deduction_type_id"):
                 setattr(existing, k, v)
         existing.updated_by = user_id
-        await db.flush()
+        db.flush()
         return existing
 
     item = EmployeeDeduction(id=uuid.uuid4(), company_id=company_id, created_by=user_id, **data)
     db.add(item)
-    await db.flush()
+    db.flush()
     return item
 
 
-async def delete_employee_deduction(
-    db: AsyncSession, item_id: UUID, company_id: UUID
+def delete_employee_deduction(
+    db: Session, item_id: UUID, company_id: UUID
 ) -> None:
-    item = (await db.execute(
+    item = (db.execute(
         select(EmployeeDeduction).where(
             EmployeeDeduction.id == item_id,
             EmployeeDeduction.company_id == company_id,
@@ -194,20 +194,20 @@ async def delete_employee_deduction(
     )).scalar_one_or_none()
     if not item:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Deduction not found")
-    await db.delete(item)
-    await db.flush()
+    db.delete(item)
+    db.flush()
 
 
 # ── Leave Balances ──────────────────────────────────────────────────────────
 
-async def get_or_init_leave_balances(
-    db: AsyncSession,
+def get_or_init_leave_balances(
+    db: Session,
     company_id: UUID,
     employee_id: UUID,
     year: int,
 ) -> list[EmployeeLeaveBalance]:
     """Return leave balances for the year, initialising from policies if missing."""
-    existing = (await db.execute(
+    existing = (db.execute(
         select(EmployeeLeaveBalance).where(
             EmployeeLeaveBalance.company_id == company_id,
             EmployeeLeaveBalance.employee_id == employee_id,
@@ -219,7 +219,7 @@ async def get_or_init_leave_balances(
         return list(existing)
 
     # Bootstrap from active leave policies
-    policies = (await db.execute(
+    policies = (db.execute(
         select(LeavePolicy).where(
             LeavePolicy.company_id == company_id,
             LeavePolicy.is_active == True,  # noqa: E712
@@ -241,14 +241,14 @@ async def get_or_init_leave_balances(
         db.add(bal)
         balances.append(bal)
 
-    await db.flush()
+    db.flush()
     return balances
 
 
 # ── Leave Requests ──────────────────────────────────────────────────────────
 
-async def list_leave_requests(
-    db: AsyncSession,
+def list_leave_requests(
+    db: Session,
     company_id: UUID,
     employee_id: UUID | None = None,
     status_filter: str | None = None,
@@ -263,11 +263,11 @@ async def list_leave_requests(
         from sqlalchemy import extract
         q = q.where(extract("year", LeaveRequest.start_date) == year)
     q = q.order_by(LeaveRequest.created_at.desc())
-    return list((await db.execute(q)).scalars().all())
+    return list((db.execute(q)).scalars().all())
 
 
-async def create_leave_request(
-    db: AsyncSession,
+def create_leave_request(
+    db: Session,
     company_id: UUID,
     data: dict,
     user_id: UUID | None = None,
@@ -275,14 +275,14 @@ async def create_leave_request(
 ) -> LeaveRequest:
     req = LeaveRequest(id=uuid.uuid4(), company_id=company_id, created_by=user_id, **data)
     db.add(req)
-    await db.flush()
-    await log_action(db, company_id=company_id, table_name="leave_requests",
+    db.flush()
+    log_action(db, company_id=company_id, table_name="leave_requests",
                      record_id=req.id, action="CREATE", user_id=user_id, ip_address=ip_address)
     return req
 
 
-async def update_leave_request_status(
-    db: AsyncSession,
+def update_leave_request_status(
+    db: Session,
     request_id: UUID,
     company_id: UUID,
     new_status: str,
@@ -290,7 +290,7 @@ async def update_leave_request_status(
     rejection_reason: str | None = None,
     ip_address: str | None = None,
 ) -> LeaveRequest:
-    req = (await db.execute(
+    req = (db.execute(
         select(LeaveRequest).where(
             LeaveRequest.id == request_id,
             LeaveRequest.company_id == company_id,
@@ -310,26 +310,26 @@ async def update_leave_request_status(
         req.approved_by = approver_id
         req.approved_at = datetime.now(timezone.utc)
         # Deduct from leave balance
-        await _deduct_leave(db, company_id, req)
+        _deduct_leave(db, company_id, req)
     elif new_status == "REJECTED":
         req.rejection_reason = rejection_reason
 
-    await db.flush()
-    await log_action(db, company_id=company_id, table_name="leave_requests",
+    db.flush()
+    log_action(db, company_id=company_id, table_name="leave_requests",
                      record_id=req.id, action="UPDATE",
                      changed_fields={"status": new_status},
                      user_id=approver_id, ip_address=ip_address)
     return req
 
 
-async def cancel_leave_request(
-    db: AsyncSession,
+def cancel_leave_request(
+    db: Session,
     request_id: UUID,
     company_id: UUID,
     user_id: UUID | None = None,
     ip_address: str | None = None,
 ) -> LeaveRequest:
-    req = (await db.execute(
+    req = (db.execute(
         select(LeaveRequest).where(
             LeaveRequest.id == request_id,
             LeaveRequest.company_id == company_id,
@@ -342,17 +342,17 @@ async def cancel_leave_request(
 
     # If was approved, restore leave balance
     if req.status == "APPROVED":
-        await _restore_leave(db, company_id, req)
+        _restore_leave(db, company_id, req)
 
     req.status = "CANCELLED"
     req.updated_by = user_id
-    await db.flush()
+    db.flush()
     return req
 
 
-async def _deduct_leave(db: AsyncSession, company_id: UUID, req: LeaveRequest) -> None:
+def _deduct_leave(db: Session, company_id: UUID, req: LeaveRequest) -> None:
     year = req.start_date.year
-    bal = (await db.execute(
+    bal = (db.execute(
         select(EmployeeLeaveBalance).where(
             EmployeeLeaveBalance.employee_id == req.employee_id,
             EmployeeLeaveBalance.leave_policy_id == req.leave_policy_id,
@@ -363,9 +363,9 @@ async def _deduct_leave(db: AsyncSession, company_id: UUID, req: LeaveRequest) -
         bal.used_days = bal.used_days + req.days_requested
 
 
-async def _restore_leave(db: AsyncSession, company_id: UUID, req: LeaveRequest) -> None:
+def _restore_leave(db: Session, company_id: UUID, req: LeaveRequest) -> None:
     year = req.start_date.year
-    bal = (await db.execute(
+    bal = (db.execute(
         select(EmployeeLeaveBalance).where(
             EmployeeLeaveBalance.employee_id == req.employee_id,
             EmployeeLeaveBalance.leave_policy_id == req.leave_policy_id,
