@@ -240,6 +240,10 @@ async def check_coa(
     group = await group_service.get_user_group(db, current_user)
     if group is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No company group found")
+    # Validate company belongs to this group
+    members = await group_service.list_group_companies(db, group.id)
+    if not any(m["company_id"] == str(company_id) for m in members):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Company not in your group")
     return await group_service.check_coa_mismatches(db, group.id, company_id)
 
 
@@ -252,6 +256,10 @@ async def fix_coa(
     group = await group_service.get_user_group(db, current_user)
     if group is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No company group found")
+    # Validate company belongs to this group
+    members = await group_service.list_group_companies(db, group.id)
+    if not any(m["company_id"] == str(company_id) for m in members):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Company not in your group")
     count = await group_service.add_missing_accounts(db, group.id, company_id)
     await db.commit()
     return {"accounts_added": count}
