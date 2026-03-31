@@ -26,7 +26,7 @@ export default function Login() {
   const [activeTab, setActiveTab] = useState<"login" | "book">("login");
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { setTokens, setUser } = useAppStore();
+  const { setTokens, setUser, setCompanies, setCompanyGroup } = useAppStore();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,10 +36,40 @@ export default function Login() {
     try {
       const resp = await authApi.login(email, password);
       setTokens(resp.data.access_token, resp.data.refresh_token);
-      const meResp = await authApi.me();
-      setUser(meResp.data);
-      navigate("/dashboard");
-    } catch {
+
+      let meData;
+      try {
+        const meResp = await authApi.me();
+        meData = meResp.data;
+      } catch (meErr) {
+        console.error("Failed to load user profile:", meErr);
+        setError("Login succeeded but failed to load profile. Please try again.");
+        return;
+      }
+
+      setUser(meData);
+
+      // Load group accounting context
+      try {
+        if (meData.companies?.length) {
+          setCompanies(meData.companies);
+        }
+        if (meData.company_group_id) {
+          setCompanyGroup(meData.company_group_id, meData.company_group_name || null);
+        }
+      } catch (groupErr) {
+        console.error("Failed to load group context:", groupErr);
+        // Non-fatal — continue to dashboard
+      }
+
+      // Route based on effective role
+      if (meData.effective_role === "GROUP_ADMIN") {
+        navigate("/group/dashboard");
+      } else {
+        navigate("/dashboard");
+      }
+    } catch (err) {
+      console.error("Login failed:", err);
       setError(t("auth.invalidCredentials"));
     } finally {
       setLoading(false);

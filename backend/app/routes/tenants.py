@@ -133,20 +133,26 @@ async def list_tenants(
     result = await db.execute(q)
     tenants = list(result.scalars().all())
 
+    # Batch lease counts in one query (fixes N+1)
+    tenant_ids = [t.id for t in tenants]
+    lease_counts: dict = {}
+    if tenant_ids:
+        lc_result = await db.execute(
+            select(Lease.tenant_id, func.count(Lease.id))
+            .where(Lease.tenant_id.in_(tenant_ids), Lease.status == "ACTIVE")
+            .group_by(Lease.tenant_id)
+        )
+        lease_counts = dict(lc_result.all())
+
     responses = []
     for t in tenants:
-        lease_count = await db.execute(
-            select(func.count(Lease.id)).where(
-                Lease.tenant_id == t.id, Lease.status == "ACTIVE"
-            )
-        )
         responses.append(TenantResponse(
             id=t.id, company_id=t.company_id, full_name=t.full_name,
             phone=t.phone, email=t.email, id_type=t.id_type, id_number=t.id_number,
             emergency_contact=t.emergency_contact, emergency_phone=t.emergency_phone,
             notes=t.notes, is_active=t.is_active,
             created_at=str(t.created_at),
-            active_lease_count=lease_count.scalar_one(),
+            active_lease_count=lease_counts.get(t.id, 0),
         ))
     return responses
 
@@ -187,8 +193,13 @@ async def update_tenant(
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
 
+    ALLOWED_UPDATE_FIELDS = {
+        "full_name", "phone", "email", "id_type", "id_number",
+        "emergency_contact", "emergency_phone", "notes",
+    }
     for key, value in body.model_dump(exclude_unset=True).items():
-        setattr(tenant, key, value)
+        if key in ALLOWED_UPDATE_FIELDS:
+            setattr(tenant, key, value)
     await db.commit()
     await db.refresh(tenant)
 
@@ -240,11 +251,19 @@ async def list_leases(
     result = await db.execute(q)
     leases = list(result.scalars().all())
 
+    # Batch total paid in one query (fixes N+1)
+    lease_ids = [ls.id for ls in leases]
+    paid_map: dict = {}
+    if lease_ids:
+        paid_result = await db.execute(
+            select(RentPayment.lease_id, func.coalesce(func.sum(RentPayment.amount), 0))
+            .where(RentPayment.lease_id.in_(lease_ids))
+            .group_by(RentPayment.lease_id)
+        )
+        paid_map = dict(paid_result.all())
+
     responses = []
     for ls in leases:
-        paid = await db.execute(
-            select(func.coalesce(func.sum(RentPayment.amount), 0)).where(RentPayment.lease_id == ls.id)
-        )
         responses.append(LeaseResponse(
             id=ls.id, tenant_id=ls.tenant_id, location_id=ls.location_id, unit_id=ls.unit_id,
             start_date=ls.start_date, end_date=ls.end_date,
@@ -253,7 +272,7 @@ async def list_leases(
             tenant_name=ls.tenant.full_name if ls.tenant else None,
             location_name=ls.location.name if ls.location else None,
             unit_name=ls.unit.name if ls.unit else None,
-            total_paid=paid.scalar_one(),
+            total_paid=paid_map.get(ls.id, Decimal(0)),
             created_at=str(ls.created_at),
         ))
     return responses

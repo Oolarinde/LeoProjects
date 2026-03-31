@@ -1,4 +1,6 @@
 """Services for Payroll Sprint 2 — employee profiles, allowances, deductions, leave."""
+from __future__ import annotations
+
 
 import uuid
 from datetime import datetime, timezone
@@ -34,6 +36,16 @@ async def list_profiles(db: AsyncSession, company_id: UUID) -> list[EmployeePayr
     result = await db.execute(
         select(EmployeePayrollProfile)
         .where(EmployeePayrollProfile.company_id == company_id)
+        .order_by(EmployeePayrollProfile.created_at)
+    )
+    return list(result.scalars().all())
+
+
+async def list_profiles_multi(db: AsyncSession, company_ids: list[UUID]) -> list[EmployeePayrollProfile]:
+    """List payroll profiles across multiple companies (group payroll)."""
+    result = await db.execute(
+        select(EmployeePayrollProfile)
+        .where(EmployeePayrollProfile.company_id.in_(company_ids))
         .order_by(EmployeePayrollProfile.created_at)
     )
     return list(result.scalars().all())

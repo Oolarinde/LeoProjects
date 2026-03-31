@@ -41,10 +41,13 @@ import {
   Logout,
   ChevronLeft,
   GroupWork,
+  CorporateFare,
+  SwapHoriz,
 } from "@mui/icons-material";
 import { tokens } from "../theme/theme";
-import { useAppStore, hasAccess, isAdmin } from "../utils/store";
+import { useAppStore, hasAccess, isAdmin, isGroupAdmin as isGroupAdminFn } from "../utils/store";
 import { languageApi, configApi, referenceApi } from "../services/api";
+import CompanySwitcher from "./CompanySwitcher";
 
 const SIDEBAR_FULL = 166;
 const SIDEBAR_MINI = 40;
@@ -69,7 +72,13 @@ function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle:
   const user = useAppStore((s) => s.user);
   const [openBookkeeping, setOpenBookkeeping] = useState(true);
   const [openReports, setOpenReports] = useState(false);
+  const [openGroup, setOpenGroup] = useState(false);
+  const [openStaff, setOpenStaff] = useState(false);
   const [openSettings, setOpenSettings] = useState(false);
+
+  const effectiveRole = user?.effective_role || user?.role || "";
+  const isGroupAdminRole = effectiveRole === "GROUP_ADMIN";
+  const isViewerRole = effectiveRole === "VIEWER" || effectiveRole === "STAFF";
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -214,10 +223,6 @@ function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle:
   const bookkeepingItems: NavItem[] = [
     { label: t("nav.revenue"), path: "/revenue", icon: <AttachMoney sx={{ fontSize: 15 }} />, module: "revenue" },
     { label: t("nav.expenses"), path: "/expenses", icon: <CreditCard sx={{ fontSize: 15 }} />, module: "expenses" },
-    { label: t("nav.payroll"), path: "/payroll", icon: <People sx={{ fontSize: 15 }} />, module: "payroll" },
-    { label: t("nav.payrollSetup"), path: "/payroll/setup", icon: <Settings sx={{ fontSize: 15 }} />, module: "payroll" },
-    { label: t("nav.payrollEmployees"), path: "/payroll/employees", icon: <People sx={{ fontSize: 15 }} />, module: "payroll" },
-    { label: t("nav.leaveRequests"), path: "/payroll/leave", icon: <People sx={{ fontSize: 15 }} />, module: "payroll" },
     { label: t("nav.budget"), path: "/budget", icon: <AccountBalance sx={{ fontSize: 15 }} />, module: "budget" },
     { label: t("nav.generalLedger"), path: "/ledger", icon: <LibraryBooks sx={{ fontSize: 15 }} />, module: "ledger" },
     { label: t("nav.tenants"), path: "/tenants", icon: <People sx={{ fontSize: 15 }} />, module: "revenue" },
@@ -231,9 +236,25 @@ function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle:
     { label: t("nav.analysis"), path: "/analysis", icon: <BarChart sx={{ fontSize: 15 }} />, module: "analysis" },
   ];
 
+  const groupItems: NavItem[] = [
+    { label: "Group Dashboard", path: "/group/dashboard", icon: <DashboardIcon sx={{ fontSize: 15 }} /> },
+    { label: "Consolidated P&L", path: "/group/reports/pnl", icon: <Description sx={{ fontSize: 15 }} /> },
+    { label: "Consolidated BS", path: "/group/reports/balance-sheet", icon: <TableChart sx={{ fontSize: 15 }} /> },
+    { label: "Consolidated TB", path: "/group/reports/trial-balance", icon: <Description sx={{ fontSize: 15 }} /> },
+    { label: "Inter-Company", path: "/group/intercompany", icon: <SwapHoriz sx={{ fontSize: 15 }} /> },
+    { label: "Group Settings", path: "/group/settings", icon: <Settings sx={{ fontSize: 15 }} /> },
+  ];
+
+  const staffItems: NavItem[] = [
+    { label: "Staff Directory", path: "/payroll/employees", icon: <People sx={{ fontSize: 15 }} /> },
+    { label: "Payroll Run", path: "/payroll", icon: <People sx={{ fontSize: 15 }} /> },
+    { label: "Payroll Setup", path: "/payroll/setup", icon: <Settings sx={{ fontSize: 15 }} /> },
+    { label: "Leave Requests", path: "/payroll/leave", icon: <People sx={{ fontSize: 15 }} /> },
+  ];
+
   const settingsItems: NavItem[] = [
     { label: t("nav.chartOfAccounts"), path: "/settings/accounts", icon: <AccountTree sx={{ fontSize: 15 }} />, module: "accounts" },
-    { label: t("nav.employees"), path: "/settings/employees", icon: <People sx={{ fontSize: 15 }} />, module: "employees" },
+    ...(!isGroupAdminRole ? [{ label: t("nav.employees"), path: "/settings/employees", icon: <People sx={{ fontSize: 15 }} />, module: "employees" }] : []),
     { label: t("nav.locationsUnits"), path: "/settings/locations", icon: <LocationOn sx={{ fontSize: 15 }} />, module: "locations" },
     { label: t("nav.referenceData"), path: "/settings/reference", icon: <Settings sx={{ fontSize: 15 }} />, module: "reference" },
     ...(isAdmin(user) ? [
@@ -278,9 +299,11 @@ function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle:
 
           {!collapsed && <Divider sx={{ borderColor: tokens.border, mx: 1.75, my: 0.5 }} />}
 
-          {section(t("nav.bookkeeping"), <ReceiptLong sx={{ fontSize: 15 }} />, bookkeepingItems, openBookkeeping, () => setOpenBookkeeping(!openBookkeeping))}
+          {!isViewerRole && section(t("nav.bookkeeping"), <ReceiptLong sx={{ fontSize: 15 }} />, bookkeepingItems, openBookkeeping, () => setOpenBookkeeping(!openBookkeeping))}
           {section(t("nav.reports"), <Description sx={{ fontSize: 15 }} />, reportItems, openReports, () => setOpenReports(!openReports))}
-          {section(t("nav.settings"), <Settings sx={{ fontSize: 15 }} />, settingsItems, openSettings, () => setOpenSettings(!openSettings))}
+          {isGroupAdminRole && section("Group", <CorporateFare sx={{ fontSize: 15 }} />, groupItems, openGroup, () => setOpenGroup(!openGroup))}
+          {isGroupAdminRole && section("Staff", <People sx={{ fontSize: 15 }} />, staffItems, openStaff, () => setOpenStaff(!openStaff))}
+          {!isViewerRole && section(t("nav.settings"), <Settings sx={{ fontSize: 15 }} />, settingsItems, openSettings, () => setOpenSettings(!openSettings))}
         </List>
       </Box>
 
@@ -329,7 +352,7 @@ function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle:
               {user?.full_name ?? "User"}
             </Typography>
             <Typography sx={{ fontSize: 11, color: tokens.muted }}>
-              {user?.role?.replace(/_/g, " ") ?? "—"}
+              {(user?.effective_role || user?.role)?.replace(/_/g, " ") ?? "—"}
             </Typography>
           </Box>
         )}
@@ -344,18 +367,28 @@ export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [langAnchor, setLangAnchor] = useState<null | HTMLElement>(null);
-  const { year, setYear, location, setLocation, user, logout, setUser, appVersion, companyName, setAppConfig } = useAppStore();
+  const { year, setYear, location, setLocation, user, logout, setUser, appVersion, companyName, setAppConfig, companies } = useAppStore();
   const navigate = useNavigate();
   const [locationOptions, setLocationOptions] = useState<{ id: string; name: string }[]>([]);
 
+  // Load config once
   useEffect(() => {
     configApi.get().then((resp) => {
       setAppConfig(resp.data.version, resp.data.app_name);
     }).catch(() => {});
-    referenceApi.getLocations().then((resp) => {
-      setLocationOptions(resp.data);
-    }).catch(() => {});
   }, []);
+
+  // Reload locations when company changes (company switch resets company_id)
+  const activeCompanyId = user?.company_id;
+  useEffect(() => {
+    setLocationOptions([]);
+    setLocation(null);
+    if (activeCompanyId) {
+      referenceApi.getLocations().then((resp) => {
+        setLocationOptions(resp.data ?? []);
+      }).catch(() => setLocationOptions([]));
+    }
+  }, [activeCompanyId]);
 
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
@@ -444,6 +477,7 @@ export default function Layout() {
           </Box>
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+            <CompanySwitcher />
             <Typography sx={{ fontSize: 11, color: tokens.muted, display: { xs: "none", md: "block" } }}>{t("dashboard.viewing")}</Typography>
             <Select
               size="small"
@@ -583,6 +617,25 @@ export default function Layout() {
             </Avatar>
           </Box>
         </Box>
+
+        {/* Company color bar — only for GROUP_ADMIN */}
+        {isGroupAdminFn(user) && companies.length > 1 && (
+          <Box
+            sx={{
+              height: 3,
+              background: (() => {
+                const current = companies.find((c) => c.is_default);
+                const prefix = current?.entity_prefix || current?.name || "";
+                let hash = 0;
+                for (let i = 0; i < prefix.length; i++) {
+                  hash = prefix.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                const hue = Math.abs(hash) % 360;
+                return `linear-gradient(90deg, hsl(${hue}, 70%, 55%), hsl(${(hue + 40) % 360}, 70%, 55%))`;
+              })(),
+            }}
+          />
+        )}
 
         {/* Page content */}
         <Box component="main" sx={{ p: 3, flex: 1 }}>

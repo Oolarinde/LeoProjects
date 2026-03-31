@@ -32,3 +32,4 @@ class User(Base):
 
     company = relationship("Company", back_populates="users", foreign_keys=[company_id])
     group = relationship("Group", back_populates="members", foreign_keys=[group_id])
+    company_memberships = relationship("UserCompanyMembership", back_populates="user", cascade="all, delete-orphan")

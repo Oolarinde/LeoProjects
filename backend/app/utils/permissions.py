@@ -20,6 +20,7 @@ class Module(str, Enum):
     EMPLOYEES = "employees"
     LOCATIONS = "locations"
     REFERENCE = "reference"
+    GROUP = "group"
 
 
 class AccessLevel(str, Enum):
@@ -28,10 +29,15 @@ class AccessLevel(str, Enum):
     WRITE = "write"
 
 
-# Role constants
+# Role constants — legacy (kept for backward compatibility)
 SUPER_ADMIN = "SUPER_ADMIN"
 ADMIN = "ADMIN"
 STAFF = "STAFF"
+
+# New group-aware roles
+GROUP_ADMIN = "GROUP_ADMIN"
+COMPANY_ADMIN = "COMPANY_ADMIN"
+VIEWER = "VIEWER"
 
 ALL_WRITE = {m.value: AccessLevel.WRITE.value for m in Module}
 ALL_READ = {m.value: AccessLevel.READ.value for m in Module}
@@ -42,15 +48,24 @@ VALID_ACCESS_LEVELS = {a.value for a in AccessLevel}
 
 def get_default_permissions(role: str) -> dict[str, str]:
     """Return default permissions dict for a given role."""
-    if role in (SUPER_ADMIN, ADMIN):
+    if role in (SUPER_ADMIN, ADMIN, GROUP_ADMIN, COMPANY_ADMIN):
         return dict(ALL_WRITE)
+    if role == VIEWER:
+        return dict(ALL_READ)
     return {}  # STAFF gets nothing by default
 
 
 def has_access(user, module: Module, required: AccessLevel) -> bool:
     """Check if user has at least the required access level for a module."""
-    if user.role == SUPER_ADMIN:
+    # Full-access roles
+    if user.role in (SUPER_ADMIN, GROUP_ADMIN, COMPANY_ADMIN, ADMIN):
         return True
+    # VIEWER / STAFF get read-only access
+    if user.role in (VIEWER, STAFF):
+        if required == AccessLevel.READ:
+            return True
+        return False
+    # Fallback: check explicit permissions
     perm = (user.permissions or {}).get(module.value, "none")
     if required == AccessLevel.READ:
         return perm in ("read", "write")

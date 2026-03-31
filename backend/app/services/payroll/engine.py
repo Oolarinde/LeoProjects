@@ -1,3 +1,4 @@
+from __future__ import annotations
 """Nigerian PAYE payroll calculation engine.
 
 Implements:
@@ -46,6 +47,9 @@ from app.models.payroll.payroll_item_line import PayrollItemLine
 ZERO = Decimal(0)
 TWO = Decimal("0.01")
 CRA_MINIMUM = Decimal("200000")  # ₦200,000 annual
+MINIMUM_WAGE_ANNUAL = Decimal("360000")  # ₦30,000/month × 12
+# Allowance codes that form part of the pension base per Pension Reform Act 2014
+PENSION_BASE_CODES = {"HSG", "TRN"}  # Housing, Transport
 
 
 def _round(v: Decimal) -> Decimal:
@@ -86,12 +90,19 @@ async def calculate_payroll(
     db: AsyncSession,
     company_id: UUID,
     run: PayrollRun,
+    employee_company_ids: list[UUID] | None = None,
 ) -> PayrollRun:
     """
     Calculate payroll for all active employees with payroll profiles.
     Populates payroll_items and payroll_item_lines on the run.
+
+    Args:
+        company_id: The parent company ID (used for settings and tax brackets).
+        run: The PayrollRun to populate.
+        employee_company_ids: If provided, load employees from these companies
+            instead of just company_id. Used for group payroll.
     """
-    # Load settings
+    # Load settings from the parent company
     settings_result = await db.execute(
         select(PayrollSettings).where(PayrollSettings.company_id == company_id)
     )
@@ -104,7 +115,7 @@ async def calculate_payroll(
     nhf_pct = Decimal(str(settings.nhf_pct))
     nsitf_pct = Decimal(str(settings.nsitf_employee_pct))
 
-    # Load tax brackets
+    # Load tax brackets from the parent company
     brackets_result = await db.execute(
         select(TaxBracket)
         .where(TaxBracket.company_id == company_id)
@@ -114,11 +125,12 @@ async def calculate_payroll(
     if not brackets:
         raise ValueError("No tax brackets configured — set up PAYE brackets in Payroll Setup")
 
-    # Load active employee profiles with their allowances and deductions
+    # Load active employee profiles — across group companies if provided
+    profile_cids = employee_company_ids if employee_company_ids else [company_id]
     profiles_result = await db.execute(
         select(EmployeePayrollProfile)
         .where(
-            EmployeePayrollProfile.company_id == company_id,
+            EmployeePayrollProfile.company_id.in_(profile_cids),
             EmployeePayrollProfile.is_active == True,
         )
         .options(
@@ -151,15 +163,20 @@ async def calculate_payroll(
         # ── Allowances ──────────────────────────────────────────────────
         allowance_lines: list[PayrollItemLine] = []
         total_allowances = ZERO
+        pension_base_allowances = ZERO  # Housing + Transport for pension base
         for ea in (profile.allowances or []):
             if not ea.is_active:
                 continue
             amt = Decimal(str(ea.amount))
             total_allowances += amt
             atype = ea.allowance_type
+            code = atype.code if atype else "UNK"
+            # Track allowances that form part of the pension base
+            if code in PENSION_BASE_CODES:
+                pension_base_allowances += amt
             allowance_lines.append(PayrollItemLine(
                 line_type="ALLOWANCE",
-                type_code=atype.code if atype else "UNK",
+                type_code=code,
                 name=atype.name if atype else "Unknown",
                 amount=amt,
             ))
@@ -172,11 +189,12 @@ async def calculate_payroll(
         cra_fixed = max(CRA_MINIMUM, _pct(gross_annual, Decimal(1)))
         cra = _round(cra_fixed + _pct(gross_annual, Decimal(20)))
 
-        # ── Pension Employee (annual, tax-exempt) ────────────────────────
-        pension_ee_annual = _pct(basic * 12, pension_ee_pct)
+        # ── Pension base = Basic + Housing + Transport (Pension Reform Act 2014)
+        pension_base_monthly = basic + pension_base_allowances
+        pension_ee_annual = _pct(pension_base_monthly * 12, pension_ee_pct)
         pension_ee_monthly = _round(pension_ee_annual / 12)
 
-        # ── NHF (annual, tax-exempt) ─────────────────────────────────────
+        # ── NHF (annual, based on basic salary only) ─────────────────────
         nhf_annual = _pct(basic * 12, nhf_pct)
         nhf_monthly = _round(nhf_annual / 12)
 
@@ -185,10 +203,17 @@ async def calculate_payroll(
 
         # ── PAYE Tax ─────────────────────────────────────────────────────
         paye_annual = _calc_paye_annual(taxable_annual, brackets)
+
+        # Minimum tax check: 1% of gross income if PAYE < minimum tax
+        # Exception: does not apply if gross income ≤ national minimum wage
+        if gross_annual > MINIMUM_WAGE_ANNUAL:
+            minimum_tax = _pct(gross_annual, Decimal(1))
+            paye_annual = max(paye_annual, minimum_tax)
+
         paye_monthly = _round(paye_annual / 12)
 
-        # ── Pension Employer (monthly) ───────────────────────────────────
-        pension_er_monthly = _pct(basic, pension_er_pct)
+        # ── Pension Employer (monthly, same base as employee) ────────────
+        pension_er_monthly = _pct(pension_base_monthly, pension_er_pct)
 
         # ── NSITF (monthly) ──────────────────────────────────────────────
         nsitf_monthly = _pct(basic, nsitf_pct)
@@ -238,7 +263,7 @@ async def calculate_payroll(
         item = PayrollItem(
             payroll_run_id=run.id,
             employee_id=profile.employee_id,
-            company_id=company_id,
+            company_id=profile.company_id,  # employee's own company (group-aware)
             basic_salary=basic,
             total_allowances=total_allowances,
             gross_pay=gross_monthly,

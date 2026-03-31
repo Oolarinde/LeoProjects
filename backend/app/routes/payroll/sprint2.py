@@ -16,6 +16,7 @@ from app.schemas.payroll.sprint2 import (
     LeaveRequestCreate, LeaveRequestUpdate, LeaveRequestResponse,
 )
 from app.services.payroll import sprint2 as svc
+from app.services.company_groups import get_group_company_ids_for_user
 from app.utils.dependencies import require_permission
 from app.utils.permissions import Module, AccessLevel
 from app.utils.request_context import get_client_ip
@@ -33,6 +34,10 @@ async def list_profiles(
     current_user: User = Depends(_read),
     db: AsyncSession = Depends(get_db),
 ):
+    # Group payroll: GROUP_ADMIN sees all group employees
+    if current_user.role in ("SUPER_ADMIN", "GROUP_ADMIN"):
+        company_ids = await get_group_company_ids_for_user(db, current_user)
+        return await svc.list_profiles_multi(db, company_ids)
     return await svc.list_profiles(db, current_user.company_id)
 
 

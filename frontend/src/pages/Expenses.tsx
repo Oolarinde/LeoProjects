@@ -231,7 +231,7 @@ export default function Expenses() {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      await expensesApi.delete(deleteTarget.id);
+      await expensesApi.void(deleteTarget.id, "Voided by user");
       setDeleteTarget(null);
       fetchData();
     } catch (err) {

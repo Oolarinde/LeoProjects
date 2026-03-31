@@ -60,12 +60,12 @@ async def get_balance_sheet(
     # Cash & Bank: all-time revenue minus all-time expenses (Option A)
     all_rev = await scalar(
         f"SELECT COALESCE(SUM(r.amount), 0) FROM revenue_transactions r "
-        f"WHERE r.company_id = :cid{lf_rev}",
+        f"WHERE r.company_id = :cid AND r.is_voided = false{lf_rev}",
         loc_params,
     )
     all_exp = await scalar(
         f"SELECT COALESCE(SUM(e.amount), 0) FROM expense_transactions e "
-        f"WHERE e.company_id = :cid{lf_exp}",
+        f"WHERE e.company_id = :cid AND e.is_voided = false{lf_exp}",
         loc_params,
     )
     cash_and_bank = all_rev - all_exp
@@ -76,7 +76,7 @@ async def get_balance_sheet(
         f"SELECT COALESCE(SUM(r.amount), 0) "
         f"FROM revenue_transactions r "
         f"JOIN accounts a ON r.account_id = a.id "
-        f"WHERE r.company_id = :cid AND a.code = '4030'{lf_rev}",
+        f"WHERE r.company_id = :cid AND r.is_voided = false AND a.code = '4030'{lf_rev}",
         loc_params,
     )
 
@@ -92,7 +92,7 @@ async def get_balance_sheet(
         f"SELECT COALESCE(SUM(r.amount), 0) "
         f"FROM revenue_transactions r "
         f"JOIN accounts a ON r.account_id = a.id "
-        f"WHERE r.company_id = :cid AND r.fiscal_year < :year AND a.code = '4030'{lf_rev}",
+        f"WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year < :year AND a.code = '4030'{lf_rev}",
         {**loc_params, "year": year},
     )
 
@@ -101,19 +101,19 @@ async def get_balance_sheet(
         f"SELECT COALESCE(SUM(r.amount), 0) "
         f"FROM revenue_transactions r "
         f"JOIN accounts a ON r.account_id = a.id "
-        f"WHERE r.company_id = :cid AND r.fiscal_year = :year AND a.code = '4030'{lf_rev}",
+        f"WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year = :year AND a.code = '4030'{lf_rev}",
         {**loc_params, "year": year},
     )
 
     # Retained earnings: net operating profit for all years BEFORE selected year
     prior_rev = await scalar(
         f"SELECT COALESCE(SUM(r.amount), 0) FROM revenue_transactions r "
-        f"WHERE r.company_id = :cid AND r.fiscal_year < :year{lf_rev}",
+        f"WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year < :year{lf_rev}",
         {**loc_params, "year": year},
     )
     prior_exp = await scalar(
         f"SELECT COALESCE(SUM(e.amount), 0) FROM expense_transactions e "
-        f"WHERE e.company_id = :cid AND e.fiscal_year < :year{lf_exp}",
+        f"WHERE e.company_id = :cid AND e.is_voided = false AND e.fiscal_year < :year{lf_exp}",
         {**loc_params, "year": year},
     )
     retained_earnings_prior = prior_rev - prior_caution - prior_exp
@@ -121,12 +121,12 @@ async def get_balance_sheet(
     # Current year net operating profit (excluding caution deposits)
     cur_rev = await scalar(
         f"SELECT COALESCE(SUM(r.amount), 0) FROM revenue_transactions r "
-        f"WHERE r.company_id = :cid AND r.fiscal_year = :year{lf_rev}",
+        f"WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year = :year{lf_rev}",
         {**loc_params, "year": year},
     )
     cur_exp = await scalar(
         f"SELECT COALESCE(SUM(e.amount), 0) FROM expense_transactions e "
-        f"WHERE e.company_id = :cid AND e.fiscal_year = :year{lf_exp}",
+        f"WHERE e.company_id = :cid AND e.is_voided = false AND e.fiscal_year = :year{lf_exp}",
         {**loc_params, "year": year},
     )
     current_year_profit = cur_rev - cur_caution - cur_exp

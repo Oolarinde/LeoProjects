@@ -13,6 +13,7 @@ from app.schemas.settings.employees import (
     EmployeeResponse,
 )
 from app.services.settings import employees as employees_service
+from app.services.company_groups import get_group_company_ids_for_user
 from app.utils.dependencies import require_permission
 from app.utils.permissions import Module, AccessLevel
 
@@ -27,6 +28,10 @@ async def list_employees(
     current_user: User = Depends(_read),
     db: AsyncSession = Depends(get_db),
 ):
+    # Group payroll: GROUP_ADMIN sees all group employees
+    if current_user.role in ("SUPER_ADMIN", "GROUP_ADMIN"):
+        company_ids = await get_group_company_ids_for_user(db, current_user)
+        return await employees_service.list_employees_multi(db, company_ids)
     return await employees_service.list_employees(db, current_user.company_id)
 
 

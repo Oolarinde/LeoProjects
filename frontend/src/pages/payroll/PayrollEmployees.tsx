@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   Alert,
@@ -36,12 +37,14 @@ import {
   ExpandMore,
   Person as PersonIcon,
 } from "@mui/icons-material";
-import { payrollApi, settingsApi, getErrorMessage } from "../../services/api";
+import { payrollApi, settingsApi, groupApi, getErrorMessage } from "../../services/api";
+import { useAppStore } from "../../utils/store";
 import { formatNairaDecimal } from "../../utils/format";
 import { tokens } from "../../theme/theme";
 
 interface Employee {
   id: string;
+  company_id: string;
   employee_ref: string;
   name: string;
   designation: string | null;
@@ -89,6 +92,21 @@ interface EmployeeDeduction {
   is_active: boolean;
 }
 
+interface CostAllocationItem {
+  id?: string;
+  company_id: string;
+  company_name: string;
+  entity_prefix: string | null;
+  percentage: number;
+}
+
+interface CompanyInfo {
+  id: string;
+  name: string;
+  entity_prefix?: string;
+  is_default?: boolean;
+}
+
 const emptyProfile = {
   basic_salary: "",
   pay_grade: "",
@@ -103,6 +121,7 @@ const emptyProfile = {
 
 export default function PayrollEmployees() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [profiles, setProfiles] = useState<Record<string, PayrollProfile>>({});
   const [allowanceTypes, setAllowanceTypes] = useState<AllowanceType[]>([]);
@@ -124,6 +143,20 @@ export default function PayrollEmployees() {
   const [profileError, setProfileError] = useState("");
 
   // Allowance dialog
+  // Cost allocation state
+  const [costAllocations, setCostAllocations] = useState<Record<string, CostAllocationItem[]>>({});
+  const [allocDialogOpen, setAllocDialogOpen] = useState(false);
+  const [allocEmployee, setAllocEmployee] = useState<Employee | null>(null);
+  const [allocForm, setAllocForm] = useState<{ company_id: string; percentage: string }[]>([]);
+  const [allocSaving, setAllocSaving] = useState(false);
+  const [allocError, setAllocError] = useState("");
+  const companies = useAppStore((s) => s.companies) as CompanyInfo[];
+  const user = useAppStore((s) => s.user);
+  const isGroupAdmin = user?.effective_role === "GROUP_ADMIN";
+
+  // Subsidiary filter (client-side, only shown for GROUP_ADMIN)
+  const [filterCompanyId, setFilterCompanyId] = useState<string>("ALL");
+
   const [allowanceDialogOpen, setAllowanceDialogOpen] = useState(false);
   const [allowanceEmployeeId, setAllowanceEmployeeId] = useState("");
   const [allowanceForm, setAllowanceForm] = useState({ allowance_type_id: "", amount: "" });
@@ -144,6 +177,20 @@ export default function PayrollEmployees() {
       setProfiles(profMap);
       setAllowanceTypes(atResp.data);
       setDeductionTypes(dtResp.data);
+
+      // Fetch cost allocations for all employees
+      const allocMap: Record<string, CostAllocationItem[]> = {};
+      await Promise.all(
+        (empResp.data as Employee[]).map(async (emp) => {
+          try {
+            const resp = await groupApi.getEmployeeAllocations(emp.id);
+            allocMap[emp.id] = resp.data.allocations ?? [];
+          } catch {
+            allocMap[emp.id] = [];
+          }
+        }),
+      );
+      setCostAllocations(allocMap);
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -260,15 +307,90 @@ export default function PayrollEmployees() {
     } catch { /* non-critical */ }
   };
 
+  // Cost allocation helpers
+  const formatAllocLabel = (allocs: CostAllocationItem[]) => {
+    if (!allocs || allocs.length === 0) return "—";
+    if (allocs.length === 1 && Number(allocs[0].percentage) === 100) {
+      return allocs[0].entity_prefix || allocs[0].company_name;
+    }
+    return allocs.map((a) => `${a.entity_prefix || a.company_name} ${Number(a.percentage)}%`).join(" / ");
+  };
+
+  const openAllocDialog = (emp: Employee) => {
+    setAllocEmployee(emp);
+    setAllocError("");
+    const existing = costAllocations[emp.id] ?? [];
+    if (existing.length > 0) {
+      setAllocForm(existing.map((a) => ({ company_id: a.company_id, percentage: String(Number(a.percentage)) })));
+    } else if (companies.length > 0) {
+      // Default: first company at 100%
+      setAllocForm(companies.map((c, idx) => ({ company_id: c.id, percentage: idx === 0 ? "100" : "0" })));
+    } else {
+      setAllocForm([]);
+    }
+    setAllocDialogOpen(true);
+  };
+
+  const saveAllocations = async () => {
+    if (!allocEmployee) return;
+    const lines = allocForm
+      .filter((f) => Number(f.percentage) > 0)
+      .map((f) => ({ company_id: f.company_id, percentage: Number(f.percentage) }));
+    const total = lines.reduce((s, l) => s + l.percentage, 0);
+    if (Math.abs(total - 100) > 0.01) {
+      setAllocError(`Allocations must sum to 100%. Current sum: ${total}%`);
+      return;
+    }
+    setAllocSaving(true);
+    setAllocError("");
+    try {
+      const resp = await groupApi.setEmployeeAllocations(allocEmployee.id, lines);
+      setCostAllocations((prev) => ({ ...prev, [allocEmployee.id]: resp.data.allocations ?? [] }));
+      setAllocDialogOpen(false);
+    } catch (err) {
+      setAllocError(getErrorMessage(err));
+    } finally {
+      setAllocSaving(false);
+    }
+  };
+
+  const allocTotal = allocForm.reduce((s, f) => s + (Number(f.percentage) || 0), 0);
+
   const allowanceName = (typeId: string) =>
     allowanceTypes.find((a) => a.id === typeId)?.name ?? typeId;
   const deductionName = (typeId: string) =>
     deductionTypes.find((d) => d.id === typeId)?.name ?? typeId;
 
+  const companyName = (companyId: string) =>
+    companies.find((c) => c.id === companyId)?.name ?? "—";
+
+  // Filter employees by selected subsidiary (client-side)
+  const filteredEmployees = filterCompanyId === "ALL"
+    ? employees
+    : employees.filter((e) => e.company_id === filterCompanyId);
+
   return (
     <Box>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
         <Typography variant="h1">{t("payroll.employees.title")}</Typography>
+        {isGroupAdmin && companies.length > 1 && (
+          <FormControl size="small" sx={{ minWidth: 180 }}>
+            <InputLabel>Subsidiary</InputLabel>
+            <Select
+              value={filterCompanyId}
+              label="Subsidiary"
+              onChange={(e) => setFilterCompanyId(e.target.value)}
+              sx={{ fontSize: 12 }}
+            >
+              <MenuItem value="ALL" sx={{ fontSize: 12 }}>All Subsidiaries</MenuItem>
+              {companies.map((c) => (
+                <MenuItem key={c.id} value={c.id} sx={{ fontSize: 12 }}>
+                  {c.entity_prefix ? `${c.entity_prefix} — ` : ""}{c.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )}
       </Box>
 
       {error && <Alert severity="error" onClose={() => setError("")} sx={{ mb: 2 }}>{error}</Alert>}
@@ -283,15 +405,17 @@ export default function PayrollEmployees() {
                 <TableCell sx={{ fontWeight: 600, width: 40 }} />
                 <TableCell sx={{ fontWeight: 600 }}>{t("settings.employeeRef")}</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>{t("settings.employeeName")}</TableCell>
+                {isGroupAdmin && <TableCell sx={{ fontWeight: 600 }}>Company</TableCell>}
                 <TableCell sx={{ fontWeight: 600 }}>{t("settings.designation")}</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>{t("settings.status")}</TableCell>
                 <TableCell sx={{ fontWeight: 600 }} align="right">{t("payroll.employees.basicSalary")}</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>{t("payroll.employees.payGrade")}</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Cost Allocation</TableCell>
                 <TableCell sx={{ fontWeight: 600 }} align="right">{t("common.actions")}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {employees.map((emp) => {
+              {filteredEmployees.map((emp) => {
                 const profile = profiles[emp.id];
                 const isExpanded = expandedId === emp.id;
                 return (
@@ -303,7 +427,25 @@ export default function PayrollEmployees() {
                         </IconButton>
                       </TableCell>
                       <TableCell sx={{ fontWeight: 600, color: tokens.navy }}>{emp.employee_ref}</TableCell>
-                      <TableCell>{emp.name}</TableCell>
+                      <TableCell>
+                        <Typography
+                          component="span"
+                          onClick={() => navigate(`/payroll/employees/${emp.id}`)}
+                          sx={{ fontSize: 12, color: tokens.primary, cursor: "pointer", fontWeight: 600, "&:hover": { textDecoration: "underline" } }}
+                        >
+                          {emp.name}
+                        </Typography>
+                      </TableCell>
+                      {isGroupAdmin && (
+                        <TableCell>
+                          <Chip
+                            label={companies.find((c) => c.id === emp.company_id)?.entity_prefix || companyName(emp.company_id)}
+                            size="small"
+                            variant="outlined"
+                            sx={{ fontSize: 11 }}
+                          />
+                        </TableCell>
+                      )}
                       <TableCell sx={{ color: tokens.muted }}>{emp.designation ?? "—"}</TableCell>
                       <TableCell>
                         <Chip
@@ -317,6 +459,18 @@ export default function PayrollEmployees() {
                         {profile ? formatNairaDecimal(profile.basic_salary) : <span style={{ color: tokens.muted }}>—</span>}
                       </TableCell>
                       <TableCell sx={{ color: tokens.muted }}>{profile?.pay_grade ?? "—"}</TableCell>
+                      <TableCell>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                          <Typography variant="body2" sx={{ fontSize: 12 }}>
+                            {formatAllocLabel(costAllocations[emp.id] ?? [])}
+                          </Typography>
+                          <Tooltip title="Edit cost allocation">
+                            <IconButton size="small" onClick={() => openAllocDialog(emp)}>
+                              <EditIcon sx={{ fontSize: 14 }} />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </TableCell>
                       <TableCell align="right">
                         <Tooltip title={profile ? t("payroll.employees.editProfile") : t("payroll.employees.addProfile")}>
                           <IconButton size="small" onClick={() => openProfileDialog(emp)}>
@@ -329,7 +483,7 @@ export default function PayrollEmployees() {
                     {/* Expanded row — allowances & deductions */}
                     {isExpanded && (
                       <TableRow key={`${emp.id}-detail`}>
-                        <TableCell colSpan={8} sx={{ bgcolor: "#f8fafc", py: 0 }}>
+                        <TableCell colSpan={isGroupAdmin ? 10 : 9} sx={{ bgcolor: "#f8fafc", py: 0 }}>
                           <Box sx={{ px: 4, py: 2 }}>
                             {detailLoading && !empAllowances[emp.id] ? (
                               <CircularProgress size={20} />
@@ -417,9 +571,9 @@ export default function PayrollEmployees() {
                   </>
                 );
               })}
-              {employees.length === 0 && (
+              {filteredEmployees.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 4, color: tokens.muted }}>
+                  <TableCell colSpan={isGroupAdmin ? 10 : 9} align="center" sx={{ py: 4, color: tokens.muted }}>
                     {t("settings.noData")}
                   </TableCell>
                 </TableRow>
@@ -508,6 +662,69 @@ export default function PayrollEmployees() {
           <Button onClick={() => setProfileDialogOpen(false)} color="inherit">{t("common.cancel")}</Button>
           <Button variant="contained" onClick={saveProfile} disabled={profileSaving}>
             {profileSaving ? t("common.saving") : t("common.save")}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Cost Allocation Dialog */}
+      <Dialog open={allocDialogOpen} onClose={() => setAllocDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Cost Allocation — {allocEmployee?.name}</DialogTitle>
+        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: "16px !important" }}>
+          {allocError && <Alert severity="error">{allocError}</Alert>}
+          <Typography variant="body2" sx={{ color: tokens.muted }}>
+            Assign what percentage of this employee's salary cost is borne by each subsidiary. Must total 100%.
+          </Typography>
+          {companies.length === 0 ? (
+            <Alert severity="info">No group companies found. Set up your group first.</Alert>
+          ) : (
+            allocForm.map((line, idx) => {
+              const comp = companies.find((c) => c.id === line.company_id);
+              return (
+                <Box key={line.company_id} sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Typography variant="body2" sx={{ minWidth: 180, fontWeight: 600 }}>
+                    {comp?.entity_prefix ? `${comp.entity_prefix} — ` : ""}{comp?.name ?? line.company_id}
+                  </Typography>
+                  <TextField
+                    type="number"
+                    size="small"
+                    value={line.percentage}
+                    onChange={(e) => {
+                      setAllocForm((prev) => {
+                        const next = [...prev];
+                        next[idx] = { ...next[idx], percentage: e.target.value };
+                        return next;
+                      });
+                    }}
+                    inputProps={{ min: 0, max: 100, step: "0.01" }}
+                    sx={{ width: 120 }}
+                    InputProps={{ endAdornment: <Typography variant="body2" sx={{ ml: 0.5 }}>%</Typography> }}
+                  />
+                </Box>
+              );
+            })
+          )}
+          <Divider />
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Typography variant="body2" sx={{ fontWeight: 700 }}>Total</Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                fontWeight: 700,
+                color: Math.abs(allocTotal - 100) < 0.01 ? "success.main" : "error.main",
+              }}
+            >
+              {allocTotal.toFixed(2)}%
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setAllocDialogOpen(false)} color="inherit">{t("common.cancel")}</Button>
+          <Button
+            variant="contained"
+            onClick={saveAllocations}
+            disabled={allocSaving || Math.abs(allocTotal - 100) > 0.01}
+          >
+            {allocSaving ? t("common.saving") : t("common.save")}
           </Button>
         </DialogActions>
       </Dialog>

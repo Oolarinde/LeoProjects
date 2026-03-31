@@ -5,8 +5,8 @@ from typing import Optional
 import uuid
 
 from sqlalchemy import (
-    CheckConstraint, Date, DateTime, ForeignKey, Index, Integer,
-    Numeric, String, Text,
+    Boolean, CheckConstraint, Date, DateTime, ForeignKey, Index, Integer,
+    Numeric, String, Text, TIMESTAMP,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -39,6 +39,15 @@ class RevenueTransaction(Base):
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=True)
     created_by: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     updated_by: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+
+    # Audit: void instead of delete (LEDGER P0)
+    is_voided: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    void_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    voided_by: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    voided_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
+
+    # Deposit flag: caution deposits are liabilities, not earned revenue (LEDGER P2)
+    is_deposit: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     company = relationship("Company")
     location = relationship("Location")

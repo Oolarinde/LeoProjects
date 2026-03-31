@@ -74,7 +74,7 @@ async def get_ledger_entries(
         FROM revenue_transactions r
         JOIN accounts a ON r.account_id = a.id
         LEFT JOIN locations l ON r.location_id = l.id
-        WHERE r.company_id = :cid AND r.fiscal_year = :year{lf_rev}{acct_rev}
+        WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year = :year{lf_rev}{acct_rev}
     """
 
     exp_sql = f"""
@@ -87,7 +87,7 @@ async def get_ledger_entries(
         FROM expense_transactions e
         JOIN accounts a ON e.account_id = a.id
         LEFT JOIN locations l ON e.location_id = l.id
-        WHERE e.company_id = :cid AND e.fiscal_year = :year{lf_exp}{acct_exp}
+        WHERE e.company_id = :cid AND e.is_voided = false AND e.fiscal_year = :year{lf_exp}{acct_exp}
     """
 
     if entry_type == "Income":

@@ -1,4 +1,6 @@
 """Pydantic schemas for Expense Transactions."""
+from __future__ import annotations
+
 
 from datetime import date as DateType, datetime
 from decimal import Decimal
@@ -95,5 +97,11 @@ class ExpenseResponse(BaseModel):
     updated_at: Optional[datetime] = None
     created_by: Optional[UUID] = None
     updated_by: UUID | None
+    is_voided: bool = False
+    void_reason: Optional[str] = None
+    voided_by: Optional[UUID] = None
+    voided_at: Optional[datetime] = None
+    wht_rate: Optional[Decimal] = None
+    wht_amount: Optional[Decimal] = None
 
     model_config = {"from_attributes": True}

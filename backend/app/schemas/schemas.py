@@ -141,3 +141,19 @@ class DropdownsResponse(BaseModel):
     expense_categories: list[str]
     departments: list[str]
     revenue_accounts: list[str]
+
+
+# --- Company Switching ---
+
+class SwitchCompanyRequest(BaseModel):
+    company_id: UUID
+
+class CompanyMemberResponse(BaseModel):
+    id: UUID
+    name: str
+    role: str
+    is_default: bool
+    entity_prefix: str | None = None
+    company_group_id: UUID | None = None
+
+    model_config = {"from_attributes": True}

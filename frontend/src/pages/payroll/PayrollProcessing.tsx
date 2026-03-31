@@ -76,6 +76,8 @@ interface ItemLine {
 interface PayrollItem {
   id: string;
   employee_id: string;
+  company_id?: string;
+  company_name?: string;
   employee_name: string;
   employee_ref: string;
   basic_salary: number;
@@ -98,7 +100,7 @@ interface RunDetail extends RunSummary {
   items: PayrollItem[];
 }
 
-function ExpandableRow({ item }: { item: PayrollItem }) {
+function ExpandableRow({ item, showCompany }: { item: PayrollItem; showCompany?: boolean }) {
   const [open, setOpen] = useState(false);
   const allowances = item.lines.filter((l) => l.line_type === "ALLOWANCE");
   const deductions = item.lines.filter((l) => l.line_type === "DEDUCTION");
@@ -113,6 +115,7 @@ function ExpandableRow({ item }: { item: PayrollItem }) {
         </TableCell>
         <TableCell sx={{ fontSize: 11, fontFamily: "monospace" }}>{item.employee_ref}</TableCell>
         <TableCell sx={{ fontSize: 11, fontWeight: 600 }}>{item.employee_name}</TableCell>
+        {showCompany && <TableCell sx={{ fontSize: 11, color: tokens.muted }}>{item.company_name || "—"}</TableCell>}
         <TableCell align="right" sx={{ fontSize: 11 }}>{fmt(item.basic_salary)}</TableCell>
         <TableCell align="right" sx={{ fontSize: 11 }}>{fmt(item.total_allowances)}</TableCell>
         <TableCell align="right" sx={{ fontSize: 11, fontWeight: 600 }}>{fmt(item.gross_pay)}</TableCell>
@@ -122,7 +125,7 @@ function ExpandableRow({ item }: { item: PayrollItem }) {
         <TableCell align="right" sx={{ fontSize: 11, fontWeight: 700, color: tokens.navy }}>{fmt(item.net_pay)}</TableCell>
       </TableRow>
       <TableRow>
-        <TableCell colSpan={10} sx={{ py: 0, borderBottom: open ? undefined : "none" }}>
+        <TableCell colSpan={showCompany ? 11 : 10} sx={{ py: 0, borderBottom: open ? undefined : "none" }}>
           <Collapse in={open}>
             <Box sx={{ py: 1, px: 2, display: "flex", gap: 4 }}>
               {allowances.length > 0 && (
@@ -168,8 +171,23 @@ function ExpandableRow({ item }: { item: PayrollItem }) {
   );
 }
 
+function buildSubsidiarySummary(items: PayrollItem[]) {
+  const byCompany: Record<string, { name: string; gross: number; deductions: number; net: number; count: number }> = {};
+  for (const item of items) {
+    const key = item.company_id || "unknown";
+    const name = item.company_name || "Unknown";
+    if (!byCompany[key]) byCompany[key] = { name, gross: 0, deductions: 0, net: 0, count: 0 };
+    byCompany[key].gross += Number(item.gross_pay);
+    byCompany[key].deductions += Number(item.total_deductions);
+    byCompany[key].net += Number(item.net_pay);
+    byCompany[key].count += 1;
+  }
+  return Object.values(byCompany).sort((a, b) => b.gross - a.gross);
+}
+
 export default function PayrollProcessing() {
-  const { year } = useAppStore();
+  const { year, user } = useAppStore();
+  const isGroupAdmin = user?.effective_role === "GROUP_ADMIN";
   const [activeStep, setActiveStep] = useState(0);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(year);
@@ -500,6 +518,46 @@ export default function PayrollProcessing() {
                 ))}
               </Box>
 
+              {/* Cost by Subsidiary — group payroll only */}
+              {isGroupAdmin && currentRun.items.some((i) => i.company_name) && (() => {
+                const summary = buildSubsidiarySummary(currentRun.items);
+                return summary.length > 1 ? (
+                  <Card sx={{ borderRadius: 3, boxShadow: tokens.shadowCard, mb: 2 }}>
+                    <CardContent sx={{ py: "10px !important" }}>
+                      <Typography sx={{ fontSize: 11, fontWeight: 700, color: tokens.navy, mb: 1 }}>
+                        Cost by Subsidiary
+                      </Typography>
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            {["Subsidiary", "Employees", "Gross Pay", "Deductions", "Net Pay"].map((h) => (
+                              <TableCell
+                                key={h}
+                                align={h === "Subsidiary" ? "left" : "right"}
+                                sx={{ fontSize: 11, fontWeight: 700, color: tokens.muted, py: 0.5 }}
+                              >
+                                {h}
+                              </TableCell>
+                            ))}
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {summary.map((row) => (
+                            <TableRow key={row.name}>
+                              <TableCell sx={{ fontSize: 11, fontWeight: 600 }}>{row.name}</TableCell>
+                              <TableCell align="right" sx={{ fontSize: 11 }}>{row.count}</TableCell>
+                              <TableCell align="right" sx={{ fontSize: 11 }}>{fmt(row.gross)}</TableCell>
+                              <TableCell align="right" sx={{ fontSize: 11, color: tokens.danger }}>{fmt(row.deductions)}</TableCell>
+                              <TableCell align="right" sx={{ fontSize: 11, fontWeight: 700 }}>{fmt(row.net)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+                ) : null;
+              })()}
+
               {/* Status + Actions */}
               <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
                 <Chip
@@ -569,10 +627,14 @@ export default function PayrollProcessing() {
                       <TableHead>
                         <TableRow sx={{ bgcolor: tokens.navy }}>
                           <TableCell sx={{ color: "#fff", width: 36 }} />
-                          {["Ref", "Employee", "Basic", "Allowances", "Gross", "PAYE", "Pension", "Deductions", "Net Pay"].map((h) => (
+                          {[
+                            "Ref", "Employee",
+                            ...(isGroupAdmin ? ["Company"] : []),
+                            "Basic", "Allowances", "Gross", "PAYE", "Pension", "Deductions", "Net Pay",
+                          ].map((h) => (
                             <TableCell
                               key={h}
-                              align={["Ref", "Employee"].includes(h) ? "left" : "right"}
+                              align={["Ref", "Employee", "Company"].includes(h) ? "left" : "right"}
                               sx={{ color: "#fff", fontWeight: 700, fontSize: 11, whiteSpace: "nowrap" }}
                             >
                               {h}
@@ -582,11 +644,11 @@ export default function PayrollProcessing() {
                       </TableHead>
                       <TableBody>
                         {currentRun.items.map((item) => (
-                          <ExpandableRow key={item.id} item={item} />
+                          <ExpandableRow key={item.id} item={item} showCompany={isGroupAdmin} />
                         ))}
                         {/* Totals row */}
                         <TableRow sx={{ bgcolor: "rgba(27,42,74,0.06)" }}>
-                          <TableCell colSpan={3} sx={{ fontWeight: 800, fontSize: 11 }}>TOTAL</TableCell>
+                          <TableCell colSpan={isGroupAdmin ? 4 : 3} sx={{ fontWeight: 800, fontSize: 11 }}>TOTAL</TableCell>
                           <TableCell align="right" sx={{ fontWeight: 700, fontSize: 11 }}>
                             {fmt(currentRun.items.reduce((s, i) => s + i.basic_salary, 0))}
                           </TableCell>

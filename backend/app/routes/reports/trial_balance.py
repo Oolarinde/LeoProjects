@@ -52,7 +52,7 @@ async def get_trial_balance(
                    COALESCE(SUM(r.amount), 0) AS credit
             FROM revenue_transactions r
             JOIN accounts a ON r.account_id = a.id
-            WHERE r.company_id = :cid AND r.fiscal_year = :year{lf_rev}
+            WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year = :year{lf_rev}
             GROUP BY a.code, a.name, a.type
             ORDER BY a.code
         """),
@@ -67,7 +67,7 @@ async def get_trial_balance(
                    0::numeric AS credit
             FROM expense_transactions e
             JOIN accounts a ON e.account_id = a.id
-            WHERE e.company_id = :cid AND e.fiscal_year = :year{lf_exp}
+            WHERE e.company_id = :cid AND e.is_voided = false AND e.fiscal_year = :year{lf_exp}
             GROUP BY a.code, a.name, a.type
             ORDER BY a.code
         """),

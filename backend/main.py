@@ -9,6 +9,12 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.base import BaseHTTPMiddleware
 
+import logging
+from sqlalchemy.exc import IntegrityError as SAIntegrityError
+from pydantic import ValidationError as PydanticValidationError
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+
 from app.routes import auth, users, groups
 from app.routes import config as config_routes
 from app.routes import dashboard as dashboard_routes
@@ -27,6 +33,9 @@ from app.routes import ledger as ledger_routes
 from app.routes import budget as budget_routes
 from app.routes import analysis as analysis_routes
 from app.routes import tenants as tenant_routes
+from app.routes import company_groups as company_group_routes
+from app.routes import intercompany as intercompany_routes
+from app.routes import staff as staff_routes
 from app.utils.config import settings
 from app.utils.audit_context import set_audit_context
 from app.utils.request_context import get_client_ip
@@ -71,6 +80,52 @@ app = FastAPI(
 app.state.limiter = auth.limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+_logger = logging.getLogger("app.errors")
+
+
+@app.exception_handler(SAIntegrityError)
+async def integrity_error_handler(request: Request, exc: SAIntegrityError):
+    """Convert SQLAlchemy IntegrityError into user-friendly 409 responses."""
+    detail = str(exc.orig) if exc.orig else str(exc)
+    _logger.warning("IntegrityError: %s", detail)
+    # Extract the constraint name for a readable message
+    if "unique" in detail.lower() or "duplicate" in detail.lower():
+        # Try to extract the field from "Key (field)=(value) already exists"
+        msg = "A record with this value already exists."
+        if "entity_prefix" in detail:
+            msg = "This entity prefix is already in use."
+        elif "company_id" in detail and "name" in detail:
+            msg = "This name is already taken."
+        elif "email" in detail:
+            msg = "This email address is already registered."
+        elif "code" in detail:
+            msg = "This code is already in use."
+        return JSONResponse(status_code=409, content={"detail": msg})
+    if "foreign key" in detail.lower() or "violates foreign key" in detail.lower():
+        return JSONResponse(status_code=409, content={"detail": "Cannot complete this action — related records exist."})
+    if "not-null" in detail.lower() or "null value" in detail.lower():
+        return JSONResponse(status_code=422, content={"detail": "A required field is missing."})
+    return JSONResponse(status_code=409, content={"detail": "Data conflict — please check your input."})
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(request: Request, exc: RequestValidationError):
+    """Convert Pydantic validation errors into readable 422 responses."""
+    errors = exc.errors()
+    messages = []
+    for err in errors[:5]:  # Limit to 5 errors
+        field = " → ".join(str(loc) for loc in err.get("loc", []) if str(loc) != "body")
+        msg = err.get("msg", "Invalid value")
+        messages.append(f"{field}: {msg}" if field else msg)
+    return JSONResponse(status_code=422, content={"detail": "; ".join(messages) if messages else "Validation error"})
+
+
+@app.exception_handler(500)
+async def internal_error_handler(request: Request, exc: Exception):
+    """Catch unhandled 500 errors and return structured JSON instead of HTML."""
+    _logger.exception("Unhandled error on %s %s", request.method, request.url.path)
+    return JSONResponse(status_code=500, content={"detail": "Internal server error. Please try again or contact support."})
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS.split(","),
@@ -78,6 +133,22 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Add security headers to all responses."""
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        return response
+
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 # Audit context — extracts user from JWT on every request
 app.add_middleware(AuditContextMiddleware)
@@ -105,6 +176,9 @@ app.include_router(ledger_routes.router, prefix="/api/ledger", tags=["ledger"])
 app.include_router(budget_routes.router, prefix="/api/budget", tags=["budget"])
 app.include_router(analysis_routes.router, prefix="/api/analysis", tags=["analysis"])
 app.include_router(tenant_routes.router, prefix="/api/tenants", tags=["tenants"])
+app.include_router(company_group_routes.router, prefix="/api/company-groups", tags=["company-groups"])
+app.include_router(intercompany_routes.router, prefix="/api/intercompany", tags=["intercompany"])
+app.include_router(staff_routes.router, prefix="/api/staff", tags=["staff"])
 
 
 @app.get("/api/health")

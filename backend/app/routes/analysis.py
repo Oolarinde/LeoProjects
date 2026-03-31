@@ -87,7 +87,7 @@ async def get_analysis(
     rev_monthly = await db.execute(sa.text(f"""
         SELECT EXTRACT(MONTH FROM r.date)::int AS m, COALESCE(SUM(r.amount), 0) AS total
         FROM revenue_transactions r
-        WHERE r.company_id = :cid AND r.fiscal_year = :year{lf_rev}
+        WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year = :year{lf_rev}
         GROUP BY m ORDER BY m
     """), params)
     rev_map = {row.m: Decimal(str(row.total)) for row in rev_monthly}
@@ -95,7 +95,7 @@ async def get_analysis(
     exp_monthly = await db.execute(sa.text(f"""
         SELECT EXTRACT(MONTH FROM e.date)::int AS m, COALESCE(SUM(e.amount), 0) AS total
         FROM expense_transactions e
-        WHERE e.company_id = :cid AND e.fiscal_year = :year{lf_exp}
+        WHERE e.company_id = :cid AND e.is_voided = false AND e.fiscal_year = :year{lf_exp}
         GROUP BY m ORDER BY m
     """), params)
     exp_map = {row.m: Decimal(str(row.total)) for row in exp_monthly}
@@ -117,7 +117,7 @@ async def get_analysis(
         SELECT a.name, COALESCE(SUM(e.amount), 0) AS total
         FROM expense_transactions e
         JOIN accounts a ON e.account_id = a.id
-        WHERE e.company_id = :cid AND e.fiscal_year = :year{lf_exp}
+        WHERE e.company_id = :cid AND e.is_voided = false AND e.fiscal_year = :year{lf_exp}
         GROUP BY a.name ORDER BY total DESC
     """), params)
     expense_by_category = [CategoryAmount(name=r.name, amount=Decimal(str(r.total))) for r in exp_cat]
@@ -127,7 +127,7 @@ async def get_analysis(
         SELECT a.name, COALESCE(SUM(r.amount), 0) AS total
         FROM revenue_transactions r
         JOIN accounts a ON r.account_id = a.id
-        WHERE r.company_id = :cid AND r.fiscal_year = :year{lf_rev}
+        WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year = :year{lf_rev}
         GROUP BY a.name ORDER BY total DESC
     """), params)
     revenue_by_source = [CategoryAmount(name=r.name, amount=Decimal(str(r.total))) for r in rev_src]
@@ -136,7 +136,7 @@ async def get_analysis(
     prev_rev = await db.execute(sa.text(f"""
         SELECT EXTRACT(MONTH FROM r.date)::int AS m, COALESCE(SUM(r.amount), 0) AS total
         FROM revenue_transactions r
-        WHERE r.company_id = :cid AND r.fiscal_year = :year{lf_rev}
+        WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year = :year{lf_rev}
         GROUP BY m ORDER BY m
     """), prev_params)
     prev_map = {row.m: Decimal(str(row.total)) for row in prev_rev}
@@ -160,7 +160,7 @@ async def get_analysis(
             SELECT a.name, SUM(e.amount) AS spent
             FROM expense_transactions e
             JOIN accounts a ON e.account_id = a.id
-            WHERE e.company_id = :cid AND e.fiscal_year = :year{lf_exp}
+            WHERE e.company_id = :cid AND e.is_voided = false AND e.fiscal_year = :year{lf_exp}
             GROUP BY a.name
         ) s
         FULL OUTER JOIN (

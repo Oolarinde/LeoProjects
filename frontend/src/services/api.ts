@@ -249,7 +249,7 @@ export const revenueApi = {
     api.get("/revenue/summary", { params: { year, location_id: locationId || undefined } }),
   create: (data: Record<string, unknown>) => api.post("/revenue", data),
   update: (id: string, data: Record<string, unknown>) => api.patch(`/revenue/${id}`, data),
-  delete: (id: string) => api.delete(`/revenue/${id}`),
+  void: (id: string, reason = "") => api.post(`/revenue/${id}/void`, null, { params: { reason } }),
 };
 
 // Expenses
@@ -259,7 +259,7 @@ export const expensesApi = {
     api.get("/expenses/summary", { params: { year, location_id: locationId || undefined } }),
   create: (data: Record<string, unknown>) => api.post("/expenses", data),
   update: (id: string, data: Record<string, unknown>) => api.patch(`/expenses/${id}`, data),
-  delete: (id: string) => api.delete(`/expenses/${id}`),
+  void: (id: string, reason = "") => api.post(`/expenses/${id}/void`, null, { params: { reason } }),
 };
 
 // Settings
@@ -338,6 +338,79 @@ export const tenantApi = {
 export const analysisApi = {
   summary: (year: number, locationId?: string) =>
     api.get("/analysis/summary", { params: { year, location_id: locationId || undefined } }),
+};
+
+// Company switching
+export const companyApi = {
+  switchCompany: (companyId: string) =>
+    api.post("/auth/switch-company", { company_id: companyId }),
+};
+
+// Group accounting
+export const groupApi = {
+  getGroup: () => api.get("/company-groups/mine"),
+  listCompanies: () => api.get("/company-groups/companies"),
+  createSubsidiary: (data: any) => api.post("/company-groups/companies/create", data),
+  addCompany: (data: any) => api.post("/company-groups/companies", data),
+  updateCompany: (companyId: string, data: any) => api.patch(`/company-groups/companies/${companyId}`, data),
+  setParentCompany: (companyId: string) => api.patch(`/company-groups/companies/${companyId}/set-parent`),
+  removeCompany: (companyId: string) => api.delete(`/company-groups/companies/${companyId}`),
+  getCoaMismatches: (companyId: string) => api.get(`/company-groups/coa-check/${companyId}`),
+
+  // Group user management
+  listGroupUsers: () => api.get("/company-groups/users"),
+  updateUserAccess: (userId: string, memberships: { company_id: string; role: string; is_default: boolean }[]) =>
+    api.put(`/company-groups/users/${userId}/access`, { memberships }),
+
+  // CoA template
+  getCoaTemplate: () => api.get("/company-groups/coa-template"),
+  createCoaTemplate: (data: any) => api.post("/company-groups/coa-template", data),
+  updateCoaTemplateEntry: (entryId: string, data: any) => api.put(`/company-groups/coa-template/${entryId}`, data),
+  deleteCoaTemplateEntry: (entryId: string) => api.delete(`/company-groups/coa-template/${entryId}`),
+
+  // Allocation rules
+  listAllocationRules: () => api.get("/company-groups/allocation-rules"),
+  createAllocationRule: (data: any) => api.post("/company-groups/allocation-rules", data),
+  updateAllocationRule: (id: string, data: any) => api.put(`/company-groups/allocation-rules/${id}`, data),
+  deleteAllocationRule: (id: string) => api.delete(`/company-groups/allocation-rules/${id}`),
+
+  // IC transactions
+  listIcTransactions: (params: { year: number }) => api.get("/intercompany/transactions", { params }),
+  createIcTransaction: (data: any) => api.post("/intercompany/transactions", data),
+  confirmIcTransaction: (id: string) => api.patch(`/intercompany/transactions/${id}/confirm`),
+  voidIcTransaction: (id: string, reason: string) => api.patch(`/intercompany/transactions/${id}/void`, { void_reason: reason }),
+  getIcBalances: (year: number) => api.get("/intercompany/balances", { params: { year } }),
+
+  // Consolidated reports
+  consolidatedPnl: (year: number) => api.get("/reports/consolidated/pnl/summary", { params: { year } }),
+  consolidatedBs: (year: number) => api.get("/reports/consolidated/balance-sheet/summary", { params: { year } }),
+  consolidatedTb: (year: number) => api.get("/reports/consolidated/trial-balance/summary", { params: { year } }),
+
+  // Group dashboard
+  groupDashboard: (year: number) => api.get("/company-groups/dashboard", { params: { year } }),
+
+  // Cost allocations
+  getEmployeeAllocations: (employeeId: string) => api.get(`/payroll/employees/${employeeId}/cost-allocations`),
+  setEmployeeAllocations: (employeeId: string, allocations: { company_id: string; percentage: number }[]) =>
+    api.put(`/payroll/employees/${employeeId}/cost-allocations`, { allocations }),
+};
+
+// Staff profiles
+export const staffApi = {
+  getProfile: (id: string) => api.get(`/staff/${id}`),
+  updateProfile: (id: string, data: Record<string, unknown>) => api.put(`/staff/${id}`, data),
+  uploadPhoto: (id: string, file: File) => {
+    const formData = new FormData();
+    formData.append("photo", file);
+    return api.post(`/staff/${id}/photo`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+  getPayrollHistory: (id: string) => api.get(`/staff/${id}/payroll-history`),
+  getLeave: (id: string, year?: number) => api.get(`/staff/${id}/leave`, { params: year ? { year } : {} }),
+  getLoginHistory: (id: string) => api.get(`/staff/${id}/login-history`),
+  createStaff: (data: Record<string, unknown>) => api.post("/staff", data),
+  createLogin: (id: string, data: { email: string; role: string }) => api.post(`/staff/${id}/create-login`, data),
 };
 
 export default api;

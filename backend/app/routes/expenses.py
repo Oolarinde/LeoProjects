@@ -72,13 +72,15 @@ async def update_expense(
     )
 
 
-@router.delete("/{item_id}", status_code=204)
-async def delete_expense(
+@router.post("/{item_id}/void", response_model=ExpenseResponse)
+async def void_expense(
     item_id: UUID,
     request: Request,
+    reason: str = Query(""),
     current_user: User = Depends(_write),
     db: AsyncSession = Depends(get_db),
 ):
-    await expenses_service.delete_expense(
-        db, item_id, current_user.company_id, current_user.id, get_client_ip(request),
+    """Void an expense transaction. Financial records are never deleted."""
+    return await expenses_service.void_expense(
+        db, item_id, current_user.company_id, reason, current_user.id, get_client_ip(request),
     )

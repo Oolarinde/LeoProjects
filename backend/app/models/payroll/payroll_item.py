@@ -47,4 +47,5 @@ class PayrollItem(Base):
     # Relationships
     run: Mapped["PayrollRun"] = relationship("PayrollRun", back_populates="items")
     employee = relationship("Employee")
+    company = relationship("Company", foreign_keys=[company_id])
     lines: Mapped[List["PayrollItemLine"]] = relationship("PayrollItemLine", back_populates="item", cascade="all, delete-orphan")

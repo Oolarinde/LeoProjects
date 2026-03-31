@@ -115,7 +115,7 @@ async def get_dashboard_summary(
         sa.text(f"""
             SELECT COALESCE(SUM(r.amount), 0) AS total
             FROM revenue_transactions r
-            WHERE r.company_id = :cid AND r.fiscal_year = :year{loc_rev}
+            WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year = :year{loc_rev}
         """),
         params,
     )
@@ -125,7 +125,7 @@ async def get_dashboard_summary(
         sa.text(f"""
             SELECT COALESCE(SUM(e.amount), 0) AS total
             FROM expense_transactions e
-            WHERE e.company_id = :cid AND e.fiscal_year = :year{loc_exp}
+            WHERE e.company_id = :cid AND e.is_voided = false AND e.fiscal_year = :year{loc_exp}
         """),
         params,
     )
@@ -141,7 +141,7 @@ async def get_dashboard_summary(
         sa.text(f"""
             SELECT COALESCE(SUM(e.amount), 0) AS total
             FROM expense_transactions e
-            WHERE e.company_id = :cid AND e.fiscal_year = :year
+            WHERE e.company_id = :cid AND e.is_voided = false AND e.fiscal_year = :year
               AND e.category = 'Salaries'{loc_exp}
         """),
         params,
@@ -155,7 +155,7 @@ async def get_dashboard_summary(
         sa.text(f"""
             SELECT COALESCE(SUM(r.amount), 0) AS total
             FROM revenue_transactions r
-            WHERE r.company_id = :cid AND r.fiscal_year = :year{loc_rev}
+            WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year = :year{loc_rev}
         """),
         prev_params,
     )
@@ -165,7 +165,7 @@ async def get_dashboard_summary(
         sa.text(f"""
             SELECT COALESCE(SUM(e.amount), 0) AS total
             FROM expense_transactions e
-            WHERE e.company_id = :cid AND e.fiscal_year = :year{loc_exp}
+            WHERE e.company_id = :cid AND e.is_voided = false AND e.fiscal_year = :year{loc_exp}
         """),
         prev_params,
     )
@@ -187,7 +187,7 @@ async def get_dashboard_summary(
             SELECT EXTRACT(MONTH FROM r.date)::int AS month_num,
                    COALESCE(SUM(r.amount), 0) AS total
             FROM revenue_transactions r
-            WHERE r.company_id = :cid AND r.fiscal_year = :year{loc_rev}
+            WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year = :year{loc_rev}
             GROUP BY month_num
             ORDER BY month_num
         """),
@@ -200,7 +200,7 @@ async def get_dashboard_summary(
             SELECT EXTRACT(MONTH FROM e.date)::int AS month_num,
                    COALESCE(SUM(e.amount), 0) AS total
             FROM expense_transactions e
-            WHERE e.company_id = :cid AND e.fiscal_year = :year{loc_exp}
+            WHERE e.company_id = :cid AND e.is_voided = false AND e.fiscal_year = :year{loc_exp}
             GROUP BY month_num
             ORDER BY month_num
         """),
@@ -225,7 +225,7 @@ async def get_dashboard_summary(
             SELECT a.name, COALESCE(SUM(r.amount), 0) AS total
             FROM revenue_transactions r
             JOIN accounts a ON r.account_id = a.id
-            WHERE r.company_id = :cid AND r.fiscal_year = :year{loc_rev}
+            WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year = :year{loc_rev}
             GROUP BY a.name
             ORDER BY total DESC
         """),
@@ -253,7 +253,7 @@ async def get_dashboard_summary(
             FROM (
                 SELECT e.category, SUM(e.amount) AS spent
                 FROM expense_transactions e
-                WHERE e.company_id = :cid AND e.fiscal_year = :year{loc_exp}
+                WHERE e.company_id = :cid AND e.is_voided = false AND e.fiscal_year = :year{loc_exp}
                 GROUP BY e.category
             ) s
             FULL OUTER JOIN (
@@ -306,7 +306,7 @@ async def get_dashboard_summary(
             SELECT a.name, COALESCE(SUM(r.amount), 0) AS total
             FROM revenue_transactions r
             JOIN accounts a ON r.account_id = a.id
-            WHERE r.company_id = :cid AND r.fiscal_year = :year{loc_rev}
+            WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year = :year{loc_rev}
             GROUP BY a.name
             ORDER BY a.name
         """),
@@ -322,7 +322,7 @@ async def get_dashboard_summary(
         sa.text(f"""
             SELECT e.category AS name, COALESCE(SUM(e.amount), 0) AS total
             FROM expense_transactions e
-            WHERE e.company_id = :cid AND e.fiscal_year = :year{loc_exp}
+            WHERE e.company_id = :cid AND e.is_voided = false AND e.fiscal_year = :year{loc_exp}
             GROUP BY e.category
             ORDER BY e.category
         """),
@@ -354,7 +354,7 @@ async def get_dashboard_summary(
                        0 AS debit, r.amount AS credit
                 FROM revenue_transactions r
                 JOIN accounts a ON r.account_id = a.id
-                WHERE r.company_id = :cid AND r.fiscal_year = :year{loc_rev}
+                WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year = :year{loc_rev}
             )
             UNION ALL
             (
@@ -362,7 +362,7 @@ async def get_dashboard_summary(
                        'Expense' AS type, COALESCE(e.description, '') AS description,
                        e.amount AS debit, 0 AS credit
                 FROM expense_transactions e
-                WHERE e.company_id = :cid AND e.fiscal_year = :year{loc_exp}
+                WHERE e.company_id = :cid AND e.is_voided = false AND e.fiscal_year = :year{loc_exp}
             )
             ORDER BY date DESC, credit DESC
             LIMIT 10

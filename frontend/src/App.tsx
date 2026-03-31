@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import { Alert, Box } from "@mui/material";
 import { useAppStore, hasAccess, isAdmin } from "./utils/store";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
@@ -24,6 +25,13 @@ import Budget from "./pages/Budget";
 import PayrollProcessing from "./pages/payroll/PayrollProcessing";
 import Analysis from "./pages/Analysis";
 import TenantOps from "./pages/TenantOps";
+import GroupDashboard from "./pages/GroupDashboard";
+import GroupSettings from "./pages/GroupSettings";
+import InterCompanyTransactions from "./pages/InterCompanyTransactions";
+import ConsolidatedPnL from "./pages/reports/ConsolidatedPnL";
+import ConsolidatedBalanceSheet from "./pages/reports/ConsolidatedBalanceSheet";
+import ConsolidatedTrialBalance from "./pages/reports/ConsolidatedTrialBalance";
+import StaffProfile from "./pages/payroll/StaffProfile";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const user = useAppStore((s) => s.user);
@@ -51,6 +59,20 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function GroupRoute({ children }: { children: React.ReactNode }) {
+  const effectiveRole = useAppStore((s) => s.user?.effective_role);
+  if (effectiveRole !== "GROUP_ADMIN") {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="info">
+          Group features are only available to group administrators.
+        </Alert>
+      </Box>
+    );
+  }
+  return <>{children}</>;
+}
+
 export default function App() {
   return (
     <Routes>
@@ -68,10 +90,11 @@ export default function App() {
         {/* Bookkeeping */}
         <Route path="/revenue" element={<PermissionRoute module="revenue"><Revenue /></PermissionRoute>} />
         <Route path="/expenses" element={<PermissionRoute module="expenses"><Expenses /></PermissionRoute>} />
-        <Route path="/payroll" element={<PermissionRoute module="payroll"><PayrollProcessing /></PermissionRoute>} />
-        <Route path="/payroll/setup" element={<PermissionRoute module="payroll"><PayrollSetup /></PermissionRoute>} />
-        <Route path="/payroll/employees" element={<PermissionRoute module="payroll"><PayrollEmployees /></PermissionRoute>} />
-        <Route path="/payroll/leave" element={<PermissionRoute module="payroll"><LeaveRequests /></PermissionRoute>} />
+        <Route path="/payroll" element={<GroupRoute><PayrollProcessing /></GroupRoute>} />
+        <Route path="/payroll/setup" element={<GroupRoute><PayrollSetup /></GroupRoute>} />
+        <Route path="/payroll/employees" element={<GroupRoute><PayrollEmployees /></GroupRoute>} />
+        <Route path="/payroll/employees/:employeeId" element={<GroupRoute><StaffProfile /></GroupRoute>} />
+        <Route path="/payroll/leave" element={<GroupRoute><LeaveRequests /></GroupRoute>} />
         <Route path="/budget" element={<PermissionRoute module="budget"><Budget /></PermissionRoute>} />
 
         {/* Reports */}
@@ -92,6 +115,14 @@ export default function App() {
 
         {/* Tenant Ops */}
         <Route path="/tenants" element={<PermissionRoute module="revenue"><TenantOps /></PermissionRoute>} />
+
+        {/* Group Accounting */}
+        <Route path="/group/dashboard" element={<GroupRoute><GroupDashboard /></GroupRoute>} />
+        <Route path="/group/settings" element={<AdminRoute><GroupSettings /></AdminRoute>} />
+        <Route path="/group/intercompany" element={<GroupRoute><InterCompanyTransactions /></GroupRoute>} />
+        <Route path="/group/reports/pnl" element={<GroupRoute><ConsolidatedPnL /></GroupRoute>} />
+        <Route path="/group/reports/balance-sheet" element={<GroupRoute><ConsolidatedBalanceSheet /></GroupRoute>} />
+        <Route path="/group/reports/trial-balance" element={<GroupRoute><ConsolidatedTrialBalance /></GroupRoute>} />
 
         {/* Profile */}
         <Route path="/profile" element={<Profile />} />

@@ -5,17 +5,25 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from sqlalchemy import select
+from uuid import UUID
+
 from database import get_db
 from app.models.user import User
+from app.models.company_group import CompanyGroup
 from app.schemas.schemas import (
     LanguageUpdate,
     LoginRequest,
     RefreshRequest,
     RegisterRequest,
+    SwitchCompanyRequest,
     TokenResponse,
     UserResponse,
 )
-from app.services.auth import authenticate_user, generate_tokens, refresh_access_token, register_user
+from app.services.auth import (
+    authenticate_user, generate_tokens_with_context, get_user_companies,
+    refresh_access_token, register_user, switch_company,
+)
 from app.services.login_sessions import list_sessions, record_login
 from app.schemas.login_session import LoginHistoryResponse
 from app.utils.dependencies import get_current_user
@@ -37,7 +45,7 @@ async def register(request: Request, body: RegisterRequest, db: AsyncSession = D
         full_name=body.full_name,
         company_name=body.company_name,
     )
-    return generate_tokens(user)
+    return await generate_tokens_with_context(db, user)
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -52,7 +60,7 @@ async def login(request: Request, body: LoginRequest, db: AsyncSession = Depends
         ip_address=get_client_ip(request),
         user_agent_str=request.headers.get("user-agent", ""),
     )
-    return generate_tokens(user)
+    return await generate_tokens_with_context(db, user)
 
 
 @router.post("/refresh", response_model=TokenResponse)
@@ -64,9 +72,71 @@ async def refresh(request: Request, body: RefreshRequest, db: AsyncSession = Dep
     return tokens
 
 
-@router.get("/me", response_model=UserResponse)
-async def me(current_user: User = Depends(get_current_user)):
-    return current_user
+@router.post("/switch-company", response_model=TokenResponse)
+@limiter.limit("10/minute")
+async def switch_company_endpoint(
+    request: Request,
+    body: SwitchCompanyRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    logger.info(
+        "Company switch",
+        extra={
+            "user_id": str(current_user.id),
+            "from_company": str(current_user.company_id),
+            "to_company": str(body.company_id),
+        },
+    )
+    return await switch_company(db, current_user, body.company_id)
+
+
+@router.get("/me")
+async def me(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    from app.models.company_group import CompanyGroupMember
+
+    companies = await get_user_companies(db, current_user.id)
+    user_data = UserResponse.model_validate(current_user).model_dump()
+    user_data["companies"] = companies if len(companies) > 1 else []
+    # Find the group ID from the active company
+    company_group_id = None
+    for c in companies:
+        if c["id"] == str(current_user.company_id) and c.get("company_group_id"):
+            company_group_id = c["company_group_id"]
+            break
+    user_data["company_group_id"] = company_group_id
+    # Also load the group name so the frontend can display it
+    company_group_name = None
+    if company_group_id:
+        group = (await db.execute(
+            select(CompanyGroup).where(CompanyGroup.id == UUID(company_group_id))
+        )).scalar_one_or_none()
+        if group:
+            company_group_name = group.name
+    user_data["company_group_name"] = company_group_name
+
+    # Determine if current company is the parent in its group
+    is_parent = False
+    if company_group_id:
+        parent_check = (await db.execute(
+            select(CompanyGroupMember).where(
+                CompanyGroupMember.company_id == current_user.company_id,
+                CompanyGroupMember.is_parent == True,
+            )
+        )).scalar_one_or_none()
+        is_parent = parent_check is not None
+
+    # Derive effective_role for frontend menu/routing
+    if current_user.role in ("SUPER_ADMIN", "GROUP_ADMIN"):
+        effective_role = "GROUP_ADMIN" if is_parent else "COMPANY_ADMIN"
+    elif current_user.role in ("ADMIN", "COMPANY_ADMIN"):
+        effective_role = "COMPANY_ADMIN"
+    else:
+        effective_role = "VIEWER"
+
+    user_data["effective_role"] = effective_role
+    user_data["is_parent_company"] = is_parent
+    return user_data
 
 
 @router.get("/me/login-history", response_model=LoginHistoryResponse)
@@ -125,10 +195,11 @@ async def upload_avatar(
     os.makedirs(avatar_dir, exist_ok=True)
     filepath = os.path.join(avatar_dir, filename)
 
-    # Remove old avatar file if it exists
+    # Remove old avatar file if it exists (path traversal safe)
     if current_user.avatar_url:
-        old_path = current_user.avatar_url.lstrip("/")
-        if os.path.exists(old_path):
+        old_filename = os.path.basename(current_user.avatar_url)
+        old_path = os.path.join(avatar_dir, old_filename)
+        if os.path.isfile(old_path):
             os.remove(old_path)
 
     with open(filepath, "wb") as f:

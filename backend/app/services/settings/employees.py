@@ -24,6 +24,16 @@ async def list_employees(db: AsyncSession, company_id: UUID) -> list[Employee]:
     return list(result.scalars().all())
 
 
+async def list_employees_multi(db: AsyncSession, company_ids: list[UUID]) -> list[Employee]:
+    """List employees across multiple companies (group payroll)."""
+    result = await db.execute(
+        select(Employee)
+        .where(Employee.company_id.in_(company_ids))
+        .order_by(Employee.employee_ref)
+    )
+    return list(result.scalars().all())
+
+
 async def create_employee(
     db: AsyncSession,
     company_id: UUID,

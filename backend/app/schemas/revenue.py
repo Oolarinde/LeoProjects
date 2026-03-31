@@ -1,4 +1,5 @@
 """Pydantic schemas for Revenue Transactions."""
+from __future__ import annotations
 
 from datetime import date as DateType, datetime
 from decimal import Decimal
@@ -70,5 +71,10 @@ class RevenueResponse(BaseModel):
     updated_at: Optional[datetime] = None
     created_by: Optional[UUID] = None
     updated_by: Optional[UUID] = None
+    is_voided: bool = False
+    void_reason: Optional[str] = None
+    voided_by: Optional[UUID] = None
+    voided_at: Optional[datetime] = None
+    is_deposit: bool = False
 
     model_config = {"from_attributes": True}

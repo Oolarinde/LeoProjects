@@ -10,6 +10,7 @@ from sqlalchemy.orm import selectinload
 
 from database import get_db
 from app.models.user import User
+from app.models.company import Company
 from app.models.payroll.payroll_run import PayrollRun
 from app.models.payroll.payroll_item import PayrollItem
 from app.models.payroll.payroll_item_line import PayrollItemLine
@@ -25,7 +26,7 @@ def _fmt(v) -> str:
     return f"₦{Decimal(str(v)):,.2f}"
 
 
-def _payslip_html(item: PayrollItem, run: PayrollRun) -> str:
+def _payslip_html(item: PayrollItem, run: PayrollRun, company_name: str = "—") -> str:
     emp = item.employee
     emp_name = emp.name if emp else "Employee"
     emp_ref = emp.employee_ref if emp else "—"
@@ -44,11 +45,13 @@ def _payslip_html(item: PayrollItem, run: PayrollRun) -> str:
     for d in deductions:
         ded_rows += f'<tr><td>{d.name}</td><td class="right red">{_fmt(d.amount)}</td></tr>'
 
+    from html import escape
+    safe_company = escape(company_name)
     return f"""
     <div class="payslip">
       <div class="header">
         <div>
-          <h2>Talents Apartments</h2>
+          <h2>{safe_company}</h2>
           <p class="sub">Payslip — {period}</p>
         </div>
         <div class="right-header">
@@ -158,7 +161,11 @@ async def get_payslip(
     if item is None:
         raise HTTPException(status_code=404, detail="Payslip not found")
 
-    html = _payslip_html(item, item.run)
+    company = (await db.execute(
+        select(Company).where(Company.id == current_user.company_id)
+    )).scalar_one_or_none()
+    company_name = company.name if company else "—"
+    html = _payslip_html(item, item.run, company_name)
     return _wrap_payslips(html, f"Payslip — {item.employee.name if item.employee else 'Employee'}")
 
 
@@ -191,6 +198,10 @@ async def get_all_payslips(
     if not items:
         raise HTTPException(status_code=404, detail="No payroll items found for this run")
 
-    html = "".join(_payslip_html(item, run) for item in items)
+    company = (await db.execute(
+        select(Company).where(Company.id == current_user.company_id)
+    )).scalar_one_or_none()
+    company_name = company.name if company else "—"
+    html = "".join(_payslip_html(item, run, company_name) for item in items)
     period = f"{MONTH_NAMES[run.month - 1]} {run.year}"
     return _wrap_payslips(html, f"Payslips — {period}")

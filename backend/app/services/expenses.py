@@ -1,4 +1,6 @@
 """CRUD services for Expense Transactions."""
+from __future__ import annotations
+
 
 import uuid
 from uuid import UUID
@@ -32,6 +34,7 @@ async def list_expenses(
     base = select(ExpenseTransaction).where(
         ExpenseTransaction.company_id == company_id,
         ExpenseTransaction.fiscal_year == year,
+        ExpenseTransaction.is_voided == False,
     )
     if location_id:
         base = base.where(ExpenseTransaction.location_id == location_id)
@@ -67,6 +70,7 @@ async def get_summary(
     ).where(
         ExpenseTransaction.company_id == company_id,
         ExpenseTransaction.fiscal_year == year,
+        ExpenseTransaction.is_voided == False,
     )
     if location_id:
         base = base.where(ExpenseTransaction.location_id == location_id)
@@ -148,13 +152,16 @@ async def update_expense(
     return item
 
 
-async def delete_expense(
+async def void_expense(
     db: AsyncSession,
     item_id: UUID,
     company_id: UUID,
+    reason: str = "",
     user_id: UUID | None = None,
     ip_address: str | None = None,
-) -> None:
+) -> ExpenseTransaction:
+    """Void an expense transaction (never delete financial records)."""
+    from datetime import datetime, timezone
     result = await db.execute(
         select(ExpenseTransaction).where(
             ExpenseTransaction.id == item_id,
@@ -164,15 +171,24 @@ async def delete_expense(
     item = result.scalar_one_or_none()
     if item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Expense transaction not found")
-    record_id = item.id
-    await db.delete(item)
+    if item.is_voided:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Transaction already voided")
+
+    item.is_voided = True
+    item.void_reason = reason
+    item.voided_by = user_id
+    item.voided_at = datetime.now(timezone.utc)
     await db.flush()
     await log_action(
         db,
         company_id=company_id,
         table_name="expense_transactions",
-        record_id=record_id,
-        action="DELETE",
+        record_id=item.id,
+        action="VOID",
+        changed_fields={"void_reason": reason},
         user_id=user_id,
         ip_address=ip_address,
     )
+    await db.commit()
+    await db.refresh(item)
+    return item

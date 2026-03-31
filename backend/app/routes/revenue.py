@@ -72,13 +72,15 @@ async def update_revenue(
     )
 
 
-@router.delete("/{item_id}", status_code=204)
-async def delete_revenue(
+@router.post("/{item_id}/void", response_model=RevenueResponse)
+async def void_revenue(
     item_id: UUID,
     request: Request,
+    reason: str = Query(""),
     current_user: User = Depends(_write),
     db: AsyncSession = Depends(get_db),
 ):
-    await revenue_service.delete_revenue(
-        db, item_id, current_user.company_id, current_user.id, get_client_ip(request),
+    """Void a revenue transaction. Financial records are never deleted."""
+    return await revenue_service.void_revenue(
+        db, item_id, current_user.company_id, reason, current_user.id, get_client_ip(request),
     )

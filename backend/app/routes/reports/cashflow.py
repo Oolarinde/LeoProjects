@@ -53,7 +53,7 @@ async def get_cashflow(
     lf_rev = loc_filter("r", location_id)
     lf_exp = loc_filter("e", location_id)
 
-    # Opening balance from table (default 0 if not set)
+    # Opening balance: manual entry OR auto-computed from prior year closing
     ob_result = await db.execute(
         sa.text(
             "SELECT COALESCE(amount, 0) FROM opening_balances "
@@ -61,7 +61,20 @@ async def get_cashflow(
         ),
         {"cid": cid, "year": year},
     )
-    opening_balance = Decimal(str(ob_result.scalar() or 0))
+    manual_ob = ob_result.scalar()
+    if manual_ob is not None and Decimal(str(manual_ob)) != Decimal(0):
+        opening_balance = Decimal(str(manual_ob))
+    else:
+        # Auto-chain: prior year closing = all-time revenue - all-time expenses up to end of prior year
+        prior_rev = await db.execute(
+            sa.text(f"SELECT COALESCE(SUM(r.amount), 0) FROM revenue_transactions r WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year < :year{lf_rev}"),
+            {"cid": cid, "year": year, **({"loc_id": location_id} if location_id else {})},
+        )
+        prior_exp = await db.execute(
+            sa.text(f"SELECT COALESCE(SUM(e.amount), 0) FROM expense_transactions e WHERE e.company_id = :cid AND e.is_voided = false AND e.fiscal_year < :year{lf_exp}"),
+            {"cid": cid, "year": year, **({"loc_id": location_id} if location_id else {})},
+        )
+        opening_balance = Decimal(str(prior_rev.scalar_one())) - Decimal(str(prior_exp.scalar_one()))
 
     # Monthly cash in (revenue)
     rev_result = await db.execute(
@@ -69,7 +82,7 @@ async def get_cashflow(
             SELECT EXTRACT(MONTH FROM r.date)::int AS month_num,
                    COALESCE(SUM(r.amount), 0) AS total
             FROM revenue_transactions r
-            WHERE r.company_id = :cid AND r.fiscal_year = :year{lf_rev}
+            WHERE r.company_id = :cid AND r.is_voided = false AND r.fiscal_year = :year{lf_rev}
             GROUP BY month_num ORDER BY month_num
         """),
         params,
@@ -82,7 +95,7 @@ async def get_cashflow(
             SELECT EXTRACT(MONTH FROM e.date)::int AS month_num,
                    COALESCE(SUM(e.amount), 0) AS total
             FROM expense_transactions e
-            WHERE e.company_id = :cid AND e.fiscal_year = :year{lf_exp}
+            WHERE e.company_id = :cid AND e.is_voided = false AND e.fiscal_year = :year{lf_exp}
             GROUP BY month_num ORDER BY month_num
         """),
         params,

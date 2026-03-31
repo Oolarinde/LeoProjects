@@ -56,6 +56,8 @@ class PayrollItemLineResponse(BaseModel):
 class PayrollItemResponse(BaseModel):
     id: UUID
     employee_id: UUID
+    company_id: Optional[UUID] = None
+    company_name: Optional[str] = None
     employee_name: Optional[str] = None
     employee_ref: Optional[str] = None
     basic_salary: Decimal

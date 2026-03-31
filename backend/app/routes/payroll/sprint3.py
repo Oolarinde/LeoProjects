@@ -20,6 +20,8 @@ from app.schemas.payroll.sprint3 import (
     PayrollItemLineResponse,
 )
 from app.services.payroll.engine import calculate_payroll
+from app.services.payroll.gl_posting import post_payroll_to_gl
+from app.services.company_groups import get_group_company_ids_for_user
 from app.utils.dependencies import get_current_user
 
 router = APIRouter()
@@ -28,9 +30,15 @@ router = APIRouter()
 def _item_to_response(item: PayrollItem) -> PayrollItemResponse:
     """Convert PayrollItem ORM → response with employee name."""
     emp = item.employee
+    # Resolve company name for group payroll display
+    company_name = None
+    if hasattr(item, "company") and item.company:
+        company_name = item.company.name
     return PayrollItemResponse(
         id=item.id,
         employee_id=item.employee_id,
+        company_id=item.company_id,
+        company_name=company_name,
         employee_name=emp.name if emp else None,
         employee_ref=emp.employee_ref if emp else None,
         basic_salary=item.basic_salary,
@@ -89,6 +97,8 @@ async def get_run(
         .options(
             selectinload(PayrollRun.items)
             .selectinload(PayrollItem.employee),
+            selectinload(PayrollRun.items)
+            .selectinload(PayrollItem.company),
             selectinload(PayrollRun.items)
             .selectinload(PayrollItem.lines),
         )
@@ -161,8 +171,13 @@ async def calculate_run(
     if run.status not in ("DRAFT", "CALCULATED"):
         raise HTTPException(status_code=400, detail=f"Cannot calculate a run in '{run.status}' status")
 
+    # Group payroll: load employees from all group companies
+    employee_company_ids = None
+    if current_user.role in ("SUPER_ADMIN", "GROUP_ADMIN"):
+        employee_company_ids = await get_group_company_ids_for_user(db, current_user)
+
     try:
-        run = await calculate_payroll(db, current_user.company_id, run)
+        run = await calculate_payroll(db, current_user.company_id, run, employee_company_ids)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -196,6 +211,10 @@ async def approve_run(
     run.status = "APPROVED"
     run.approved_by = current_user.id
     run.approved_at = datetime.utcnow()
+
+    # Auto-post payroll journal to GL (LEDGER P1)
+    await post_payroll_to_gl(db, current_user.company_id, run, current_user.id)
+
     await db.commit()
     await db.refresh(run)
     return run

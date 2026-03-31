@@ -243,7 +243,7 @@ export default function Revenue() {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      await revenueApi.delete(deleteTarget.id);
+      await revenueApi.void(deleteTarget.id, "Voided by user");
       setDeleteTarget(null);
       fetchData();
     } catch (err) {

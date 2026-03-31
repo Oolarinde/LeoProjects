@@ -9,6 +9,11 @@ def loc_filter(alias: str, location_id: Optional[UUID]) -> str:
     return f" AND {alias}.location_id = :loc_id" if location_id else ""
 
 
+def not_voided(alias: str) -> str:
+    """Return AND clause to exclude voided transactions."""
+    return f" AND {alias}.is_voided = false"
+
+
 def base_params(company_id: UUID, year: int, location_id: Optional[UUID]) -> dict:
     """Return base parameter dict for all report queries."""
     p: dict = {"cid": company_id, "year": year}

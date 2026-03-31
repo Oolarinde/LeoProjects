@@ -1,4 +1,6 @@
 """Pydantic schemas for Payroll Sprint 2 — employee profiles, allowances, deductions, leave."""
+from __future__ import annotations
+
 
 from datetime import date as DateType, datetime
 from decimal import Decimal
