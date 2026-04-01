@@ -253,7 +253,7 @@ def update_staff_profile(
 
 
 @router.post("/{employee_id}/photo")
-def upload_staff_photo(
+async def upload_staff_photo(
     employee_id: UUID,
     request: Request,
     db: Session = Depends(get_db),
@@ -266,7 +266,7 @@ def upload_staff_photo(
     if "multipart/form-data" not in content_type:
         raise HTTPException(status_code=400, detail="Expected multipart/form-data")
 
-    form = request.form()
+    form = await request.form()
     file = form.get("photo")
     if file is None:
         raise HTTPException(status_code=400, detail="No photo file provided")
@@ -275,7 +275,7 @@ def upload_staff_photo(
     if file.content_type not in ALLOWED_TYPES:
         raise HTTPException(status_code=400, detail="Only JPEG, PNG, and WebP images are allowed")
 
-    data = file.read()
+    data = await file.read()
     MAX_SIZE = 2 * 1024 * 1024  # 2 MB
     if len(data) > MAX_SIZE:
         raise HTTPException(status_code=400, detail="File size must be under 2 MB")
